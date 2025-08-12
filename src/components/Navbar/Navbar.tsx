@@ -28,6 +28,9 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className={styles.desktopNav}>
+            <a href="/" className={styles.navLink}>
+              Home
+            </a>
             <a href="/jornada-cripto" className={styles.navLink}>
               Jornada Crypto
             </a>
@@ -71,6 +74,13 @@ const Header = () => {
         {isMenuOpen && (
           <div className={styles.mobileNavContainer}>
             <nav className={styles.mobileNav}>
+              <a
+                href="/"
+                className={styles.mobileNavLink}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Home
+              </a>
               <a
                 href="/jornada-cripto"
                 className={styles.mobileNavLink}
