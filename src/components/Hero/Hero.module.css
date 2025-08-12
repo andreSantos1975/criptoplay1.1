@@ -1,0 +1,277 @@
+.heroSection {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.heroBackground {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.heroImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.1;
+}
+
+.heroGradientOverlay {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(135deg, hsla(var(--primary), 0.05), hsl(var(--background)), hsla(var(--success), 0.05));
+}
+
+.heroContentWrapper {
+  position: relative;
+  z-index: 10;
+  max-width: 1280px; /* container */
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem; /* px-4 */
+  padding-right: 1rem; /* px-4 */
+  padding-top: 4rem; /* pt-16 */
+}
+
+@media (min-width: 640px) { /* sm: */
+  .heroContentWrapper {
+    padding-left: 1.5rem; /* sm:px-6 */
+    padding-right: 1.5rem; /* sm:px-6 */
+  }
+}
+
+@media (min-width: 1024px) { /* lg: */
+  .heroContentWrapper {
+    padding-left: 2rem; /* lg:px-8 */
+    padding-right: 2rem; /* lg:px-8 */
+  }
+}
+
+.headlineContainer {
+  max-width: 64rem; /* max-w-4xl */
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem; /* space-x-2 */
+  background-color: hsl(var(--success-light)); /* bg-success-light */
+  border-radius: 9999px; /* rounded-full */
+  padding-left: 1rem; /* px-4 */
+  padding-right: 1rem; /* px-4 */
+  padding-top: 0.5rem; /* py-2 */
+  padding-bottom: 0.5rem; /* py-2 */
+  margin-bottom: 2rem; /* mb-8 */
+  animation: fadeInScale 0.5s ease-out forwards; /* fade-in-scale */
+}
+
+.badgeIcon {
+  width: 1rem; /* w-4 */
+  height: 1rem; /* h-4 */
+  color: hsl(var(--success)); /* text-success */
+}
+
+.badgeText {
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500; /* font-medium */
+  color: hsl(var(--success)); /* text-success */
+}
+
+.mainHeadline {
+  font-size: 2.25rem; /* text-4xl */
+  font-weight: 700; /* font-bold */
+  color: hsl(var(--foreground)); /* text-foreground */
+  margin-bottom: 1.5rem; /* mb-6 */
+  line-height: 1.25; /* leading-tight */
+  animation: fadeInUp 0.6s ease-out forwards; /* fade-in-up */
+}
+
+@media (min-width: 640px) { /* sm: */
+  .mainHeadline {
+    font-size: 3rem; /* sm:text-5xl */
+  }
+}
+
+@media (min-width: 1024px) { /* lg: */
+  .mainHeadline {
+    font-size: 3.75rem; /* lg:text-6xl */
+  }
+}
+
+.headlineGradientText {
+  background-image: linear-gradient(to right, hsl(var(--primary)), hsl(var(--success))); /* bg-gradient-to-r from-primary to-success */
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent; /* text-transparent */
+}
+
+.subtitle {
+  font-size: 1.125rem; /* text-lg */
+  color: hsl(var(--muted-foreground)); /* text-muted-foreground */
+  margin-bottom: 2rem; /* mb-8 */
+  max-width: 42rem; /* max-w-2xl */
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.625; /* leading-relaxed */
+  animation: fadeInUp 0.6s ease-out forwards; /* fade-in-up */
+}
+
+@media (min-width: 640px) { /* sm: */
+  .subtitle {
+    font-size: 1.25rem; /* sm:text-xl */
+  }
+}
+
+.ctaButtonsContainer {
+  display: flex;
+  flex-direction: column; /* flex-col */
+  align-items: center;
+  justify-content: center;
+  gap: 1rem; /* space-y-4 */
+  margin-bottom: 3rem; /* mb-12 */
+  animation: fadeInUp 0.6s ease-out forwards; /* fade-in-up */
+}
+
+@media (min-width: 640px) { /* sm: */
+  .ctaButtonsContainer {
+    flex-direction: row; /* sm:flex-row */
+    gap: 1.5rem; /* sm:space-x-6 */
+    margin-top: 0; /* sm:space-y-0 */
+  }
+}
+
+.ctaButtonPrimary {
+  /* Button component will handle its own styling based on variant/size */
+}
+
+.ctaButtonIcon {
+  width: 1.25rem; /* w-5 */
+  height: 1.25rem; /* h-5 */
+  margin-left: 0.5rem; /* ml-2 */
+  transition: transform 0.3s ease; /* transition-transform */
+}
+
+.ctaButtonPrimary:hover .ctaButtonIcon {
+  transform: translateX(0.25rem); /* group-hover:translate-x-1 */
+}
+
+.ctaButtonSecondary {
+  /* Button component will handle its own styling based on variant/size */
+  border-color: hsl(var(--primary)); /* border-primary */
+  color: hsl(var(--primary)); /* text-primary */
+}
+
+.ctaButtonSecondary:hover {
+  background-color: hsl(var(--primary)); /* hover:bg-primary */
+  color: hsl(var(--primary-foreground)); /* hover:text-primary-foreground */
+}
+
+.trustIndicatorsContainer {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr)); /* grid-cols-1 */
+  gap: 1.5rem; /* gap-6 */
+  max-width: 42rem; /* max-w-2xl */
+  margin-left: auto;
+  margin-right: auto;
+  animation: fadeInScale 0.5s ease-out forwards; /* fade-in-scale */
+}
+
+@media (min-width: 640px) { /* sm: */
+  .trustIndicatorsContainer {
+    grid-template-columns: repeat(3, minmax(0, 1fr)); /* sm:grid-cols-3 */
+  }
+}
+
+.trustIndicatorItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem; /* space-x-2 */
+  color: hsl(var(--muted-foreground)); /* text-muted-foreground */
+}
+
+.trustIndicatorIcon {
+  width: 1.25rem; /* w-5 */
+  height: 1.25rem; /* h-5 */
+  color: hsl(var(--success)); /* text-success */
+}
+
+.trustIndicatorText {
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500; /* font-medium */
+}
+
+.floatingElementOne {
+  position: absolute;
+  top: 5rem; /* top-20 */
+  left: 2.5rem; /* left-10 */
+  width: 4rem; /* w-16 */
+  height: 4rem; /* h-16 */
+  background-color: hsla(var(--success), 0.1); /* bg-success/10 */
+  border-radius: 9999px; /* rounded-full */
+  filter: blur(1rem); /* blur-xl */
+  animation: float 3s ease-in-out infinite; /* float */
+}
+
+.floatingElementTwo {
+  position: absolute;
+  bottom: 5rem; /* bottom-20 */
+  right: 2.5rem; /* right-10 */
+  width: 5rem; /* w-20 */
+  height: 5rem; /* h-20 */
+  background-color: hsla(var(--primary), 0.1); /* bg-primary/10 */
+  border-radius: 9999px; /* rounded-full */
+  filter: blur(1rem); /* blur-xl */
+  animation: float 3s ease-in-out infinite; /* float */
+}
+
+.floatingElementThree {
+  position: absolute;
+  top: 50%; /* top-1/2 */
+  left: 25%; /* left-1/4 */
+  width: 3rem; /* w-12 */
+  height: 3rem; /* h-12 */
+  background-color: hsla(var(--success), 0.05); /* bg-success/5 */
+  border-radius: 9999px; /* rounded-full */
+  filter: blur(0.75rem); /* blur-lg */
+  animation: float 3s ease-in-out infinite; /* float */
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}

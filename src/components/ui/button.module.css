@@ -1,0 +1,114 @@
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border-radius: var(--radius); /* Using global radius variable */
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500; /* font-medium */
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Sizes */
+.size-default {
+  height: 2.5rem; /* h-10 */
+  padding: 0 1rem; /* px-4 */
+}
+
+.size-sm {
+  height: 2.25rem; /* h-9 */
+  padding: 0 0.75rem; /* px-3 */
+  font-size: 0.875rem; /* text-sm */
+}
+
+.size-lg {
+  height: 2.75rem; /* h-11 */
+  padding: 0 1.25rem; /* px-5 */
+  font-size: 1rem; /* text-base */
+}
+
+.size-xl {
+  height: 3.5rem; /* h-14 */
+  padding: 0 2rem; /* px-8 */
+  font-size: 1.125rem; /* text-lg */
+}
+
+/* Variants */
+.variant-default {
+  background-color: hsl(var(--primary)); /* bg-primary */
+  color: hsl(var(--primary-foreground)); /* text-primary-foreground */
+}
+
+.variant-default:hover {
+  background-color: hsl(var(--primary-muted)); /* hover:bg-primary-muted */
+}
+
+.variant-destructive {
+  background-color: hsl(var(--destructive)); /* bg-destructive */
+  color: hsl(var(--destructive-foreground)); /* text-destructive-foreground */
+}
+
+.variant-destructive:hover {
+  background-color: hsl(var(--destructive) / 0.9); /* hover:bg-destructive/90 */
+}
+
+.variant-outline {
+  border: 1px solid hsl(var(--border)); /* border border-input */
+  background-color: hsl(var(--background)); /* bg-background */
+  color: hsl(var(--foreground)); /* text-foreground */
+}
+
+.variant-outline:hover {
+  background-color: hsl(var(--accent)); /* hover:bg-accent */
+  color: hsl(var(--accent-foreground)); /* hover:text-accent-foreground */
+}
+
+.variant-secondary {
+  background-color: hsl(var(--secondary)); /* bg-secondary */
+  color: hsl(var(--secondary-foreground)); /* text-secondary-foreground */
+}
+
+.variant-secondary:hover {
+  background-color: hsl(var(--secondary) / 0.8); /* hover:bg-secondary/80 */
+}
+
+.variant-ghost {
+  background-color: transparent;
+  color: hsl(var(--foreground)); /* text-foreground */
+}
+
+.variant-ghost:hover {
+  background-color: hsl(var(--accent)); /* hover:bg-accent */
+  color: hsl(var(--accent-foreground)); /* hover:text-accent-foreground */
+}
+
+.variant-link {
+  color: hsl(var(--primary)); /* text-primary */
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.variant-link:hover {
+  color: hsl(var(--primary) / 0.9); /* hover:text-primary/90 */
+}
+
+/* Custom CTA variant */
+.variant-cta {
+  background: var(--gradient-hero); /* bg-gradient-hero */
+  color: hsl(var(--primary-foreground)); /* text-primary-foreground */
+  box-shadow: var(--shadow-medium); /* shadow-medium */
+}
+
+.variant-cta:hover {
+  box-shadow: var(--shadow-strong); /* hover:shadow-strong */
+  transform: translateY(-1px); /* slight lift on hover */
+}
+
+/* Disabled state */
+.base:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

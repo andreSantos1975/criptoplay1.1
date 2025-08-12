@@ -1,4 +1,4 @@
-START
+START 11/08/2025 criptoplay
 sudo /opt/lampp/lampp start 
 npm run dev 
 ----------------------------------------------------------------------
