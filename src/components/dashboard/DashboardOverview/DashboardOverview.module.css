@@ -1,0 +1,72 @@
+.overviewContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* Corresponds to space-y-6 */
+}
+
+.chartContainer {
+  height: 20rem; /* Corresponds to h-80 */
+}
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableRow {
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableHeader {
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+
+.tableCell {
+  padding: 0.75rem 0.5rem;
+  vertical-align: middle;
+}
+
+.tableCellContent {
+  composes: tableCell;
+  font-weight: 500;
+}
+
+.tradeType {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-block;
+  text-transform: capitalize;
+}
+
+.buyType {
+  background-color: hsla(220, 84%, 60%, 0.1);
+  color: hsl(220, 84%, 70%);
+}
+
+.sellType {
+  background-color: hsla(38, 92%, 50%, 0.1);
+  color: hsl(38, 92%, 60%);
+}
+
+.positiveValue {
+  color: hsl(var(--profit));
+}
+
+.negativeValue {
+  color: hsl(var(--loss));
+}

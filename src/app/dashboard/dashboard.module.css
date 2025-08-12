@@ -1,0 +1,63 @@
+.page {
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 80rem; /* Corresponds to max-w-7xl */
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding: 2rem; /* Corresponds to sm:px-8 */
+  }
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 2.25rem; /* Corresponds to text-4xl */
+  font-weight: 700; /* Corresponds to font-bold */
+  margin-bottom: 1rem;
+  background-image: linear-gradient(to right, hsl(var(--success)), hsl(var(--primary)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.subtitle {
+  font-size: 1.25rem; /* Corresponds to text-xl */
+  color: hsl(var(--muted-foreground));
+}
+
+.kpiGrid {
+  display: grid;
+  gap: 1.5rem; /* Corresponds to gap-6 */
+  margin-bottom: 2rem;
+  grid-template-columns: repeat(1, 1fr);
+}
+
+@media (min-width: 768px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr); /* md:grid-cols-2 */
+  }
+}
+
+@media (min-width: 1024px) {
+  .kpiGrid {
+    grid-template-columns: repeat(4, 1fr); /* lg:grid-cols-4 */
+  }
+}
+
+.tabs {
+  margin-bottom: 2rem;
+}
+
+.tabContent {
+  /* No specific styles needed here, just a container */
+}

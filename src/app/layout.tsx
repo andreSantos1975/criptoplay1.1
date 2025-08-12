@@ -30,7 +30,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <AuthProvider>
           <Navbar />
-          <main>{children}</main>
+          <main className={"mainContent"}>{children}</main>
         </AuthProvider>
       </body>
     </html>

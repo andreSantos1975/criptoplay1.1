@@ -1,0 +1,20 @@
+.content {
+  padding: 1.25rem;
+}
+
+.title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 0.25rem;
+}
+
+.value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.positiveValue {
+  color: hsl(var(--profit));
+}

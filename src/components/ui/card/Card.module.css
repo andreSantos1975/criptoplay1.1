@@ -1,0 +1,22 @@
+.card {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-soft);
+}
+
+.cardHeader {
+  padding: 1.5rem;
+  padding-bottom: 0;
+}
+
+.cardTitle {
+  font-size: 1.25rem; /* Corresponds to text-xl */
+  font-weight: 600; /* Corresponds to font-semibold */
+  letter-spacing: -0.025em;
+}
+
+.cardContent {
+  padding: 1.5rem;
+}
