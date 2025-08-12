@@ -38,10 +38,10 @@ const Header = () => {
               Recursos
             </a>
             
-            <a href="#depoimentos" className={styles.navLink}>
-              Depoimentos
+            <a href="/blog" className={styles.navLink}>
+              Blog
             </a>
-            <a href="#contato" className={styles.navLink}>
+            <a href="/contato" className={styles.navLink}>
               Contato
             </a>
           </nav>
@@ -97,14 +97,14 @@ const Header = () => {
               </a>
               
               <a
-                href="#depoimentos"
+                href="/blog"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
-                Depoimentos
+                Blog
               </a>
               <a
-                href="#contato"
+                href="/contato"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
