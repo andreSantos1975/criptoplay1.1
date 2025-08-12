@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation"; // Import useRouter
+import { useSession } from "next-auth/react"; // Add this import
 import styles from "./Navbar.module.css";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter();
+  const { data: session, status } = useSession(); // Get session data and status
 
   return (
     <header className={styles.header}>
@@ -43,8 +45,14 @@ const Header = () => {
 
           {/* Desktop CTA */}
           <div className={styles.desktopCta}>
-            <Button variant="ghost" onClick={() => router.push('/login')}>Entrar</Button> {/* Added onClick */}
-            <Button variant="cta" onClick={() => router.push('/cadastro')}>Começar Agora</Button> {/* Added onClick */}
+            {status === "authenticated" ? (
+              <Button variant="cta" onClick={() => router.push('/dashboard')}>Dashboard</Button>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => router.push('/login')}>Entrar</Button>
+                <Button variant="cta" onClick={() => router.push('/cadastro')}>Começar Agora</Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -90,12 +98,20 @@ const Header = () => {
                 Contato
               </a>
               <div className={styles.mobileCtaContainer}>
-                <Button variant="ghost" className={styles.mobileCtaButton} onClick={() => { router.push('/login'); setIsMenuOpen(false); }}> {/* Added onClick and close menu */}
-                  Entrar
-                </Button>
-                <Button variant="cta" className={styles.mobileCtaButton} onClick={() => { router.push('/cadastro'); setIsMenuOpen(false); }}> {/* Added onClick and close menu */}
-                  Começar Agora
-                </Button>
+                {status === "authenticated" ? (
+                  <Button variant="cta" className={styles.mobileCtaButton} onClick={() => { router.push('/dashboard'); setIsMenuOpen(false); }}>
+                    Dashboard
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="ghost" className={styles.mobileCtaButton} onClick={() => { router.push('/login'); setIsMenuOpen(false); }}>
+                      Entrar
+                    </Button>
+                    <Button variant="cta" className={styles.mobileCtaButton} onClick={() => { router.push('/cadastro'); setIsMenuOpen(false); }}>
+                      Começar Agora
+                    </Button>
+                  </>
+                )}
               </div>
             </nav>
           </div>
