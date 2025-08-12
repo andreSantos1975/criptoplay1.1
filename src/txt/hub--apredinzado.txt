@@ -1,0 +1,87 @@
+ Para uma plataforma como a "Criptoplay", a experiência do usuário (UX) é
+  fundamental para manter o engajamento e facilitar o aprendizado. A melhor abordagem é criar uma
+  jornada de aprendizado estruturada e gamificada.
+
+  Aqui está uma sugestão de como estruturar as páginas para apresentar o material de estudo (texto e
+  vídeo) de forma eficaz:
+
+  1. A Página Principal (O "Hub" de Aprendizado)
+
+
+  Quando o usuário clicar em "Jornada Crypto" (ou o nome que você escolher), ele não deve ver uma
+  lista simples de links. Em vez disso, ele deve cair em uma página central que organiza o
+  conhecimento de forma visual e progressiva.
+
+  Estrutura Sugerida:
+
+
+   * Trilhas de Conhecimento: Organize o conteúdo em módulos ou "trilhas" que funcionam como níveis
+     de um jogo.
+       * Exemplo:
+           * Módulo 1: Os Primeiros Passos no Mundo Cripto (Nível Iniciante)
+           * Módulo 2: Estratégias de Investimento (Nível Intermediário)
+           * Módulo 3: Dominando a Tecnologia Blockchain (Nível Avançado)
+
+
+   * Formato de Cartões (Cards) para cada Lição: Dentro de cada módulo, apresente as lições como
+     cartões interativos. Cada cartão deve ter:
+       * Título da Lição: Ex: "O que é Bitcoin?".
+       * Ícone de Formato: Um ícone claro para diferenciar vídeo (▶️) de texto (📄).
+       * Tempo Estimado: Ex: "Leitura de 5 min" ou "Vídeo de 8 min". Isso ajuda o usuário a se
+         planejar.
+       * Status de Progresso: Um indicador visual (Ex: um checkbox [ ] vazio que vira [✔] completo,
+         ou uma barra de progresso).
+       * Pontos/Recompensa (Opcional): Ex: "Recompensa: 25 XP".
+
+
+
+
+  2. A Página de Conteúdo (A "Missão")
+
+  Ao clicar em um cartão, o usuário é levado para a página da lição. O design deve ser limpo,
+  focado e consistente, seja para vídeo ou texto.
+
+  Estrutura Sugerida:
+
+
+   * Layout Consistente: Use um layout de duas colunas.
+       * Coluna Principal (70% da largura): O conteúdo em si.
+       * Coluna Lateral (30% da largura): A navegação da trilha.
+
+  Coluna Principal (Conteúdo):
+
+
+   * Para Vídeos:
+       * O player de vídeo deve ser o elemento principal, grande e centralizado no topo.
+       * Abaixo do vídeo, uma breve descrição ou os pontos principais abordados.
+       * Uma seção de "Recursos Adicionais" com links mencionados no vídeo.
+
+
+   * Para Textos:
+       * O texto deve ser bem formatado e legível: use títulos, subtítulos, listas e negrito para
+         quebrar blocos grandes de texto.
+       * Incorpore imagens, gráficos e infográficos para ilustrar conceitos complexos. Ninguém gosta
+         de ler uma parede de texto.
+
+
+  Coluna Lateral (Navegação da Trilha):
+
+
+   * Mostre a lista completa de lições do módulo atual.
+   * Destaque a lição que o usuário está visualizando.
+   * Marque as lições já concluídas com um ícone (✔).
+   * Isso funciona como um "mapa", permitindo que o usuário veja seu progresso e navegue facilmente
+     entre as lições.
+
+  3. O Elemento "Game Changer": A Gamificação
+
+  Para realmente engajar, adicione elementos de jogo ao final de cada lição.
+
+
+   * Botão de Conclusão: Ao final do conteúdo, em vez de um simples botão "Próxima Lição", use um
+     botão como "Missão Cumprida!" ou "Entendido, próximo desafio!".
+   * Teste Rápido: Clicar no botão pode revelar um pequeno quiz de 1 a 3 perguntas para validar o
+     conhecimento.
+   * Recompensa: Ao acertar o quiz ou concluir a lição, mostre uma pequena animação ou um pop-up
+     parabenizando o usuário.
+       * "Parabéns! Você ganhou 25 XP e a medalha 'Iniciado em Bitcoin'!"
