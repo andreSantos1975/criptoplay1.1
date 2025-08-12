@@ -26,12 +26,13 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <nav className={styles.desktopNav}>
+            <a href="/jornada-cripto" className={styles.navLink}>
+              Jornada Crypto
+            </a>
             <a href="#recursos" className={styles.navLink}>
               Recursos
             </a>
-            <a href="#como-funciona" className={styles.navLink}>
-              Como Funciona
-            </a>
+            
             <a href="#depoimentos" className={styles.navLink}>
               Depoimentos
             </a>
@@ -60,19 +61,20 @@ const Header = () => {
           <div className={styles.mobileNavContainer}>
             <nav className={styles.mobileNav}>
               <a
+                href="/jornada-cripto"
+                className={styles.mobileNavLink}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Jornada Crypto
+              </a>
+              <a
                 href="#recursos"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Recursos
               </a>
-              <a
-                href="#como-funciona"
-                className={styles.mobileNavLink}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Como Funciona
-              </a>
+              
               <a
                 href="#depoimentos"
                 className={styles.mobileNavLink}
