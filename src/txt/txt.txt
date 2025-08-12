@@ -1,3 +1,11 @@
-  
+START
+sudo /opt/lampp/lampp start 
+npm run dev 
+----------------------------------------------------------------------
+
+MUDAR DE REPOSITORIO NO GITHUB
+git remote set-url origin <URL_DO_NOVO_REPOSITORIO_NO_GITHUB>
+-----------------------------------------------------------------------  
   Gerar uma string segredo
   openssl rand -base64 32  
+  ---------------------------------------------------------------------
