@@ -15,12 +15,14 @@ const Header = () => {
       <div className={styles.container}>
         <div className={styles.flexBetween}>
           {/* Logo */}
-          <div className={styles.logoContainer}>
-            <div className={styles.logoIconWrapper}>
-              <TrendingUp className={styles.logoIcon} />
+          <a href="/" className={styles.logoLink}> {/* Added a tag and class */}
+            <div className={styles.logoContainer}>
+              <div className={styles.logoIconWrapper}>
+                <TrendingUp className={styles.logoIcon} />
+              </div>
+              <span className={styles.logoText}>CriptoPlay</span>
             </div>
-            <span className={styles.logoText}>CryptoTrade</span>
-          </div>
+          </a>
 
           {/* Desktop Navigation */}
           <nav className={styles.desktopNav}>

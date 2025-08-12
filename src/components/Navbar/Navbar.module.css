@@ -67,6 +67,11 @@
   color: hsl(var(--primary)); /* text-primary */
 }
 
+.logoLink {
+  text-decoration: none;
+  color: inherit; /* Inherit color from parent, or set a specific color */
+}
+
 .desktopNav {
   display: none; /* hidden */
   align-items: center;
