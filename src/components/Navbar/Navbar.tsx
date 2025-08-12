@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation"; // Import useRouter
-import { useSession } from "next-auth/react"; // Add this import
+import { useSession, signOut } from "next-auth/react"; // Add signOut to this import
 import styles from "./Navbar.module.css";
 
 const Header = () => {
@@ -46,7 +46,10 @@ const Header = () => {
           {/* Desktop CTA */}
           <div className={styles.desktopCta}>
             {status === "authenticated" ? (
-              <Button variant="cta" onClick={() => router.push('/dashboard')}>Dashboard</Button>
+              <>
+                <Button variant="ghost" onClick={() => router.push('/dashboard')}>Dashboard</Button>
+                <Button variant="cta" onClick={() => signOut()}>Sair</Button>
+              </>
             ) : (
               <>
                 <Button variant="ghost" onClick={() => router.push('/login')}>Entrar</Button>
@@ -99,9 +102,14 @@ const Header = () => {
               </a>
               <div className={styles.mobileCtaContainer}>
                 {status === "authenticated" ? (
-                  <Button variant="cta" className={styles.mobileCtaButton} onClick={() => { router.push('/dashboard'); setIsMenuOpen(false); }}>
-                    Dashboard
-                  </Button>
+                  <>
+                    <Button variant="ghost" className={styles.mobileCtaButton} onClick={() => { router.push('/dashboard'); setIsMenuOpen(false); }}>
+                      Dashboard
+                    </Button>
+                    <Button variant="cta" className={styles.mobileCtaButton} onClick={() => { signOut(); setIsMenuOpen(false); }}>
+                      Sair
+                    </Button>
+                  </>
                 ) : (
                   <>
                     <Button variant="ghost" className={styles.mobileCtaButton} onClick={() => { router.push('/login'); setIsMenuOpen(false); }}>
