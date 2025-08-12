@@ -17,7 +17,7 @@ export const TechnicalAnalysisChart = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Análise Técnica - BTC/USD</CardTitle>
+        <CardTitle>Gráfico de Análise Técnica - BTC/USD</CardTitle>
       </CardHeader>
       <CardContent>
         <div className={styles.chartContainer}>

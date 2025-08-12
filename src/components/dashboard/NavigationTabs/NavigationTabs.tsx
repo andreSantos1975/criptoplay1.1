@@ -8,7 +8,7 @@ interface NavigationTabsProps {
 const TABS = [
   { id: "painel", label: "Painel Geral" },
   { id: "pessoal", label: "Finanças Pessoais" },
-  { id: "analise", label: "Análise Técnica" },
+  { id: "analise", label: "Gráfico de Análise Técnica" },
   { id: "relatorios", label: "Relatórios" },
 ];
 
