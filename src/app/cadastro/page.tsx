@@ -87,6 +87,9 @@ export default function CadastroPage() {
         <button type="submit" className={styles.button} disabled={isLoading}>
           {isLoading ? 'Registrando...' : 'Registrar'}
         </button>
+        <p className={styles.loginLink}>
+          Já tem uma conta? <a href="/login">Faça login aqui</a>
+        </p>
         {error && <p className={styles.error}>{error}</p>}
         {success && <p className={styles.success}>{success}</p>}
       </form>
