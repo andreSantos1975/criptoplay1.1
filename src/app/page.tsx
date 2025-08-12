@@ -1,9 +1,9 @@
 import Header from "@/components/Navbar/Navbar";
 import Hero from "@/components/Hero/Hero";
-// import HowItWorks from "@/components/HowItWorks";
-// import Features from "@/components/Features";
-// import Testimonials from "@/components/Testimonials";
-// import Footer from "@/components/Footer";
+import HowItWorks from "@/components/HowItWorks/HowItWorks";
+import Features from "@/components/Features/Features";
+import Testimonials from "@/components/Testimonials/Testimonials";
+import Footer from "@/components/Footer/Footer";
 
 import styles from "./page.module.css";
 
@@ -13,11 +13,11 @@ const Index = () => {
       <Header />
       <main>
         <Hero />
-        {/* <HowItWorks />
+        <HowItWorks />
         <Features />
-        <Testimonials /> */}
+        <Testimonials />
       </main>
-      {/* <Footer /> */}
+      <Footer />
     </div>
   );
 };
