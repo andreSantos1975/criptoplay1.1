@@ -2,10 +2,23 @@ START
 sudo /opt/lampp/lampp start 
 npm run dev 
 ----------------------------------------------------------------------
-
+INICIAR A INTERFACE DO PRISMA CLIENTE 
+npx prisma studio
+----------------------------------------------------------------------
+COMANO PARA EXCLUI BANCO DE DADOS 
+DROP DATABASE <nome do banco de dados>
+----------------------------------------------------------------------
 MUDAR DE REPOSITORIO NO GITHUB
 git remote set-url origin <URL_DO_NOVO_REPOSITORIO_NO_GITHUB>
 -----------------------------------------------------------------------  
   Gerar uma string segredo
   openssl rand -base64 32  
-  ---------------------------------------------------------------------
+  ----------------------------------------------------------------------
+  ------------------------------------------------------------------------------
+(Gerando o cliente Prisma para refletir as novas configurações no banco de dados
+  npx prisma generate 
+  ------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+(Aplicando as migrações existentes ao novo banco de dados
+  npx prisma migrate deploy 
+  -------------------------------------------------------------------------------
