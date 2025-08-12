@@ -1,10 +1,29 @@
-.placeholder {
+.reportsSection {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 20rem;
-  border: 2px dashed hsl(var(--border));
-  border-radius: var(--radius);
-  color: hsl(var(--muted-foreground));
-  background-color: hsl(var(--accent));
+  flex-direction: column;
+  gap: 1.5rem; /* space-y-6 */
+}
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem; /* gap-6 */
+}
+
+@media (min-width: 1024px) {
+  .chartsGrid {
+    grid-template-columns: repeat(2, 1fr); /* lg:grid-cols-2 */
+  }
+}
+
+.chartContainer {
+  height: 16rem; /* h-64 */
+}
+
+.positiveValue {
+  color: hsl(var(--profit));
+}
+
+.negativeValue {
+  color: hsl(var(--loss));
 }

@@ -1,10 +1,33 @@
-.placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 20rem;
-  border: 2px dashed hsl(var(--border));
-  border-radius: var(--radius);
+.chartContainer {
+  height: 20rem;
+}
+
+.metricsGrid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+@media (min-width: 768px) {
+  .metricsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.metricItem {
+  text-align: center;
+}
+
+.metricLabel {
   color: hsl(var(--muted-foreground));
-  background-color: hsl(var(--accent));
+}
+
+.metricValue {
+  font-weight: 600;
+}
+
+.positiveValue {
+  color: hsl(var(--profit));
 }
