@@ -1,4 +1,3 @@
-
 .container {
     display: flex;
     justify-content: center;
@@ -70,3 +69,18 @@
     text-align: center;
   }
   
+.registerLink {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.registerLink a {
+  color: #0070f3; /* Use the primary blue color for the link */
+  text-decoration: none;
+}
+
+.registerLink a:hover {
+  text-decoration: underline;
+}
