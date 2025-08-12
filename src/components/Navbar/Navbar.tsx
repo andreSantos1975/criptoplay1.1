@@ -3,10 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // Import useRouter
 import styles from "./Navbar.module.css";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter(); // Initialize useRouter
 
   return (
     <header className={styles.header}>
@@ -38,8 +40,8 @@ const Header = () => {
 
           {/* Desktop CTA */}
           <div className={styles.desktopCta}>
-            <Button variant="ghost">Entrar</Button>
-            <Button variant="cta">Começar Agora</Button>
+            <Button variant="ghost" onClick={() => router.push('/login')}>Entrar</Button> {/* Added onClick */}
+            <Button variant="cta" onClick={() => router.push('/cadastro')}>Começar Agora</Button> {/* Added onClick */}
           </div>
 
           {/* Mobile Menu Button */}
@@ -84,10 +86,10 @@ const Header = () => {
                 Contato
               </a>
               <div className={styles.mobileCtaContainer}>
-                <Button variant="ghost" className={styles.mobileCtaButton}>
+                <Button variant="ghost" className={styles.mobileCtaButton} onClick={() => { router.push('/login'); setIsMenuOpen(false); }}> {/* Added onClick and close menu */}
                   Entrar
                 </Button>
-                <Button variant="cta" className={styles.mobileCtaButton}>
+                <Button variant="cta" className={styles.mobileCtaButton} onClick={() => { router.push('/cadastro'); setIsMenuOpen(false); }}> {/* Added onClick and close menu */}
                   Começar Agora
                 </Button>
               </div>
