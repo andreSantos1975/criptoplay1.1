@@ -27,3 +27,13 @@ npx prisma studio
   (Criar uma tabela no banco de dados
   npx prisma migrate dev --name add_is_admin_to_user
   -------------------------------------------------------------------------------
+  (Remove o diretório node_modules e o arquivo… 
+  rm -rf node_modules package-lock.json 
+   rm -rf node_modules
+  --------------------------------------------------------------------------------
+(Executa o linter do projeto para verificar a qualidade do código.)
+npm run lint 
+-------------------------------------------------------------------------------
+(Executa o build do projeto Next.js.) 
+npm run build 
+---------------------------------------------------------------------------------

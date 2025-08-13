@@ -1,63 +1,90 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import styles from "./TechnicalAnalysisChart.module.css";
+'use client';
 
-const chartData = [
-  { time: "09:00", price: 45000, volume: 1200 },
-  { time: "10:00", price: 45500, volume: 1500 },
-  { time: "11:00", price: 44800, volume: 900 },
-  { time: "12:00", price: 46200, volume: 1800 },
-  { time: "13:00", price: 47100, volume: 2100 },
-  { time: "14:00", price: 46800, volume: 1600 },
-  { time: "15:00", price: 48200, volume: 2400 },
-  { time: "16:00", price: 47900, volume: 1900 },
+import React, { useEffect, useRef, memo } from 'react';
+import * as LightweightCharts from 'lightweight-charts';
+import { AreaSeries } from 'lightweight-charts';
+import styles from './TechnicalAnalysisChart.module.css';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+// Placeholder data for demonstration
+const initialData = [
+  { time: '2023-01-01', value: 45000 },
+  { time: '2023-01-02', value: 45500 },
+  { time: '2023-01-03', value: 44800 },
+  { time: '2023-01-04', value: 46200 },
+  { time: '2023-01-05', value: 47100 },
+  { time: '2023-01-06', value: 46800 },
+  { time: '2023-01-07', value: 48200 },
+  { time: '2023-01-08', value: 47900 },
+  { time: '2023-01-09', value: 49000 },
+  { time: '2023-01-10', value: 48500 },
 ];
 
-export const TechnicalAnalysisChart = () => {
+export const TechnicalAnalysisChart = memo(() => {
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const handleResize = () => {
+      chart.applyOptions({ width: chartContainerRef.current!.clientWidth });
+    };
+
+    const chart = LightweightCharts.createChart(chartContainerRef.current, {
+      width: chartContainerRef.current.clientWidth,
+      height: 300,
+    });
+
+    chart.timeScale().fitContent();
+
+    const newSeries = chart.addSeries(LightweightCharts.AreaSeries, {
+      lineColor: 'hsl(var(--chart-green))',
+      topColor: 'rgba(38, 166, 154, 0.28)',
+      bottomColor: 'rgba(38, 166, 154, 0.05)',
+    });
+
+    newSeries.setData(initialData);
+
+    // Example of adding a price line (e.g., for Stop Loss)
+    const stopLossPrice = 46000;
+    const stopLossLine = newSeries.createPriceLine({
+      price: stopLossPrice,
+      color: 'red',
+      lineWidth: 2,
+      lineStyle: 2, // LineStyle.Dashed
+      axisLabelVisible: true,
+      title: 'Stop Loss',
+    });
+
+    // Example of adding another price line (e.g., for Take Profit)
+    const takeProfitPrice = 48500;
+    const takeProfitLine = newSeries.createPriceLine({
+      price: takeProfitPrice,
+      color: 'green',
+      lineWidth: 2,
+      lineStyle: 2, // LineStyle.Dashed
+      axisLabelVisible: true,
+      title: 'Take Profit',
+    });
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.remove();
+    };
+  }, []);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Gráfico de Análise Técnica - BTC/USD</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className={styles.chartContainer}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="time" 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-                domain={['dataMin - 500', 'dataMax + 500']}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "var(--radius)",
-                  color: "hsl(var(--foreground))"
-                }}
-                labelStyle={{ color: "hsl(var(--muted-foreground))" }}
-              />
-              <Line
-                type="monotone"
-                dataKey="price"
-                stroke="hsl(var(--chart-green))"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4, stroke: "hsl(var(--chart-green))", strokeWidth: 2, fill: "hsl(var(--chart-green))" }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <div ref={chartContainerRef} className={styles.chartContainer} style={{ height: '300px' }}>
+          {/* Chart will be rendered here by lightweight-charts */}
         </div>
+        {/* Existing metrics grid, assuming it's still relevant */}
         <div className={styles.metricsGrid}>
           <div className={styles.metricItem}>
             <p className={styles.metricLabel}>Preço Atual</p>
@@ -79,4 +106,6 @@ export const TechnicalAnalysisChart = () => {
       </CardContent>
     </Card>
   );
-};
+});
+
+TechnicalAnalysisChart.displayName = 'TechnicalAnalysisChart';

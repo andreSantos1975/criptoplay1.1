@@ -4,7 +4,12 @@ import { useState } from "react";
 import { KPICard } from "@/components/dashboard/KPICard/KPICard";
 import { NavigationTabs } from "@/components/dashboard/NavigationTabs/NavigationTabs";
 import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable";
-import { TechnicalAnalysisChart } from "@/components/dashboard/TechnicalAnalysisChart/TechnicalAnalysisChart";
+import dynamic from "next/dynamic";
+
+const TechnicalAnalysisChart = dynamic(
+  () => import("@/components/dashboard/TechnicalAnalysisChart/TechnicalAnalysisChart").then(mod => mod.TechnicalAnalysisChart),
+  { ssr: false }
+);
 import { ReportsSection } from "@/components/dashboard/ReportsSection/ReportsSection";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview/DashboardOverview";
 import styles from "./dashboard.module.css";

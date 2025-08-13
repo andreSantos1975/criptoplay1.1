@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation"; // Import useRouter
+import Link from "next/link";
 import { useSession, signOut } from "next-auth/react"; // Add signOut to this import
 import styles from "./Navbar.module.css";
 
@@ -17,33 +18,33 @@ const Header = () => {
       <div className={styles.container}>
         <div className={styles.flexBetween}>
           {/* Logo */}
-          <a href="/" className={styles.logoLink}> {/* Added a tag and class */}
+          <Link href="/" className={styles.logoLink}> {/* Added a tag and class */}
             <div className={styles.logoContainer}>
               <div className={styles.logoIconWrapper}>
                 <TrendingUp className={styles.logoIcon} />
               </div>
               <span className={styles.logoText}>CriptoPlay</span>
             </div>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className={styles.desktopNav}>
-            <a href="/" className={styles.navLink}>
+            <Link href="/" className={styles.navLink}>
               Home
-            </a>
-            <a href="/jornada-cripto" className={styles.navLink}>
+            </Link>
+            <Link href="/jornada-cripto" className={styles.navLink}>
               Jornada Crypto
-            </a>
+            </Link>
             <a href="#recursos" className={styles.navLink}>
               Recursos
             </a>
             
-            <a href="/blog" className={styles.navLink}>
+            <Link href="/blog" className={styles.navLink}>
               Blog
-            </a>
-            <a href="/contato" className={styles.navLink}>
+            </Link>
+            <Link href="/contato" className={styles.navLink}>
               Contato
-            </a>
+            </Link>
           </nav>
 
           {/* Desktop CTA */}
@@ -74,20 +75,20 @@ const Header = () => {
         {isMenuOpen && (
           <div className={styles.mobileNavContainer}>
             <nav className={styles.mobileNav}>
-              <a
+              <Link
                 href="/"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Home
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/jornada-cripto"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Jornada Crypto
-              </a>
+              </Link>
               <a
                 href="#recursos"
                 className={styles.mobileNavLink}
@@ -96,20 +97,20 @@ const Header = () => {
                 Recursos
               </a>
               
-              <a
+              <Link
                 href="/blog"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Blog
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/contato"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Contato
-              </a>
+              </Link>
               <div className={styles.mobileCtaContainer}>
                 {status === "authenticated" ? (
                   <>

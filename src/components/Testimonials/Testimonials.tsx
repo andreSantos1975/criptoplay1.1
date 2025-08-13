@@ -55,7 +55,7 @@ const Testimonials = () => {
               </div>
 
               <p className={styles.content}>
-                "{testimonial.content}"
+                {testimonial.content}
               </p>
 
               <div className={styles.author}>
