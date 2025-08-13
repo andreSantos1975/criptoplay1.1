@@ -26,6 +26,30 @@ const recentTrades = [
   { crypto: "SOL", tipo: "Venda", quantidade: "5.0", preco: "R$ 890", resultado: "+R$ 340" },
 ];
 
+// Helper function to calculate percentage
+const calculatePercentage = (precoStr: string, quantidadeStr: string, resultadoStr: string): string => {
+  try {
+    const cleanString = (str: string) => str.replace(/[^0-9,-]+/g, "").replace(".", "").replace(",", ".");
+    
+    const preco = parseFloat(cleanString(precoStr));
+    const quantidade = parseFloat(cleanString(quantidadeStr));
+    const resultado = parseFloat(cleanString(resultadoStr));
+
+    if (isNaN(preco) || isNaN(quantidade) || isNaN(resultado) || preco === 0 || quantidade === 0) {
+      return "-";
+    }
+
+    const totalCost = preco * quantidade;
+    if (totalCost === 0) return "-";
+
+    const percentage = (resultado / totalCost) * 100;
+    const sign = percentage > 0 ? "+" : "";
+    return `${sign}${percentage.toFixed(2)}%`;
+  } catch (error) {
+    return "-";
+  }
+};
+
 export const DashboardOverview = () => {
   return (
     <div className={styles.overviewContainer}>
@@ -100,36 +124,49 @@ export const DashboardOverview = () => {
                   <th className={styles.tableHeader}>Quantidade</th>
                   <th className={styles.tableHeader}>Preço</th>
                   <th className={styles.tableHeader}>Resultado</th>
+                  <th className={styles.tableHeader}>Resultado (%)</th>
                 </tr>
               </thead>
               <tbody>
-                {recentTrades.map((trade, index) => (
-                  <tr key={index} className={styles.tableRow}>
-                    <td className={styles.tableCellContent}>{trade.crypto}</td>
-                    <td className={styles.tableCell}>
-                      <span
-                        className={`${styles.tradeType} ${
-                          trade.tipo === "Compra"
-                            ? styles.buyType
-                            : styles.sellType
+                {recentTrades.map((trade, index) => {
+                  const percentageResult = calculatePercentage(trade.preco, trade.quantidade, trade.resultado);
+                  return (
+                    <tr key={index} className={styles.tableRow}>
+                      <td className={styles.tableCellContent}>{trade.crypto}</td>
+                      <td className={styles.tableCell}>
+                        <span
+                          className={`${styles.tradeType} ${
+                            trade.tipo === "Compra"
+                              ? styles.buyType
+                              : styles.sellType
+                          }`}
+                        >
+                          {trade.tipo}
+                        </span>
+                      </td>
+                      <td className={styles.tableCell}>{trade.quantidade}</td>
+                      <td className={styles.tableCell}>{trade.preco}</td>
+                      <td
+                        className={`${styles.tableCellContent} ${
+                          trade.resultado.startsWith("+")
+                            ? styles.positiveValue
+                            : styles.negativeValue
                         }`}
                       >
-                        {trade.tipo}
-                      </span>
-                    </td>
-                    <td className={styles.tableCell}>{trade.quantidade}</td>
-                    <td className={styles.tableCell}>{trade.preco}</td>
-                    <td
-                      className={`${styles.tableCellContent} ${
-                        trade.resultado.startsWith("+")
-                          ? styles.positiveValue
-                          : styles.negativeValue
-                      }`}
-                    >
-                      {trade.resultado}
-                    </td>
-                  </tr>
-                ))}
+                        {trade.resultado}
+                      </td>
+                      <td
+                        className={`${styles.tableCellContent} ${
+                          percentageResult.startsWith("+")
+                            ? styles.positiveValue
+                            : styles.negativeValue
+                        }`}
+                      >
+                        {percentageResult}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
