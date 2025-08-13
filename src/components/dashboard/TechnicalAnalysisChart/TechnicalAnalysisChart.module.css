@@ -1,33 +1,7 @@
 .chartContainer {
-  height: 20rem;
-}
-
-.metricsGrid {
-  margin-top: 1rem;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  font-size: 0.875rem;
-}
-
-@media (min-width: 768px) {
-  .metricsGrid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-.metricItem {
-  text-align: center;
-}
-
-.metricLabel {
-  color: hsl(var(--muted-foreground));
-}
-
-.metricValue {
-  font-weight: 600;
-}
-
-.positiveValue {
-  color: hsl(var(--profit));
+  width: 100%;
+  height: 400px; /* Increased height for better visibility */
+  background-color: #131722; /* Dark background for the chart */
+  border-radius: var(--radius);
+  overflow: hidden;
 }

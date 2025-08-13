@@ -59,6 +59,11 @@ const DashboardPage = () => {
             value="R$ 25.000,00"
           />
           <KPICard
+            title="Retiradas Realizadas"
+            value="R$ 5.000,00"
+            isPositive={false}
+          />
+          <KPICard
             title="Saldo Atual"
             value="R$ 37.530,00"
             isPositive
