@@ -170,19 +170,26 @@ export const ReportsSection = () => {
                 <TableHead>Operações</TableHead>
                 <TableHead>Lucro</TableHead>
                 <TableHead>Prejuízo</TableHead>
+                <TableHead>Resultado</TableHead>
                 <TableHead>Retorno (%)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {monthlyData.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell>{item.mes}</TableCell>
-                  <TableCell>{item.operacoes}</TableCell>
-                  <TableCell className={styles.positiveValue}>R$ {item.lucro.toLocaleString()},00</TableCell>
-                  <TableCell className={styles.negativeValue}>R$ {item.prejuizo.toLocaleString()},00</TableCell>
-                  <TableCell className={styles.positiveValue}>{item.retorno}%</TableCell>
-                </TableRow>
-              ))}
+              {monthlyData.map((item, index) => {
+                const resultado = item.lucro - item.prejuizo;
+                return (
+                  <TableRow key={index}>
+                    <TableCell>{item.mes}</TableCell>
+                    <TableCell>{item.operacoes}</TableCell>
+                    <TableCell className={styles.positiveValue}>R$ {item.lucro.toLocaleString()},00</TableCell>
+                    <TableCell className={styles.negativeValue}>R$ {item.prejuizo.toLocaleString()},00</TableCell>
+                    <TableCell className={resultado >= 0 ? styles.positiveValue : styles.negativeValue}>
+                      R$ {resultado.toLocaleString()},00
+                    </TableCell>
+                    <TableCell className={styles.positiveValue}>{item.retorno}%</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
