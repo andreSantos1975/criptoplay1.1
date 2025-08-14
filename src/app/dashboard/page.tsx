@@ -16,6 +16,11 @@ import styles from "./dashboard.module.css";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("painel");
+  const [tradeLevels, setTradeLevels] = useState({
+    entry: 65500,
+    takeProfit: 68000,
+    stopLoss: 64000,
+  });
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -24,7 +29,7 @@ const DashboardPage = () => {
       case "pessoal":
         return <PersonalFinanceTable />;
       case "analise":
-        return <TechnicalAnalysisChart />;
+        return <TechnicalAnalysisChart tradeLevels={tradeLevels} onLevelsChange={setTradeLevels} />;
       case "relatorios":
         return <ReportsSection />;
       default:
