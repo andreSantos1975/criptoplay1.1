@@ -2,6 +2,7 @@ START 11/08/2025 criptoplay
 sudo /opt/lampp/lampp start 
 npm run dev 
 -------------------------------
+Lightweight Charts
   A forma correta para a versão 5.x é usar chart.addSeries(CandlestickSeries, { ... }) e importar
   o tipo de série.
   -------------------------------------------------------------------------------------------------

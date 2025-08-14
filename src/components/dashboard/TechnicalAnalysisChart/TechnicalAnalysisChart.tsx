@@ -1,7 +1,16 @@
 "use client";
 
 import React, { useEffect, useRef, memo, useState } from "react";
-import * as LightweightCharts from "lightweight-charts";
+import {
+  createChart,
+  ColorType,
+  CrosshairMode,
+  LineStyle,
+  ISeriesApi,
+  IPriceLine,
+  MouseEventParams,
+  CandlestickSeries, // <<— v5: importe a definição da série
+} from "lightweight-charts";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./TechnicalAnalysisChart.module.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,27 +18,25 @@ import { MarketData } from "@/components/dashboard/MarketData/MarketData";
 import { CryptoList } from "@/components/dashboard/CryptoList/CryptoList";
 import { TradePanel } from "@/components/dashboard/TradePanel/TradePanel";
 
+type PriceLineKey = "entry" | "takeProfit" | "stopLoss";
+
 const fetchBinanceKlines = async (interval: string) => {
-  const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=365`);
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
-  }
+  const response = await fetch(
+    `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=365`
+  );
+  if (!response.ok) throw new Error("Network response was not ok");
   const data = await response.json();
-  return data.map((kline: any) => ({
-    time: kline[0] / 1000,
-    open: parseFloat(kline[1]),
-    high: parseFloat(kline[2]),
-    low: parseFloat(kline[3]),
-    close: parseFloat(kline[4]),
+  return data.map((k: any) => ({
+    time: k[0] / 1000,
+    open: parseFloat(k[1]),
+    high: parseFloat(k[2]),
+    low: parseFloat(k[3]),
+    close: parseFloat(k[4]),
   }));
 };
 
 interface TechnicalAnalysisChartProps {
-  tradeLevels: {
-    entry: number;
-    takeProfit: number;
-    stopLoss: number;
-  };
+  tradeLevels: { entry: number; takeProfit: number; stopLoss: number };
   onLevelsChange: (newLevels: {
     entry: number;
     takeProfit: number;
@@ -37,163 +44,157 @@ interface TechnicalAnalysisChartProps {
   }) => void;
 }
 
-export const TechnicalAnalysisChart = memo(({ tradeLevels, onLevelsChange }: TechnicalAnalysisChartProps) => {
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<LightweightCharts.IChartApi | null>(null);
-  const seriesRef = useRef<LightweightCharts.ISeriesApi<"Candlestick"> | null>(null);
-  const priceLinesRef = useRef<Record<string, LightweightCharts.IPriceLine | null>>({});
-  const draggedLineRef = useRef<{ line: LightweightCharts.IPriceLine; key: string } | null>(null);
-  const [interval, setInterval] = useState('1d');
+export const TechnicalAnalysisChart = memo(
+  ({ tradeLevels, onLevelsChange }: TechnicalAnalysisChartProps) => {
+    const chartContainerRef = useRef<HTMLDivElement>(null);
+    const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+    const priceLinesRef = useRef<Partial<Record<PriceLineKey, IPriceLine>>>({});
+    const draggedLineRef = useRef<{ line: IPriceLine; key: PriceLineKey } | null>(null);
+    const [interval, setInterval] = useState("1d");
 
-  const { data: chartData, isLoading, error } = useQuery({
-    queryKey: ['binanceKlines', interval],
-    queryFn: () => fetchBinanceKlines(interval),
-    refetchInterval: 60000,
-  });
-
-  useEffect(() => {
-    if (!chartContainerRef.current || !chartData) return;
-
-    const chart = LightweightCharts.createChart(chartContainerRef.current, {
-      layout: {
-        background: { type: LightweightCharts.ColorType.Solid, color: "#131722" },
-        textColor: "#D9D9D9",
-      },
-      grid: {
-        vertLines: { color: "#2A2E39" },
-        horzLines: { color: "#2A2E39" },
-      },
-      width: chartContainerRef.current.clientWidth,
-      height: 400,
-      crosshair: {
-        mode: LightweightCharts.CrosshairMode.Normal,
-      },
+    const { data: chartData, isLoading, error } = useQuery({
+      queryKey: ["binanceKlines", interval],
+      queryFn: () => fetchBinanceKlines(interval),
+      refetchInterval: 60000,
     });
-    chartRef.current = chart;
 
-    const candlestickSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
-      upColor: "#26a69a",
-      downColor: "#ef5350",
-      borderDownColor: "#ef5350",
-      borderUpColor: "#26a69a",
-      wickDownColor: "#ef5350",
-      wickUpColor: "#26a69a",
-    });
-    seriesRef.current = candlestickSeries;
-    candlestickSeries.setData(chartData);
+    useEffect(() => {
+      if (!chartContainerRef.current || !chartData) return;
 
-    const createPriceLine = (price: number, color: string, title: string) => {
-      return candlestickSeries.createPriceLine({
-        price,
-        color,
-        lineWidth: 2,
-        lineStyle: LightweightCharts.LineStyle.Dashed,
-        axisLabelVisible: true,
-        title,
+      const chart = createChart(chartContainerRef.current, {
+        layout: { background: { type: ColorType.Solid, color: "#131722" }, textColor: "#D9D9D9" },
+        grid: { vertLines: { color: "#2A2E39" }, horzLines: { color: "#2A2E39" } },
+        width: chartContainerRef.current.clientWidth,
+        height: 400,
+        crosshair: { mode: CrosshairMode.Normal },
+        handleScroll: true,
+        handleScale: true,
       });
-    };
 
-    priceLinesRef.current.entry = createPriceLine(tradeLevels.entry, '#42A5F5', 'Entrada');
-    priceLinesRef.current.takeProfit = createPriceLine(tradeLevels.takeProfit, '#26A69A', 'Take Profit');
-    priceLinesRef.current.stopLoss = createPriceLine(tradeLevels.stopLoss, '#EF5350', 'Stop Loss');
+      // v5: criar via addSeries(CandlestickSeries, options)
+      const candlestickSeries = chart.addSeries(CandlestickSeries, {
+        upColor: "#26a69a",
+        downColor: "#ef5350",
+        borderUpColor: "#26a69a",
+        borderDownColor: "#ef5350",
+        wickUpColor: "#26a69a",
+        wickDownColor: "#ef5350",
+        // opcional: borderVisible: true,
+      });
 
-    const onMouseDown = (param: LightweightCharts.MouseEventParams) => {
-      if (!param.point || !seriesRef.current) return;
+      seriesRef.current = candlestickSeries;
+      candlestickSeries.setData(chartData);
 
-      const price = seriesRef.current.coordinateToPrice(param.point.y);
-      const chart = chartRef.current;
-      if (!chart) return;
+      const createPriceLine = (price: number, color: string, title: string) =>
+        candlestickSeries.createPriceLine({
+          price,
+          color,
+          lineWidth: 2,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title,
+        });
 
-      const priceRange = chart.priceScale().getVisiblePriceRange();
-      if (!priceRange) return;
+      priceLinesRef.current.entry = createPriceLine(tradeLevels.entry, "#42A5F5", "Entrada");
+      priceLinesRef.current.takeProfit = createPriceLine(tradeLevels.takeProfit, "#26A69A", "Take Profit");
+      priceLinesRef.current.stopLoss = createPriceLine(tradeLevels.stopLoss, "#EF5350", "Stop Loss");
 
-      const tolerance = (priceRange.to - priceRange.from) * 0.02;
+      // Click para "pegar/soltar" a linha + mover com o crosshair
+      const onClick = (param: MouseEventParams) => {
+        const series = seriesRef.current;
+        if (!series || !param.point) return;
 
-      Object.keys(priceLinesRef.current).forEach(key => {
-        const line = priceLinesRef.current[key];
-        if (line && Math.abs(line.options().price - price) < tolerance) {
-          draggedLineRef.current = { line, key };
-          chart.applyOptions({ handleScroll: false, handleScale: false });
+        // já estava arrastando -> solta e confirma
+        if (draggedLineRef.current) {
+          const { key, line } = draggedLineRef.current;
+          onLevelsChange({ ...tradeLevels, [key]: line.options().price });
+          draggedLineRef.current = null;
+          chart.applyOptions({ handleScroll: true, handleScale: true });
+          return;
         }
-      });
-    };
 
-    const onMouseMove = (param: LightweightCharts.MouseEventParams) => {
-      if (!param.point || !draggedLineRef.current || !seriesRef.current) return;
-      const price = seriesRef.current.coordinateToPrice(param.point.y);
-      draggedLineRef.current.line.applyOptions({ price });
-    };
+        // tenta "pegar" uma linha próxima
+        const y = param.point.y;
+        const priceAtCursor = series.coordinateToPrice(y);
+        if (priceAtCursor == null) return;
 
-    const onMouseUp = () => {
-      if (!draggedLineRef.current) return;
+        const pTop = series.coordinateToPrice(y - 6);
+        const pBottom = series.coordinateToPrice(y + 6);
+        if (pTop == null || pBottom == null) return;
+        const tolerance = Math.abs(pTop - pBottom);
 
-      const newPrice = draggedLineRef.current.line.options().price;
-      onLevelsChange({
-        ...tradeLevels,
-        [draggedLineRef.current.key]: newPrice,
-      });
+        (Object.keys(priceLinesRef.current) as PriceLineKey[]).forEach((key) => {
+          const line = priceLinesRef.current[key];
+          if (!line) return;
+          if (Math.abs(line.options().price - priceAtCursor) <= tolerance) {
+            draggedLineRef.current = { line, key };
+            chart.applyOptions({ handleScroll: false, handleScale: false });
+          }
+        });
+      };
 
-      draggedLineRef.current = null;
-      chart.applyOptions({ handleScroll: true, handleScale: true });
-    };
+      const onCrosshairMove = (param: MouseEventParams) => {
+        if (!draggedLineRef.current) return;
+        const series = seriesRef.current;
+        if (!series || !param.point) return;
 
-    chart.subscribeClick(onMouseDown);
-    chart.subscribeCrosshairMove(onMouseMove);
-    chart.subscribeClick(onMouseUp);
+        const price = series.coordinateToPrice(param.point.y);
+        if (price != null) draggedLineRef.current.line.applyOptions({ price });
+      };
 
-    const handleResize = () => chart.applyOptions({ width: chartContainerRef.current!.clientWidth });
-    window.addEventListener("resize", handleResize);
+      chart.subscribeClick(onClick);
+      chart.subscribeCrosshairMove(onCrosshairMove);
 
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      chart.unsubscribeClick(onMouseDown);
-      chart.unsubscribeCrosshairMove(onMouseMove);
-      chart.unsubscribeClick(onMouseUp);
-      chart.remove();
-    };
-  }, [chartData]);
+      const handleResize = () =>
+        chart.applyOptions({ width: chartContainerRef.current?.clientWidth || 0 });
+      window.addEventListener("resize", handleResize);
 
-  useEffect(() => {
-    if (priceLinesRef.current.entry) {
-      priceLinesRef.current.entry.applyOptions({ price: tradeLevels.entry });
-    }
-    if (priceLinesRef.current.takeProfit) {
-      priceLinesRef.current.takeProfit.applyOptions({ price: tradeLevels.takeProfit });
-    }
-    if (priceLinesRef.current.stopLoss) {
-      priceLinesRef.current.stopLoss.applyOptions({ price: tradeLevels.stopLoss });
-    }
-  }, [tradeLevels]);
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        chart.unsubscribeClick(onClick);
+        chart.unsubscribeCrosshairMove(onCrosshairMove);
+        chart.remove();
+      };
+    }, [chartData, tradeLevels, onLevelsChange]);
 
-  if (isLoading) {
-    return <div>Loading chart...</div>;
+    useEffect(() => {
+      if (priceLinesRef.current.entry)
+        priceLinesRef.current.entry.applyOptions({ price: tradeLevels.entry });
+      if (priceLinesRef.current.takeProfit)
+        priceLinesRef.current.takeProfit.applyOptions({ price: tradeLevels.takeProfit });
+      if (priceLinesRef.current.stopLoss)
+        priceLinesRef.current.stopLoss.applyOptions({ price: tradeLevels.stopLoss });
+    }, [tradeLevels]);
+
+    if (isLoading) return <div>Loading chart...</div>;
+    if (error) return <div>Error fetching chart data</div>;
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Análise Técnica - BTC/USDT (Binance)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <MarketData />
+          <div className={styles.intervalSelector}>
+            {["1m", "15m", "1h", "1d"].map((int) => (
+              <button
+                key={int}
+                onClick={() => setInterval(int)}
+                className={interval === int ? styles.active : ""}
+              >
+                {int}
+              </button>
+            ))}
+          </div>
+          <div ref={chartContainerRef} className={styles.chartContainer} />
+          <TradePanel tradeLevels={tradeLevels} onLevelsChange={onLevelsChange} />
+          <CryptoList />
+        </CardContent>
+      </Card>
+    );
   }
-
-  if (error) {
-    return <div>Error fetching chart data</div>;
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Análise Técnica - BTC/USDT (Binance)</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <MarketData />
-        <div className={styles.intervalSelector}>
-          <button onClick={() => setInterval('1m')}>1m</button>
-          <button onClick={() => setInterval('15m')}>15m</button>
-          <button onClick={() => setInterval('1h')}>1h</button>
-          <button onClick={() => setInterval('1d')}>1d</button>
-        </div>
-        <div ref={chartContainerRef} className={styles.chartContainer} />
-        <TradePanel tradeLevels={tradeLevels} onLevelsChange={onLevelsChange} />
-        <CryptoList />
-      </CardContent>
-    </Card>
-  );
-});
+);
 
 TechnicalAnalysisChart.displayName = "TechnicalAnalysisChart";
-
 export default TechnicalAnalysisChart;
