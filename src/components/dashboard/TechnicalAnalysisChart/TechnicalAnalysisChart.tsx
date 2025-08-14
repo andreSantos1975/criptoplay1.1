@@ -9,7 +9,7 @@ import { MarketData } from "@/components/dashboard/MarketData/MarketData";
 import { CryptoList } from "@/components/dashboard/CryptoList/CryptoList";
 
 const fetchBinanceKlines = async () => {
-  const response = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=90');
+  const response = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=365');
   if (!response.ok) {
     throw new Error('Network response was not ok');
   }
@@ -21,6 +21,12 @@ const fetchBinanceKlines = async () => {
     low: parseFloat(kline[3]),
     close: parseFloat(kline[4]),
   }));
+};
+
+const tradeLevels = {
+  entry: 65500,
+  takeProfit: 68000,
+  stopLoss: 64000,
 };
 
 export const TechnicalAnalysisChart = memo(() => {
@@ -63,6 +69,21 @@ export const TechnicalAnalysisChart = memo(() => {
     });
 
     candlestickSeries.setData(chartData);
+
+    const createPriceLine = (price: number, color: string, title: string) => {
+      candlestickSeries.createPriceLine({
+        price: price,
+        color: color,
+        lineWidth: 2,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: title,
+      });
+    };
+
+    createPriceLine(tradeLevels.entry, '#42A5F5', 'Entrada');
+    createPriceLine(tradeLevels.takeProfit, '#26A69A', 'Take Profit');
+    createPriceLine(tradeLevels.stopLoss, '#EF5350', 'Stop Loss');
 
     window.addEventListener("resize", handleResize);
 
