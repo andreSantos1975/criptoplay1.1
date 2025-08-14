@@ -1,0 +1,91 @@
+.glassCard {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+}
+
+.tableHeader {
+  text-align: left;
+  font-size: 0.875rem;
+  color: #a1a1aa;
+}
+
+.th {
+  padding-bottom: 1rem;
+}
+
+.tableRow {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.td {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cryptoImage {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+}
+
+.cryptoName {
+  font-weight: 500;
+}
+
+.cryptoSymbol {
+  font-size: 0.875rem;
+  color: #a1a1aa;
+}
+
+.changeCell {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.arrow {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.success {
+  color: #22c55e;
+}
+
+.warning {
+  color: #f59e0b;
+}

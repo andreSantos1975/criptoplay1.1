@@ -4,6 +4,8 @@ import React, { useEffect, useRef, memo } from "react";
 import * as LightweightCharts from "lightweight-charts";
 import styles from "./TechnicalAnalysisChart.module.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MarketData } from "@/components/dashboard/MarketData/MarketData";
+import { CryptoList } from "@/components/dashboard/CryptoList/CryptoList";
 
 // Sample data for candlestick chart
 const candlestickData = [
@@ -92,7 +94,9 @@ export const TechnicalAnalysisChart = memo(() => {
         <CardTitle>Análise Técnica - Ativo Exemplo</CardTitle>
       </CardHeader>
       <CardContent>
+        <MarketData />
         <div ref={chartContainerRef} className={styles.chartContainer} />
+        <CryptoList />
       </CardContent>
     </Card>
   );

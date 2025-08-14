@@ -1,0 +1,51 @@
+📌 Abas adicionais sugeridas
+
+TransactionsHistory – Histórico de Transações
+
+Registro detalhado de entradas, saídas, transferências e investimentos.
+
+Filtros por período, categoria e conta.
+
+Exportação para Excel/PDF.
+
+GoalsAndProjections – Metas e Projeções
+
+Planejamento de objetivos financeiros (ex.: economizar X até tal data).
+
+Projeção de saldo com base em aportes e rentabilidade estimada.
+
+Indicadores visuais de progresso.
+
+RiskManagement – Gerenciamento de Riscos
+
+Análise de exposição e diversificação.
+
+Registro de stop loss e take profit vinculados a ativos.
+
+Indicadores de volatilidade.
+
+AlertsCenter – Central de Alertas e Notificações
+
+Alertas de preços, vencimento de contas, mudanças importantes no portfólio.
+
+Notificações via e-mail ou push.
+
+Integrations – Integrações
+
+Conexão com corretoras, bancos e APIs de mercado.
+
+Importação automática de dados de extratos ou operações.
+
+SettingsAndSecurity – Configurações e Segurança
+
+Preferências de moeda, idioma, fuso horário.
+
+Gerenciamento de autenticação em dois fatores (2FA).
+
+Permissões para múltiplos usuários (caso seja multi-conta).
+
+TaxAndCompliance – Impostos e Conformidade (opcional, mas muito valorizado)
+
+Cálculo automático de impostos sobre ganhos de capital.
+
+Relatórios para declaração fiscal.
