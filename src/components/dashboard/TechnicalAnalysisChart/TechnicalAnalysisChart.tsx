@@ -76,7 +76,16 @@ export const TechnicalAnalysisChart = memo(
     };
 
     const [chartedSymbol, setChartedSymbol] = useState<string>('BTCUSDT');
-    const [watchedSymbols, setWatchedSymbols] = useState<string[]>(['BTCUSDT']);
+    const [watchedSymbols, setWatchedSymbols] = useState<string[]>([
+      'BTCUSDT',
+      'ETHUSDT',
+      'SOLUSDT',
+      'XRPUSDT',
+      'ADAUSDT',
+      'BNBUSDT',
+      'DOGEUSDT',
+      'SHIBUSDT',
+    ]);
     const { data: chartData, isLoading, error } = useQuery({
       queryKey: ["binanceKlines", interval, chartedSymbol],
       queryFn: async () => {
@@ -263,17 +272,7 @@ export const TechnicalAnalysisChart = memo(
               Add Crypto
             </button>
           </div>
-          <div className={styles.quickAddSymbols}>
-            {[ 'ETHUSDT', 'SOLUSDT', 'XRPUSDT'].map(symbol => (
-              <button
-                key={symbol}
-                onClick={() => handleAddSymbol(symbol)}
-                className={styles.quickAddButton}
-              >
-                {symbol.replace('USDT', '')}
-              </button>
-            ))}
-          </div>
+          
           <CryptoList watchedSymbols={watchedSymbols} onCryptoSelect={handleCryptoSelect} />
         </CardContent>
       </Card>

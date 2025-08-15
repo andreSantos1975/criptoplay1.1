@@ -5,4 +5,13 @@
   ------------------------------------------
 
     Mais exemplos de pares USDT na Binance:
- 
+   * ADAUSDT (Cardano / Tether)
+   * DOGEUSDT (Dogecoin / Tether)
+   * DOTUSDT (Polkadot / Tether)
+   * LTCUSDT (Litecoin / Tether)
+   * LINKUSDT (Chainlink / Tether)
+   * AVAXUSDT (Avalanche / Tether)
+   * SHIBUSDT (Shiba Inu / Tether)
+   * TRXUSDT (Tron / Tether)
+   * MATICUSDT (Polygon / Tether)
+   * UNIUSDT (Uniswap / Tether)
