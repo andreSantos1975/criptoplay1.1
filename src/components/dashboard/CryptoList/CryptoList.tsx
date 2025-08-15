@@ -22,7 +22,7 @@ interface BinanceTicker24hr {
   volume: string;
 }
 
-const fetchCryptoData = async (): Promise<CryptoData[]> => {
+const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
   const response = await fetch("https://api.binance.com/api/v3/ticker/24hr");
   if (!response.ok) {
     throw new Error("Erro ao buscar dados");
@@ -35,12 +35,11 @@ const fetchCryptoData = async (): Promise<CryptoData[]> => {
     SOL: "Solana",
     USDC: "USD Coin",
     FDUSD: "First Digital USD",
+    XRP: "XRP", // Add XRP to the map
   };
 
   return data
-    .filter((crypto) => crypto.symbol.endsWith("USDT"))
-    .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
-    .slice(0, 5)
+    .filter((crypto) => symbols.includes(crypto.symbol))
     .map((crypto) => {
       const baseAsset = crypto.symbol.replace("USDT", "");
       const name = coinNameMap[baseAsset] || baseAsset;
@@ -55,10 +54,15 @@ const fetchCryptoData = async (): Promise<CryptoData[]> => {
     });
 };
 
-export const CryptoList = () => {
+interface CryptoListProps {
+  watchedSymbols: string[];
+  onCryptoSelect: (symbol: string) => void;
+}
+
+export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) => {
   const { data: cryptos, isLoading, error } = useQuery<CryptoData[]>({
-    queryKey: ["cryptos"],
-    queryFn: fetchCryptoData,
+    queryKey: ["cryptos", watchedSymbols],
+    queryFn: () => fetchCryptoData(watchedSymbols),
     refetchInterval: 30000,
   });
 
@@ -85,7 +89,7 @@ export const CryptoList = () => {
           </thead>
           <tbody>
             {cryptos?.map((crypto) => (
-              <tr key={crypto.id} className={styles.tableRow}>
+              <tr key={crypto.id} className={styles.tableRow} onClick={() => onCryptoSelect(crypto.symbol + "USDT")}>
                 <td className={styles.td}>
                   <div className={styles.nameCell}>
                     <CryptoIcon

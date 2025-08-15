@@ -1,3 +1,8 @@
  Searching the web for: "lightweight-charts next.js turbopack addAreaSeries no…
    A forma correta para a versão 5.x é usar chart.addSeries(CandlestickSeries, { ... }) e importar
   o tipo de série.
+
+  ------------------------------------------
+
+    Mais exemplos de pares USDT na Binance:
+ 
