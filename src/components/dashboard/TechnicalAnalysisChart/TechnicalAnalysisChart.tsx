@@ -10,6 +10,7 @@ import {
   IPriceLine,
   MouseEventParams,
   CandlestickSeries, // <<— v5: importe a definição da série
+  UTCTimestamp,
 } from "lightweight-charts";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./TechnicalAnalysisChart.module.css";
@@ -20,14 +21,22 @@ import { TradePanel } from "@/components/dashboard/TradePanel/TradePanel";
 
 type PriceLineKey = "entry" | "takeProfit" | "stopLoss";
 
+interface BinanceKlineData extends Array<string | number> {
+  0: number; // timestamp
+  1: string; // open
+  2: string; // high
+  3: string; // low
+  4: string; // close
+}
+
 const fetchBinanceKlines = async (interval: string) => {
   const response = await fetch(
     `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${interval}&limit=365`
   );
   if (!response.ok) throw new Error("Network response was not ok");
-  const data = await response.json();
-  return data.map((k: any) => ({
-    time: k[0] / 1000,
+  const data: BinanceKlineData[] = await response.json();
+  return data.map((k) => ({
+    time: (k[0] / 1000) as UTCTimestamp,
     open: parseFloat(k[1]),
     high: parseFloat(k[2]),
     low: parseFloat(k[3]),
@@ -51,6 +60,11 @@ export const TechnicalAnalysisChart = memo(
     const priceLinesRef = useRef<Partial<Record<PriceLineKey, IPriceLine>>>({});
     const draggedLineRef = useRef<{ line: IPriceLine; key: PriceLineKey } | null>(null);
     const [interval, setInterval] = useState("1d");
+
+    const latestTradeLevelsRef = useRef(tradeLevels);
+    useEffect(() => {
+      latestTradeLevelsRef.current = tradeLevels;
+    }, [tradeLevels]);
 
     const { data: chartData, isLoading, error } = useQuery({
       queryKey: ["binanceKlines", interval],
@@ -107,7 +121,7 @@ export const TechnicalAnalysisChart = memo(
         // já estava arrastando -> solta e confirma
         if (draggedLineRef.current) {
           const { key, line } = draggedLineRef.current;
-          onLevelsChange({ ...tradeLevels, [key]: line.options().price });
+          onLevelsChange({ ...latestTradeLevelsRef.current, [key]: line.options().price });
           draggedLineRef.current = null;
           chart.applyOptions({ handleScroll: true, handleScale: true });
           return;
@@ -155,7 +169,8 @@ export const TechnicalAnalysisChart = memo(
         chart.unsubscribeCrosshairMove(onCrosshairMove);
         chart.remove();
       };
-    }, [chartData, tradeLevels, onLevelsChange]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [chartData]);
 
     useEffect(() => {
       if (priceLinesRef.current.entry)

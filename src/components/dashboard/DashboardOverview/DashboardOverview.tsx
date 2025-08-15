@@ -45,7 +45,8 @@ const calculatePercentage = (precoStr: string, quantidadeStr: string, resultadoS
     const percentage = (resultado / totalCost) * 100;
     const sign = percentage > 0 ? "+" : "";
     return `${sign}${percentage.toFixed(2)}%`;
-  } catch (error) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_) {
     return "-";
   }
 };

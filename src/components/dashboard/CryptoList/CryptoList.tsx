@@ -2,16 +2,24 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUp, ArrowDown } from "lucide-react";
+import CryptoIcon from "../../ui/CryptoIcon/CryptoIcon";
 import styles from "./CryptoList.module.css";
 
 interface CryptoData {
   id: string;
   name: string;
   symbol: string;
-  image: string;
   current_price: number;
   price_change_percentage_24h: number;
   total_volume: number;
+}
+
+interface BinanceTicker24hr {
+  symbol: string;
+  quoteVolume: string;
+  lastPrice: string;
+  priceChangePercent: string;
+  volume: string;
 }
 
 const fetchCryptoData = async (): Promise<CryptoData[]> => {
@@ -19,7 +27,7 @@ const fetchCryptoData = async (): Promise<CryptoData[]> => {
   if (!response.ok) {
     throw new Error("Erro ao buscar dados");
   }
-  const data = await response.json();
+  const data: BinanceTicker24hr[] = await response.json();
 
   const coinNameMap: Record<string, string> = {
     BTC: "Bitcoin",
@@ -30,17 +38,16 @@ const fetchCryptoData = async (): Promise<CryptoData[]> => {
   };
 
   return data
-    .filter((crypto: any) => crypto.symbol.endsWith("USDT"))
-    .sort((a: any, b: any) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
+    .filter((crypto) => crypto.symbol.endsWith("USDT"))
+    .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
     .slice(0, 5)
-    .map((crypto: any) => {
+    .map((crypto) => {
       const baseAsset = crypto.symbol.replace("USDT", "");
       const name = coinNameMap[baseAsset] || baseAsset;
       return {
         id: baseAsset,
         name,
         symbol: baseAsset,
-        image: `https://coinicons-api.vercel.app/api/icon/${baseAsset.toLowerCase()}`,
         current_price: parseFloat(crypto.lastPrice),
         price_change_percentage_24h: parseFloat(crypto.priceChangePercent),
         total_volume: parseFloat(crypto.volume),
@@ -81,11 +88,9 @@ export const CryptoList = () => {
               <tr key={crypto.id} className={styles.tableRow}>
                 <td className={styles.td}>
                   <div className={styles.nameCell}>
-                    <img
-                      src={crypto.image}
-                      alt={crypto.name}
+                    <CryptoIcon
+                      symbol={crypto.symbol}
                       className={styles.cryptoImage}
-                      onError={(e) => (e.currentTarget.style.display = "none")}
                     />
                     <div>
                       <p className={styles.cryptoName}>{crypto.name}</p>

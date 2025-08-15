@@ -36,7 +36,8 @@ export default function LoginPage() {
           router.refresh() // To update session state in Navbar
         }, 1000) // Pequeno atraso para o usuário ver a mensagem
       }
-    } catch (err) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_) {
       setError('Ocorreu um erro ao fazer login.')
     } finally {
       setIsLoading(false)

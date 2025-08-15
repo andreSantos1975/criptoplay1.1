@@ -11,7 +11,7 @@ import styles from "./Navbar.module.css";
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
-  const { data: session, status } = useSession(); // Get session data and status
+  const { status } = useSession(); // Get session data and status
 
   return (
     <header className={styles.header}>

@@ -16,11 +16,17 @@ interface TradePanelProps {
 export const TradePanel = ({ tradeLevels, onLevelsChange }: TradePanelProps) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const parsedValue = parseFloat(value);
+    // Remove o separador de milhares (ponto) e substitui a vírgula decimal por ponto
+    const cleanedValue = value.replace(/\./g, '').replace(/,/g, '.');
+    const parsedValue = parseFloat(cleanedValue);
     onLevelsChange({
       ...tradeLevels,
       [name]: isNaN(parsedValue) ? 0 : parsedValue,
     });
+  };
+
+  const formatNumber = (num: number) => {
+    return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   return (
@@ -28,30 +34,30 @@ export const TradePanel = ({ tradeLevels, onLevelsChange }: TradePanelProps) => 
       <div className={styles.inputGroup}>
         <label htmlFor="entry">Entrada</label>
         <input
-          type="number"
+          type="text"
           id="entry"
           name="entry"
-          value={tradeLevels.entry}
+          value={formatNumber(tradeLevels.entry)}
           onChange={handleChange}
         />
       </div>
       <div className={styles.inputGroup}>
         <label htmlFor="takeProfit">Take Profit</label>
         <input
-          type="number"
+          type="text"
           id="takeProfit"
           name="takeProfit"
-          value={tradeLevels.takeProfit}
+          value={formatNumber(tradeLevels.takeProfit)}
           onChange={handleChange}
         />
       </div>
       <div className={styles.inputGroup}>
         <label htmlFor="stopLoss">Stop Loss</label>
         <input
-          type="number"
+          type="text"
           id="stopLoss"
           name="stopLoss"
-          value={tradeLevels.stopLoss}
+          value={formatNumber(tradeLevels.stopLoss)}
           onChange={handleChange}
         />
       </div>

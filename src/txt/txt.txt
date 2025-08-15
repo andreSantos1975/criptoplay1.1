@@ -2,7 +2,9 @@ START 11/08/2025 criptoplay
 sudo /opt/lampp/lampp start 
 npm run dev 
 -------------------------------
+ "cryptocurrency-icons": "^0.18.1" 
 Lightweight Charts
+
   A forma correta para a versão 5.x é usar chart.addSeries(CandlestickSeries, { ... }) e importar
   o tipo de série.
   -------------------------------------------------------------------------------------------------
@@ -35,9 +37,9 @@ npx prisma studio
   rm -rf node_modules package-lock.json 
    rm -rf node_modules
   --------------------------------------------------------------------------------
-(Executa o linter do projeto para verificar a qualidade do código.)
+(Executa o linter do projeto para verificar a qualidade do código.
 npm run lint 
 -------------------------------------------------------------------------------
-(Executa o build do projeto Next.js.) 
+(Executa o build do projeto Next.js.
 npm run build 
 ---------------------------------------------------------------------------------
