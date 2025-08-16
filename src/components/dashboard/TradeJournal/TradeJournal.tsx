@@ -27,6 +27,7 @@ interface TradeJournalProps {
 }
 
 const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
+  console.log('TradeJournal: Received tradeLevels prop:', tradeLevels); // Add this line
   const [activeTab, setActiveTab] = useState('operacao');
   const [tradeData, setTradeData] = useState<TradeData>({
     ativo: '',
@@ -51,18 +52,28 @@ const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
   });
 
   useEffect(() => {
-    const formatPrice = (price: number): string => {
-      if (price >= 1000) return price.toFixed(2);
-      if (price >= 1) return price.toFixed(4);
-      return price.toFixed(6);
+    const formatNumber = (num: number): string => {
+      const options: Intl.NumberFormatOptions = {
+        minimumFractionDigits: 2,
+      };
+
+      if (num >= 100) {
+        options.maximumFractionDigits = 2;
+      } else if (num >= 1) {
+        options.maximumFractionDigits = 4;
+      } else { // num < 1
+        options.maximumFractionDigits = 2;
+      }
+
+      return num.toLocaleString('pt-BR', options);
     };
 
     if (tradeLevels) {
       setTradeData(prev => ({
         ...prev,
-        precoEntrada: formatPrice(tradeLevels.entry),
-        takeProfit: formatPrice(tradeLevels.takeProfit),
-        stopLoss: formatPrice(tradeLevels.stopLoss),
+        precoEntrada: formatNumber(tradeLevels.entry),
+        takeProfit: formatNumber(tradeLevels.takeProfit),
+        stopLoss: formatNumber(tradeLevels.stopLoss),
       }));
     }
   }, [tradeLevels]);
@@ -106,6 +117,12 @@ const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
 
   const updateTradeData = (field: keyof TradeData, value: any) => {
     setTradeData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleNumericInputChange = (field: keyof TradeData, value: string) => {
+    const cleanedValue = value.replace(/\./g, '').replace(/,/g, '.');
+    const parsedValue = parseFloat(cleanedValue);
+    updateTradeData(field, isNaN(parsedValue) ? '' : parsedValue.toString()); // Store as string, but ensure it's a valid number or empty
   };
 
   return (
@@ -166,15 +183,15 @@ const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
                             <div className={styles.gridThreeCols}>
                                 <div className={styles.inputGroup}>
                                     <label className={styles.label} htmlFor="precoEntrada">Preço de Entrada</label>
-                                    <input id="precoEntrada" type="number" className={styles.input} placeholder="0.00" value={tradeData.precoEntrada} onChange={(e) => updateTradeData('precoEntrada', e.target.value)} />
+                                    <input id="precoEntrada" type="text" className={styles.input} placeholder="0.00" value={tradeData.precoEntrada} onChange={(e) => handleNumericInputChange('precoEntrada', e.target.value)} />
                                 </div>
                                 <div className={styles.inputGroup}>
                                     <label className={styles.label} htmlFor="precoSaida">Preço de Saída</label>
-                                    <input id="precoSaida" type="number" className={styles.input} placeholder="0.00" value={tradeData.precoSaida} onChange={(e) => updateTradeData('precoSaida', e.target.value)} />
+                                    <input id="precoSaida" type="text" className={styles.input} placeholder="0.00" value={tradeData.precoSaida} onChange={(e) => handleNumericInputChange('precoSaida', e.target.value)} />
                                 </div>
                                 <div className={styles.inputGroup}>
                                     <label className={styles.label} htmlFor="quantidade">Quantidade</label>
-                                    <input id="quantidade" type="number" className={styles.input} placeholder="0" value={tradeData.quantidade} onChange={(e) => updateTradeData('quantidade', e.target.value)} />
+                                    <input id="quantidade" type="text" className={styles.input} placeholder="0" value={tradeData.quantidade} onChange={(e) => handleNumericInputChange('quantidade', e.target.value)} />
                                 </div>
                             </div>
                         </CardContent>
@@ -187,11 +204,11 @@ const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
                             <div className={styles.gridTwoCols}>
                                 <div className={styles.inputGroup}>
                                     <label className={styles.label} htmlFor="stopLoss">Stop Loss</label>
-                                    <input id="stopLoss" type="number" className={styles.input} placeholder="0.00" value={tradeData.stopLoss} onChange={(e) => updateTradeData('stopLoss', e.target.value)} />
+                                    <input id="stopLoss" type="text" className={styles.input} placeholder="0.00" value={tradeData.stopLoss} onChange={(e) => handleNumericInputChange('stopLoss', e.target.value)} />
                                 </div>
                                 <div className={styles.inputGroup}>
                                     <label className={styles.label} htmlFor="takeProfit">Take Profit</label>
-                                    <input id="takeProfit" type="number" className={styles.input} placeholder="0.00" value={tradeData.takeProfit} onChange={(e) => updateTradeData('takeProfit', e.target.value)} />
+                                    <input id="takeProfit" type="text" className={styles.input} placeholder="0.00" value={tradeData.takeProfit} onChange={(e) => handleNumericInputChange('takeProfit', e.target.value)} />
                                 </div>
                             </div>
                         </CardContent>
