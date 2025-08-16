@@ -106,6 +106,19 @@ export const TechnicalAnalysisChart = memo(
     });
 
     useEffect(() => {
+      if (chartData && chartData.length > 0) {
+        const lastPrice = chartData[chartData.length - 1].close;
+        const newLevels = {
+          entry: lastPrice,
+          takeProfit: lastPrice * 1.02,
+          stopLoss: lastPrice * 0.98,
+        };
+        onLevelsChange(newLevels);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [chartData]);
+
+    useEffect(() => {
       if (!chartContainerRef.current || !chartData || chartData.length === 0) return;
 
       // If a chart already exists, remove it and clear its series
