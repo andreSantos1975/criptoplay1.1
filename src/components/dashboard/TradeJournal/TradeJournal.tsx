@@ -54,15 +54,17 @@ const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
   useEffect(() => {
     const formatNumber = (num: number): string => {
       const options: Intl.NumberFormatOptions = {
-        minimumFractionDigits: 2,
+        minimumFractionDigits: 2, // Always show at least 2 decimal places
       };
 
-      if (num >= 100) {
-        options.maximumFractionDigits = 2;
+      if (num >= 1000) {
+        options.maximumFractionDigits = 2; // e.g., 1,234.56
       } else if (num >= 1) {
-        options.maximumFractionDigits = 4;
-      } else { // num < 1
-        options.maximumFractionDigits = 2;
+        options.maximumFractionDigits = 4; // e.g., 12.3456
+      } else if (num >= 0.01) { // For numbers like 0.231, 0.919
+        options.maximumFractionDigits = 6; // e.g., 0.123456
+      } else { // For very small numbers like SHIB
+        options.maximumFractionDigits = 8; // e.g., 0.00001234
       }
 
       return num.toLocaleString('pt-BR', options);
