@@ -43,6 +43,12 @@ const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
     .map((crypto) => {
       const baseAsset = crypto.symbol.replace("USDT", "");
       const name = coinNameMap[baseAsset] || baseAsset;
+      // Add logging for SHIB
+      if (baseAsset === 'SHIB') {
+        console.log('SHIB raw lastPrice:', crypto.lastPrice);
+        console.log('SHIB parsed current_price:', parseFloat(crypto.lastPrice));
+      }
+
       return {
         id: baseAsset,
         name,
