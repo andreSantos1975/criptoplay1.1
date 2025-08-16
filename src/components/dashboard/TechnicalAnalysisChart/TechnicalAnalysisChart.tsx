@@ -47,10 +47,11 @@ interface TechnicalAnalysisChartProps {
     takeProfit: number;
     stopLoss: number;
   }) => void;
+  children: React.ReactNode;
 }
 
 export const TechnicalAnalysisChart = memo(
-  ({ tradeLevels, onLevelsChange }: TechnicalAnalysisChartProps) => {
+  ({ tradeLevels, onLevelsChange, children }: TechnicalAnalysisChartProps) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<Record<string, ISeriesApi<"Candlestick"> | null>>({});
@@ -274,6 +275,7 @@ export const TechnicalAnalysisChart = memo(
           </div>
           <div ref={chartContainerRef} className={styles.chartContainer} />
           <TradePanel tradeLevels={tradeLevels} onLevelsChange={onLevelsChange} />
+          {children}
           <div className={styles.addSymbolContainer}>
             <input
               type="text"

@@ -35,13 +35,12 @@ const DashboardPage = () => {
         return <PersonalFinanceTable />;
       case "analise":
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <TechnicalAnalysisChart
-              tradeLevels={tradeLevels}
-              onLevelsChange={setTradeLevels}
-            />
+          <TechnicalAnalysisChart
+            tradeLevels={tradeLevels}
+            onLevelsChange={setTradeLevels}
+          >
             <TradeJournal tradeLevels={tradeLevels} />
-          </div>
+          </TechnicalAnalysisChart>
         );
       case "relatorios":
         return <ReportsSection />;
