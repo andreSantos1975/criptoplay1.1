@@ -141,7 +141,12 @@ export const TechnicalAnalysisChart = memo(
         borderDownColor: "#ef5350",
         wickUpColor: "#26a69a",
         wickDownColor: "#ef5350",
-        title: selectedCrypto, // Use selectedCrypto
+        title: selectedCrypto,
+        priceFormat: { // Add this block
+          type: 'price',
+          precision: 8, // Set a high precision
+          minMove: 0.00000001, // Smallest price increment
+        },
       });
       candlestickSeries.setData(chartData);
       seriesRef.current[selectedCrypto] = candlestickSeries;
