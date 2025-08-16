@@ -274,7 +274,6 @@ export const TechnicalAnalysisChart = memo(
           </div>
           <div ref={chartContainerRef} className={styles.chartContainer} />
           <TradePanel tradeLevels={tradeLevels} onLevelsChange={onLevelsChange} />
-          <TradeJournal />
           <div className={styles.addSymbolContainer}>
             <input
               type="text"

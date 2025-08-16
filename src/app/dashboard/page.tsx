@@ -5,9 +5,14 @@ import { KPICard } from "@/components/dashboard/KPICard/KPICard";
 import { NavigationTabs } from "@/components/dashboard/NavigationTabs/NavigationTabs";
 import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable";
 import dynamic from "next/dynamic";
+import TradeJournal from "@/components/dashboard/TradeJournal/TradeJournal";
+import { TradePanel } from "@/components/dashboard/TradePanel/TradePanel";
 
 const TechnicalAnalysisChart = dynamic(
-  () => import("@/components/dashboard/TechnicalAnalysisChart/TechnicalAnalysisChart").then(mod => mod.TechnicalAnalysisChart),
+  () =>
+    import("@/components/dashboard/TechnicalAnalysisChart/TechnicalAnalysisChart").then(
+      (mod) => mod.TechnicalAnalysisChart
+    ),
   { ssr: false }
 );
 import { ReportsSection } from "@/components/dashboard/ReportsSection/ReportsSection";
@@ -29,7 +34,15 @@ const DashboardPage = () => {
       case "pessoal":
         return <PersonalFinanceTable />;
       case "analise":
-        return <TechnicalAnalysisChart tradeLevels={tradeLevels} onLevelsChange={setTradeLevels} />;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <TechnicalAnalysisChart
+              tradeLevels={tradeLevels}
+              onLevelsChange={setTradeLevels}
+            />
+            <TradeJournal tradeLevels={tradeLevels} />
+          </div>
+        );
       case "relatorios":
         return <ReportsSection />;
       default:

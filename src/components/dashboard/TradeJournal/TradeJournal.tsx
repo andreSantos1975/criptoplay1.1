@@ -18,7 +18,15 @@ interface TradeData {
   taxas: string;
 }
 
-const TradeJournal = () => {
+interface TradeJournalProps {
+  tradeLevels: {
+    entry: number;
+    takeProfit: number;
+    stopLoss: number;
+  };
+}
+
+const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
   const [activeTab, setActiveTab] = useState('operacao');
   const [tradeData, setTradeData] = useState<TradeData>({
     ativo: '',
@@ -41,6 +49,17 @@ const TradeJournal = () => {
     lucroOuPrejuizo: 0,
     saldoConta: 10000, // Saldo inicial fictício
   });
+
+  useEffect(() => {
+    if (tradeLevels) {
+      setTradeData(prev => ({
+        ...prev,
+        precoEntrada: String(tradeLevels.entry),
+        takeProfit: String(tradeLevels.takeProfit),
+        stopLoss: String(tradeLevels.stopLoss),
+      }));
+    }
+  }, [tradeLevels]);
 
   useEffect(() => {
     const precoEntrada = parseFloat(tradeData.precoEntrada) || 0;
