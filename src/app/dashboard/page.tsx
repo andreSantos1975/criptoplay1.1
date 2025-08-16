@@ -24,17 +24,31 @@ const DashboardPage = () => {
   const [tradeLevels, setTradeLevels] = useState(() => {
     // Initialize state from localStorage if available
     const savedLevels = typeof window !== 'undefined' ? localStorage.getItem('tradeLevels') : null;
+    console.log('Loading tradeLevels from localStorage:', savedLevels);
     return savedLevels ? JSON.parse(savedLevels) : {
       entry: 65500,
       takeProfit: 68000,
       stopLoss: 64000,
     };
   });
+  const [initialLevelsSet, setInitialLevelsSet] = useState(() => {
+    const savedState = typeof window !== 'undefined' ? localStorage.getItem('initialLevelsSet') : null;
+    console.log('Loading initialLevelsSet from localStorage:', savedState);
+    return savedState ? JSON.parse(savedState) : false;
+  });
+
+  useEffect(() => {
+    console.log('Saving initialLevelsSet to localStorage:', initialLevelsSet);
+    localStorage.setItem('initialLevelsSet', JSON.stringify(initialLevelsSet));
+  }, [initialLevelsSet]);
 
   useEffect(() => {
     // Persist state to localStorage whenever it changes
+    console.log('Saving tradeLevels to localStorage:', tradeLevels);
     localStorage.setItem('tradeLevels', JSON.stringify(tradeLevels));
   }, [tradeLevels]);
+
+  console.log('DashboardPage rendered with:', { tradeLevels, initialLevelsSet });
 
 
   const renderTabContent = () => {
@@ -48,6 +62,8 @@ const DashboardPage = () => {
           <TechnicalAnalysisChart
             tradeLevels={tradeLevels}
             onLevelsChange={setTradeLevels}
+            initialLevelsSet={initialLevelsSet}
+            setInitialLevelsSet={setInitialLevelsSet}
           >
             <TradeJournal tradeLevels={tradeLevels} />
           </TechnicalAnalysisChart>

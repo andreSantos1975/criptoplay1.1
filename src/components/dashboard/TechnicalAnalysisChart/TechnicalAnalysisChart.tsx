@@ -48,10 +48,13 @@ interface TechnicalAnalysisChartProps {
     stopLoss: number;
   }) => void;
   children: React.ReactNode;
+  initialLevelsSet: boolean;
+  setInitialLevelsSet: (value: boolean) => void;
 }
 
 export const TechnicalAnalysisChart = memo(
-  ({ tradeLevels, onLevelsChange, children }: TechnicalAnalysisChartProps) => {
+  ({ tradeLevels, onLevelsChange, children, initialLevelsSet, setInitialLevelsSet }: TechnicalAnalysisChartProps) => {
+    console.log('TechnicalAnalysisChart rendered with:', { tradeLevels, initialLevelsSet });
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<Record<string, ISeriesApi<"Candlestick"> | null>>({});
@@ -107,14 +110,12 @@ export const TechnicalAnalysisChart = memo(
       refetchInterval: 60000,
     });
 
-    const [initialLevelsSet, setInitialLevelsSet] = useState(false);
+    
+
+    
 
     useEffect(() => {
-      // Reset the flag when the symbol changes
-      setInitialLevelsSet(false);
-    }, [chartedSymbol]);
-
-    useEffect(() => {
+      console.log('TechnicalAnalysisChart: chartData or initialLevelsSet changed', { chartData, initialLevelsSet });
       if (chartData && chartData.length > 0 && !initialLevelsSet) {
         const lastPrice = chartData[chartData.length - 1].close;
         const newLevels = {
@@ -124,9 +125,10 @@ export const TechnicalAnalysisChart = memo(
         };
         onLevelsChange(newLevels);
         setInitialLevelsSet(true); // Mark as set
+        console.log('TechnicalAnalysisChart: Initial levels set based on chartData', newLevels);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [chartData, initialLevelsSet]);
+    }, [chartData, initialLevelsSet, onLevelsChange, setInitialLevelsSet]);
 
     useEffect(() => {
       if (!chartContainerRef.current || !chartData || chartData.length === 0) return;
