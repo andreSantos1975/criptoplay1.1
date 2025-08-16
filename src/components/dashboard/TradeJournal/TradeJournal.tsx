@@ -51,12 +51,18 @@ const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
   });
 
   useEffect(() => {
+    const formatPrice = (price: number): string => {
+      if (price >= 1000) return price.toFixed(2);
+      if (price >= 1) return price.toFixed(4);
+      return price.toFixed(6);
+    };
+
     if (tradeLevels) {
       setTradeData(prev => ({
         ...prev,
-        precoEntrada: tradeLevels.entry.toFixed(5),
-        takeProfit: tradeLevels.takeProfit.toFixed(5),
-        stopLoss: tradeLevels.stopLoss.toFixed(5),
+        precoEntrada: formatPrice(tradeLevels.entry),
+        takeProfit: formatPrice(tradeLevels.takeProfit),
+        stopLoss: formatPrice(tradeLevels.stopLoss),
       }));
     }
   }, [tradeLevels]);

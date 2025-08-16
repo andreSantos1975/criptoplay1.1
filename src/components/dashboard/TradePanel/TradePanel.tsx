@@ -26,7 +26,19 @@ export const TradePanel = ({ tradeLevels, onLevelsChange }: TradePanelProps) => 
   };
 
   const formatNumber = (num: number) => {
-    return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 5 });
+    const options: Intl.NumberFormatOptions = {
+      minimumFractionDigits: 2,
+    };
+
+    if (num >= 1000) {
+      options.maximumFractionDigits = 2;
+    } else if (num >= 1) {
+      options.maximumFractionDigits = 4;
+    } else {
+      options.maximumFractionDigits = 6;
+    }
+
+    return num.toLocaleString('pt-BR', options);
   };
 
   return (
