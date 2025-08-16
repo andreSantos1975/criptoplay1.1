@@ -30,12 +30,22 @@ export const TradePanel = ({ tradeLevels, onLevelsChange }: TradePanelProps) => 
       minimumFractionDigits: 2,
     };
 
-    if (num >= 1000) {
+    if (num >= 100) {
       options.maximumFractionDigits = 2;
     } else if (num >= 1) {
       options.maximumFractionDigits = 4;
-    } else {
-      options.maximumFractionDigits = 6;
+    } else { // num < 1
+      const numStr = num.toString();
+      const decimalPart = numStr.includes('.') ? numStr.split('.')[1] : '';
+      const numDecimals = decimalPart.length;
+
+      if (numDecimals <= 2) {
+        options.maximumFractionDigits = 2;
+      } else if (numDecimals <= 4) {
+        options.maximumFractionDigits = 4;
+      } else {
+        options.maximumFractionDigits = 6;
+      }
     }
 
     return num.toLocaleString('pt-BR', options);
