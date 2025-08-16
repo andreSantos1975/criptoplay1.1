@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MarketData } from "@/components/dashboard/MarketData/MarketData";
 import { CryptoList } from "@/components/dashboard/CryptoList/CryptoList";
 import { TradePanel } from "@/components/dashboard/TradePanel/TradePanel";
+import TradeJournal from "@/components/dashboard/TradeJournal/TradeJournal";
 
 type PriceLineKey = "entry" | "takeProfit" | "stopLoss";
 
@@ -273,6 +274,7 @@ export const TechnicalAnalysisChart = memo(
           </div>
           <div ref={chartContainerRef} className={styles.chartContainer} />
           <TradePanel tradeLevels={tradeLevels} onLevelsChange={onLevelsChange} />
+          <TradeJournal />
           <div className={styles.addSymbolContainer}>
             <input
               type="text"
