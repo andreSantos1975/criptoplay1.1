@@ -21,34 +21,49 @@ import styles from "./dashboard.module.css";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("painel");
+  
+  const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT'); // New state for selected crypto
   const [tradeLevels, setTradeLevels] = useState(() => {
-    // Initialize state from localStorage if available
     const savedLevels = typeof window !== 'undefined' ? localStorage.getItem('tradeLevels') : null;
-    console.log('Loading tradeLevels from localStorage:', savedLevels);
     return savedLevels ? JSON.parse(savedLevels) : {
       entry: 65500,
       takeProfit: 68000,
       stopLoss: 64000,
     };
   });
-  const [initialLevelsSet, setInitialLevelsSet] = useState(() => {
-    const savedState = typeof window !== 'undefined' ? localStorage.getItem('initialLevelsSet') : null;
-    console.log('Loading initialLevelsSet from localStorage:', savedState);
-    return savedState ? JSON.parse(savedState) : false;
-  });
+
+  // Effect to update tradeLevels when selectedCrypto changes
+  useEffect(() => {
+    const fetchAndSetInitialLevels = async () => {
+      try {
+        const response = await fetch(`/api/binance/klines?symbol=${selectedCrypto}&interval=1d`);
+        if (!response.ok) throw new Error("Network response was not ok");
+        const data = await response.json();
+        if (data && data.length > 0) {
+          const lastPrice = parseFloat(data[data.length - 1][4]); // Close price is at index 4
+          const newLevels = {
+            entry: lastPrice,
+            takeProfit: lastPrice * 1.02,
+            stopLoss: lastPrice * 0.98,
+          };
+          setTradeLevels(newLevels);
+          console.log('DashboardPage: Initial levels set based on selectedCrypto', newLevels);
+        }
+      } catch (error) {
+        console.error("Failed to fetch initial crypto price:", error);
+      }
+    };
+
+    fetchAndSetInitialLevels();
+  }, [selectedCrypto]); // Re-run when selectedCrypto changes
 
   useEffect(() => {
-    console.log('Saving initialLevelsSet to localStorage:', initialLevelsSet);
-    localStorage.setItem('initialLevelsSet', JSON.stringify(initialLevelsSet));
-  }, [initialLevelsSet]);
-
-  useEffect(() => {
-    // Persist state to localStorage whenever it changes
-    console.log('Saving tradeLevels to localStorage:', tradeLevels);
     localStorage.setItem('tradeLevels', JSON.stringify(tradeLevels));
   }, [tradeLevels]);
 
-  console.log('DashboardPage rendered with:', { tradeLevels, initialLevelsSet });
+  const handleCryptoSelect = (symbol: string) => {
+    setSelectedCrypto(symbol);
+  };
 
 
   const renderTabContent = () => {
@@ -62,8 +77,8 @@ const DashboardPage = () => {
           <TechnicalAnalysisChart
             tradeLevels={tradeLevels}
             onLevelsChange={setTradeLevels}
-            initialLevelsSet={initialLevelsSet}
-            setInitialLevelsSet={setInitialLevelsSet}
+            selectedCrypto={selectedCrypto} // Pass selectedCrypto
+            onCryptoSelect={handleCryptoSelect} // Pass handler
           >
             <TradeJournal tradeLevels={tradeLevels} />
           </TechnicalAnalysisChart>

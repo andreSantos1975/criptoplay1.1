@@ -48,13 +48,13 @@ interface TechnicalAnalysisChartProps {
     stopLoss: number;
   }) => void;
   children: React.ReactNode;
-  initialLevelsSet: boolean;
-  setInitialLevelsSet: (value: boolean) => void;
+  selectedCrypto: string; // New prop
+  onCryptoSelect: (symbol: string) => void; // New prop
 }
 
 export const TechnicalAnalysisChart = memo(
-  ({ tradeLevels, onLevelsChange, children, initialLevelsSet, setInitialLevelsSet }: TechnicalAnalysisChartProps) => {
-    console.log('TechnicalAnalysisChart rendered with:', { tradeLevels, initialLevelsSet });
+  ({ tradeLevels, onLevelsChange, children, selectedCrypto, onCryptoSelect }: TechnicalAnalysisChartProps) => {
+    console.log('TechnicalAnalysisChart rendered with:', { tradeLevels, selectedCrypto });
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<Record<string, ISeriesApi<"Candlestick"> | null>>({});
@@ -80,7 +80,6 @@ export const TechnicalAnalysisChart = memo(
       }
     };
 
-    const [chartedSymbol, setChartedSymbol] = useState<string>('BTCUSDT');
     const [watchedSymbols, setWatchedSymbols] = useState<string[]>([
       'BTCUSDT',
       'ETHUSDT',
@@ -92,10 +91,10 @@ export const TechnicalAnalysisChart = memo(
       'SHIBUSDT',
     ]);
     const { data: chartData, isLoading, error } = useQuery({
-      queryKey: ["binanceKlines", interval, chartedSymbol],
+      queryKey: ["binanceKlines", interval, selectedCrypto], // Use selectedCrypto
       queryFn: async () => {
         const response = await fetch(
-          `/api/binance/klines?symbol=${chartedSymbol}&interval=${interval}`
+          `/api/binance/klines?symbol=${selectedCrypto}&interval=${interval}` // Use selectedCrypto
         );
         if (!response.ok) throw new Error("Network response was not ok");
         const data: BinanceKlineData[] = await response.json();
@@ -109,26 +108,6 @@ export const TechnicalAnalysisChart = memo(
       },
       refetchInterval: 60000,
     });
-
-    
-
-    
-
-    useEffect(() => {
-      console.log('TechnicalAnalysisChart: chartData or initialLevelsSet changed', { chartData, initialLevelsSet });
-      if (chartData && chartData.length > 0 && !initialLevelsSet) {
-        const lastPrice = chartData[chartData.length - 1].close;
-        const newLevels = {
-          entry: lastPrice,
-          takeProfit: lastPrice * 1.02,
-          stopLoss: lastPrice * 0.98,
-        };
-        onLevelsChange(newLevels);
-        setInitialLevelsSet(true); // Mark as set
-        console.log('TechnicalAnalysisChart: Initial levels set based on chartData', newLevels);
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [chartData, initialLevelsSet, onLevelsChange, setInitialLevelsSet]);
 
     useEffect(() => {
       if (!chartContainerRef.current || !chartData || chartData.length === 0) return;
@@ -162,10 +141,10 @@ export const TechnicalAnalysisChart = memo(
         borderDownColor: "#ef5350",
         wickUpColor: "#26a69a",
         wickDownColor: "#ef5350",
-        title: chartedSymbol, // Add title to series for legend/tooltip
+        title: selectedCrypto, // Use selectedCrypto
       });
       candlestickSeries.setData(chartData);
-      seriesRef.current[chartedSymbol] = candlestickSeries;
+      seriesRef.current[selectedCrypto] = candlestickSeries;
 
       // Price lines will be associated with the primary series
       const primarySeries = candlestickSeries;
@@ -247,7 +226,7 @@ export const TechnicalAnalysisChart = memo(
         }
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [chartData, chartedSymbol]);
+    }, [chartData, selectedCrypto]); // Depend on selectedCrypto
 
     useEffect(() => {
       if (priceLinesRef.current.entry)
@@ -261,14 +240,10 @@ export const TechnicalAnalysisChart = memo(
     if (isLoading) return <div>Loading chart...</div>;
     if (error) return <div>Error fetching chart data</div>;
 
-    const handleCryptoSelect = (symbol: string) => {
-      setChartedSymbol(symbol);
-    };
-
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Análise Técnica - {chartedSymbol} (Binance)</CardTitle>
+          <CardTitle>Análise Técnica - {selectedCrypto} (Binance)</CardTitle>
         </CardHeader>
         <CardContent>
           <MarketData />
@@ -299,7 +274,7 @@ export const TechnicalAnalysisChart = memo(
             </button>
           </div>
           
-          <CryptoList watchedSymbols={watchedSymbols} onCryptoSelect={handleCryptoSelect} />
+          <CryptoList watchedSymbols={watchedSymbols} onCryptoSelect={onCryptoSelect} /> {/* Use onCryptoSelect prop */}
         </CardContent>
       </Card>
     );
