@@ -54,9 +54,9 @@ const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
     if (tradeLevels) {
       setTradeData(prev => ({
         ...prev,
-        precoEntrada: String(tradeLevels.entry),
-        takeProfit: String(tradeLevels.takeProfit),
-        stopLoss: String(tradeLevels.stopLoss),
+        precoEntrada: tradeLevels.entry.toFixed(5),
+        takeProfit: tradeLevels.takeProfit.toFixed(5),
+        stopLoss: tradeLevels.stopLoss.toFixed(5),
       }));
     }
   }, [tradeLevels]);
