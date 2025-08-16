@@ -60,6 +60,25 @@ const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
     });
 };
 
+// Helper function for formatting crypto prices
+const formatCryptoPrice = (price: number): string => {
+  const options: Intl.NumberFormatOptions = {
+    minimumFractionDigits: 2, // Always show at least 2 decimal places
+  };
+
+  if (price >= 1000) {
+    options.maximumFractionDigits = 2; // e.g., 1,234.56
+  } else if (price >= 1) {
+    options.maximumFractionDigits = 4; // e.g., 12.3456
+  } else if (price >= 0.01) { // For numbers like 0.231, 0.919
+    options.maximumFractionDigits = 6; // e.g., 0.123456
+  } else { // For very small numbers like SHIB
+    options.maximumFractionDigits = 8; // e.g., 0.00001234
+  }
+
+  return price.toLocaleString('pt-BR', options);
+};
+
 interface CryptoListProps {
   watchedSymbols: string[];
   onCryptoSelect: (symbol: string) => void;
@@ -111,7 +130,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) 
                   </div>
                 </td>
                 <td className={styles.td}>
-                  ${crypto.current_price.toLocaleString()}
+                  ${formatCryptoPrice(crypto.current_price)}
                 </td>
                 <td className={styles.td}>
                   <span
