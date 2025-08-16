@@ -107,8 +107,15 @@ export const TechnicalAnalysisChart = memo(
       refetchInterval: 60000,
     });
 
+    const [initialLevelsSet, setInitialLevelsSet] = useState(false);
+
     useEffect(() => {
-      if (chartData && chartData.length > 0) {
+      // Reset the flag when the symbol changes
+      setInitialLevelsSet(false);
+    }, [chartedSymbol]);
+
+    useEffect(() => {
+      if (chartData && chartData.length > 0 && !initialLevelsSet) {
         const lastPrice = chartData[chartData.length - 1].close;
         const newLevels = {
           entry: lastPrice,
@@ -116,9 +123,10 @@ export const TechnicalAnalysisChart = memo(
           stopLoss: lastPrice * 0.98,
         };
         onLevelsChange(newLevels);
+        setInitialLevelsSet(true); // Mark as set
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [chartData]);
+    }, [chartData, initialLevelsSet]);
 
     useEffect(() => {
       if (!chartContainerRef.current || !chartData || chartData.length === 0) return;

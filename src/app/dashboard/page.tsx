@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { KPICard } from "@/components/dashboard/KPICard/KPICard";
 import { NavigationTabs } from "@/components/dashboard/NavigationTabs/NavigationTabs";
 import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable";
@@ -21,11 +21,21 @@ import styles from "./dashboard.module.css";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("painel");
-  const [tradeLevels, setTradeLevels] = useState({
-    entry: 65500,
-    takeProfit: 68000,
-    stopLoss: 64000,
+  const [tradeLevels, setTradeLevels] = useState(() => {
+    // Initialize state from localStorage if available
+    const savedLevels = typeof window !== 'undefined' ? localStorage.getItem('tradeLevels') : null;
+    return savedLevels ? JSON.parse(savedLevels) : {
+      entry: 65500,
+      takeProfit: 68000,
+      stopLoss: 64000,
+    };
   });
+
+  useEffect(() => {
+    // Persist state to localStorage whenever it changes
+    localStorage.setItem('tradeLevels', JSON.stringify(tradeLevels));
+  }, [tradeLevels]);
+
 
   const renderTabContent = () => {
     switch (activeTab) {
