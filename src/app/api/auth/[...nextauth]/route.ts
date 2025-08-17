@@ -1,11 +1,11 @@
 
-import NextAuth, { SessionStrategy } from "next-auth"
+import NextAuth, { NextAuthOptions, SessionStrategy } from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from 'bcryptjs'
 import prisma from "@/lib/prisma"
 
-const authOptions = {
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -42,6 +42,23 @@ const authOptions = {
   ],
   session: {
     strategy: "jwt" as SessionStrategy,
+  },
+  // Adicionando os callbacks para popular o token e a sessão com o ID do usuário
+  callbacks: {
+    async jwt({ token, user }) {
+      // No login inicial, o objeto 'user' está disponível
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Adiciona o ID do token ao objeto da sessão
+      if (session.user) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
   },
   pages: {
     signIn: '/login',

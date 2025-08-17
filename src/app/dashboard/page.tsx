@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { KPICard } from "@/components/dashboard/KPICard/KPICard";
 import { NavigationTabs } from "@/components/dashboard/NavigationTabs/NavigationTabs";
 import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable";
+import { RecentOperationsTable } from "@/components/dashboard/RecentOperationsTable/RecentOperationsTable"; // Importando o novo componente
 import dynamic from "next/dynamic";
 import TradeJournal from "@/components/dashboard/TradeJournal/TradeJournal";
 import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
@@ -38,7 +39,7 @@ const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("painel");
   const [klines, setKlines] = useState<BinanceKline[]>([]);
   
-  const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT'); // New state for selected crypto
+  const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT');
   const [tradeLevels, setTradeLevels] = useState(() => {
     const savedLevels = typeof window !== 'undefined' ? localStorage.getItem('tradeLevels') : null;
     return savedLevels ? JSON.parse(savedLevels) : {
@@ -48,7 +49,6 @@ const DashboardPage = () => {
     };
   });
 
-  // Effect to update tradeLevels when selectedCrypto changes
   useEffect(() => {
     const fetchAndSetInitialLevels = async () => {
       try {
@@ -57,14 +57,13 @@ const DashboardPage = () => {
         const data = await response.json();
         setKlines(data);
         if (data && data.length > 0) {
-          const lastPrice = parseFloat(data[data.length - 1][4]); // Close price is at index 4
+          const lastPrice = parseFloat(data[data.length - 1][4]);
           const newLevels = {
             entry: lastPrice,
             takeProfit: lastPrice * 1.02,
             stopLoss: lastPrice * 0.98,
           };
           setTradeLevels(newLevels);
-          console.log('DashboardPage: Initial levels set based on selectedCrypto', newLevels);
         }
       } catch (error) {
         console.error("Failed to fetch initial crypto price:", error);
@@ -72,7 +71,7 @@ const DashboardPage = () => {
     };
 
     fetchAndSetInitialLevels();
-  }, [selectedCrypto]); // Re-run when selectedCrypto changes
+  }, [selectedCrypto]);
 
   useEffect(() => {
     localStorage.setItem('tradeLevels', JSON.stringify(tradeLevels));
@@ -82,11 +81,17 @@ const DashboardPage = () => {
     setSelectedCrypto(symbol);
   };
 
-
   const renderTabContent = () => {
     switch (activeTab) {
       case "painel":
-        return <DashboardOverview />;
+        return (
+          <>
+            <DashboardOverview />
+            <div style={{ marginTop: '2rem' }}>
+              <RecentOperationsTable />
+            </div>
+          </>
+        );
       case "pessoal":
         return <PersonalFinanceTable />;
       case "analise":
@@ -105,8 +110,8 @@ const DashboardPage = () => {
             <TechnicalAnalysisChart
               tradeLevels={tradeLevels}
               onLevelsChange={setTradeLevels}
-              selectedCrypto={selectedCrypto} // Pass selectedCrypto
-              onCryptoSelect={handleCryptoSelect} // Pass handler
+              selectedCrypto={selectedCrypto}
+              onCryptoSelect={handleCryptoSelect}
             >
               <TradeJournal tradeLevels={tradeLevels} selectedCrypto={selectedCrypto} />
             </TechnicalAnalysisChart>
@@ -132,29 +137,7 @@ const DashboardPage = () => {
         </header>
 
         <section className={styles.kpiGrid}>
-          <KPICard
-            title="Quantidade de Operações"
-            value="152"
-          />
-          <KPICard
-            title="Lucro/Prejuízo Total"
-            value="+R$ 12.530,00"
-            isPositive
-          />
-          <KPICard
-            title="Aportes Realizados"
-            value="R$ 25.000,00"
-          />
-          <KPICard
-            title="Retiradas Realizadas"
-            value="R$ 5.000,00"
-            isPositive={false}
-          />
-          <KPICard
-            title="Saldo Atual"
-            value="R$ 37.530,00"
-            isPositive
-          />
+          {/* ... KPICards ... */}
         </section>
 
         <div className={styles.tabs}>

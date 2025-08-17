@@ -76,8 +76,7 @@ export const PersonalFinanceTable = () => {
                       item.status === "Pago"
                         ? styles.statusPaid
                         : styles.statusPending
-                    }`}
-                  >
+                    }`}>
                     {item.status}
                   </span>
                 </TableCell>
