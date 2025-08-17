@@ -20,10 +20,10 @@ const performanceData = [
 ];
 
 const recentTrades = [
-  { crypto: "BTC", tipo: "Compra", quantidade: "0.5", preco: "R$ 240.000", resultado: "+R$ 2.400" },
-  { crypto: "ETH", tipo: "Venda", quantidade: "2.0", preco: "R$ 12.500", resultado: "+R$ 850" },
-  { crypto: "ADA", tipo: "Compra", quantidade: "1000", preco: "R$ 2.800", resultado: "-R$ 120" },
-  { crypto: "SOL", tipo: "Venda", quantidade: "5.0", preco: "R$ 890", resultado: "+R$ 340" },
+  { crypto: "BTC", tipo: "Compra", quantidade: "0.5", preco: "R$ 240.000", resultado: "+R$ 2.400", status: "Fechada" },
+  { crypto: "ETH", tipo: "Venda", quantidade: "2.0", preco: "R$ 12.500", resultado: "+R$ 850", status: "Fechada" },
+  { crypto: "ADA", tipo: "Compra", quantidade: "1000", preco: "R$ 2.800", resultado: "-R$ 120", status: "Aberta" },
+  { crypto: "SOL", tipo: "Venda", quantidade: "5.0", preco: "R$ 890", resultado: "+R$ 340", status: "Fechada" },
 ];
 
 // Helper function to calculate percentage
@@ -126,6 +126,7 @@ export const DashboardOverview = () => {
                   <th className={styles.tableHeader}>Preço</th>
                   <th className={styles.tableHeader}>Resultado</th>
                   <th className={styles.tableHeader}>Resultado (%)</th>
+                  <th className={styles.tableHeader}>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,6 +165,17 @@ export const DashboardOverview = () => {
                         }`}
                       >
                         {percentageResult}
+                      </td>
+                      <td className={styles.tableCell}>
+                        <span
+                          className={`${styles.status} ${
+                            trade.status === "Fechada"
+                              ? styles.statusClosed
+                              : styles.statusOpen
+                          }`}
+                        >
+                          {trade.status}
+                        </span>
                       </td>
                     </tr>
                   );

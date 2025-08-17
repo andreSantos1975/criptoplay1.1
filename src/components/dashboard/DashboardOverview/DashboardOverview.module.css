@@ -70,3 +70,22 @@
 .negativeValue {
   color: hsl(var(--loss));
 }
+
+.status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-block;
+  text-transform: capitalize;
+}
+
+.statusClosed {
+  background-color: hsla(220, 84%, 60%, 0.1);
+  color: hsl(220, 84%, 70%);
+}
+
+.statusOpen {
+  background-color: hsla(38, 92%, 50%, 0.1);
+  color: hsl(38, 92%, 60%);
+}
