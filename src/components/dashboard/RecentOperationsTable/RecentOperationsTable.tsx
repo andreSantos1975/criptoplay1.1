@@ -49,6 +49,19 @@ const formatCurrency = (value: number | null | undefined) => {
   return new Intl.NumberFormat("pt-BR", options).format(value);
 };
 
+// Helper para formatar data e hora
+const formatDate = (dateString: string | undefined): string => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 export const RecentOperationsTable = () => {
   const queryClient = useQueryClient();
   const { data: trades, isLoading, error } = useQuery<Trade[]>({ 
@@ -89,9 +102,9 @@ export const RecentOperationsTable = () => {
   };
 
   const renderTableContent = () => {
-    if (isLoading) return <TableRow><TableCell colSpan={9} className="text-center">Carregando...</TableCell></TableRow>;
-    if (error) return <TableRow><TableCell colSpan={9} className="text-center text-red-500">Erro: {error.message}</TableCell></TableRow>;
-    if (!trades || trades.length === 0) return <TableRow><TableCell colSpan={9} className="text-center">Nenhuma operação encontrada.</TableCell></TableRow>;
+    if (isLoading) return <TableRow><TableCell colSpan={10} className="text-center">Carregando...</TableCell></TableRow>;
+    if (error) return <TableRow><TableCell colSpan={10} className="text-center text-red-500">Erro: {error.message}</TableCell></TableRow>;
+    if (!trades || trades.length === 0) return <TableRow><TableCell colSpan={10} className="text-center">Nenhuma operação encontrada.</TableCell></TableRow>;
 
     return trades.map((trade) => {
       const pnl = trade.status === 'CLOSED' ? trade.pnl : null;
@@ -114,6 +127,11 @@ export const RecentOperationsTable = () => {
             <span className={`${styles.status} ${trade.status === 'CLOSED' ? styles.statusPaid : styles.statusPending}`}>
               {trade.status === 'CLOSED' ? 'Fechada' : 'Aberta'}
             </span>
+          </TableCell>
+          <TableCell>
+            {trade.status === 'OPEN'
+              ? formatDate(trade.entryDate)
+              : `${formatDate(trade.entryDate)} -> ${formatDate(trade.exitDate)}`}
           </TableCell>
           <TableCell>
             {trade.status === 'OPEN' && (
@@ -149,6 +167,7 @@ export const RecentOperationsTable = () => {
               <TableHead>Resultado</TableHead>
               <TableHead>Resultado (%)</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Data/Hora</TableHead>
               <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
