@@ -305,7 +305,7 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
                 </CardContent>
             </Card>
             <Button onClick={handleSaveOperation} className={`${styles.button} ${styles.buttonPrimary}`} style={{width: '100%', padding: '12px'}}>
-                Salvar Operação
+                Fechar e Salvar Operação
             </Button>
         </div>
       </div>
