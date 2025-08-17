@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import styles from './TradeJournal.module.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,9 +51,16 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
     observacoes: '',
   });
 
+  const [tradeCostInBRL, setTradeCostInBRL] = useState<number | null>(null);
+
   const formatNumber = (num: number): string => {
     if (isNaN(num)) return '';
     return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 });
+  };
+
+  const formatCurrencyBRL = (num: number): string => {
+    if (isNaN(num) || num === null) return 'R$ 0,00';
+    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
   useEffect(() => {
@@ -67,6 +74,34 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
       }));
     }
   }, [tradeLevels, selectedCrypto]);
+
+  const { data: usdtToBrlData, isLoading: usdtToBrlLoading, error: usdtToBrlError } = useQuery({
+    queryKey: ['usdtToBrlRate'],
+    queryFn: async () => {
+      const response = await fetch('/api/exchange-rate');
+      if (!response.ok) {
+        throw new Error('Failed to fetch USDT to BRL rate');
+      }
+      const data = await response.json();
+      return data.usdtToBrl;
+    },
+    staleTime: 5 * 60 * 1000, // Data is considered fresh for 5 minutes
+    cacheTime: 10 * 60 * 1000, // Data stays in cache for 10 minutes
+    refetchOnWindowFocus: false, // Do not refetch on window focus
+  });
+
+  useEffect(() => {
+    const entryPrice = parseNumericValue(tradeData.precoEntrada);
+    const quantity = parseNumericValue(tradeData.quantidade);
+    const usdtToBrlRate = usdtToBrlData; // Use data from useQuery
+
+    if (entryPrice > 0 && quantity > 0 && usdtToBrlRate !== null && usdtToBrlRate !== undefined) {
+      const cost = entryPrice * quantity * usdtToBrlRate;
+      setTradeCostInBRL(cost);
+    } else {
+      setTradeCostInBRL(null);
+    }
+  }, [tradeData.precoEntrada, tradeData.quantidade, usdtToBrlData]); // Depend on usdtToBrlData
 
   const parseNumericValue = (value: string): number => {
     if (!value) return 0;
@@ -171,6 +206,10 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="quantidade">Quantidade</label>
                                         <input id="quantidade" type="text" className={styles.input} placeholder="0" value={tradeData.quantidade} onChange={(e) => updateTradeData('quantidade', e.target.value)} />
+                                    </div>
+                                    <div className={styles.inputGroup}>
+                                        <label className={styles.label}>Custo Total (BRL)</label>
+                                        <input type="text" className={styles.input} value={usdtToBrlLoading ? 'Carregando...' : usdtToBrlError ? 'Erro ao carregar taxa' : (tradeCostInBRL !== null ? formatCurrencyBRL(tradeCostInBRL) : 'R$ 0,00')} readOnly />
                                     </div>
                                 </div>
                             </CardContent>

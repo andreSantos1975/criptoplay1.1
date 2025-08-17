@@ -13,7 +13,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const tradeId = params.id;
+  const tradeId = (await params).id;
 
   try {
     // 1. Find the trade and verify ownership and status
