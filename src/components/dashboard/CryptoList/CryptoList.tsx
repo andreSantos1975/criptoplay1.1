@@ -11,7 +11,7 @@ interface CryptoData {
   symbol: string;
   current_price: number;
   price_change_percentage_24h: number;
-  total_volume: number;
+  quote_volume: number; // Changed from total_volume to quote_volume for currency value
 }
 
 interface BinanceTicker24hr {
@@ -19,13 +19,12 @@ interface BinanceTicker24hr {
   quoteVolume: string;
   lastPrice: string;
   priceChangePercent: string;
-  volume: string;
 }
 
 const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
   const response = await fetch("https://api.binance.com/api/v3/ticker/24hr");
   if (!response.ok) {
-    throw new Error("Erro ao buscar dados");
+    throw new Error("Erro ao buscar dados da Binance API");
   }
   const data: BinanceTicker24hr[] = await response.json();
 
@@ -35,7 +34,11 @@ const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
     SOL: "Solana",
     USDC: "USD Coin",
     FDUSD: "First Digital USD",
-    XRP: "XRP", // Add XRP to the map
+    XRP: "XRP",
+    ADA: "Cardano",
+    DOGE: "Dogecoin",
+    SHIB: "Shiba Inu",
+    BNB: "BNB",
   };
 
   return data
@@ -43,11 +46,6 @@ const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
     .map((crypto) => {
       const baseAsset = crypto.symbol.replace("USDT", "");
       const name = coinNameMap[baseAsset] || baseAsset;
-      // Add logging for SHIB
-      if (baseAsset === 'SHIB') {
-        console.log('SHIB raw lastPrice:', crypto.lastPrice);
-        console.log('SHIB parsed current_price:', parseFloat(crypto.lastPrice));
-      }
 
       return {
         id: baseAsset,
@@ -55,28 +53,26 @@ const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
         symbol: baseAsset,
         current_price: parseFloat(crypto.lastPrice),
         price_change_percentage_24h: parseFloat(crypto.priceChangePercent),
-        total_volume: parseFloat(crypto.volume),
+        quote_volume: parseFloat(crypto.quoteVolume), // Use quoteVolume for currency value
       };
     });
 };
 
-// Helper function for formatting crypto prices
-const formatCryptoPrice = (price: number): string => {
+// Helper function for formatting prices and volumes in BRL
+const formatBRLCurrency = (value: number): string => {
   const options: Intl.NumberFormatOptions = {
-    minimumFractionDigits: 2, // Always show at least 2 decimal places
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
   };
 
-  if (price >= 1000) {
-    options.maximumFractionDigits = 2; // e.g., 1,234.56
-  } else if (price >= 1) {
-    options.maximumFractionDigits = 4; // e.g., 12.3456
-  } else if (price >= 0.01) { // For numbers like 0.231, 0.919
-    options.maximumFractionDigits = 6; // e.g., 0.123456
-  } else { // For very small numbers like SHIB
-    options.maximumFractionDigits = 8; // e.g., 0.00001234
+  if (value < 1) {
+    options.maximumFractionDigits = 8; // For very small prices like SHIB
+  } else {
+    options.maximumFractionDigits = 2; // For standard prices
   }
 
-  return price.toLocaleString('pt-BR', options);
+  return value.toLocaleString('pt-BR', options);
 };
 
 interface CryptoListProps {
@@ -109,7 +105,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) 
               <th className={styles.th}>Name</th>
               <th className={styles.th}>Price</th>
               <th className={styles.th}>24h Change</th>
-              <th className={styles.th}>Volume</th>
+              <th className={styles.th}>Volume (24h)</th>
             </tr>
           </thead>
           <tbody>
@@ -130,7 +126,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) 
                   </div>
                 </td>
                 <td className={styles.td}>
-                  ${formatCryptoPrice(crypto.current_price)}
+                  {formatBRLCurrency(crypto.current_price)}
                 </td>
                 <td className={styles.td}>
                   <span
@@ -152,7 +148,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) 
                   </span>
                 </td>
                 <td className={styles.td}>
-                  ${(crypto.total_volume / 1e6).toFixed(2)}M
+                  {formatBRLCurrency(crypto.quote_volume)}
                 </td>
               </tr>
             ))}
