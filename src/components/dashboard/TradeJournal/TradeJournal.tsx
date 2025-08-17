@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import styles from './TradeJournal.module.css';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Reutilizando o Card existente
-import { Button } from '@/components/ui/button'; // Reutilizando o Button existente
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface TradeData {
   ativo: string;
   tipoOperacao: 'compra' | 'venda' | 'long' | 'short' | '';
-  dataEntrada: string; // Alterado para string para simplicidade, sem o popover de calendário
+  dataEntrada: string;
   dataSaida: string;
   precoEntrada: string;
   precoSaida: string;
@@ -24,13 +24,13 @@ interface TradeJournalProps {
     takeProfit: number;
     stopLoss: number;
   };
+  selectedCrypto: string;
 }
 
-const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
-  console.log('TradeJournal: Received tradeLevels prop:', tradeLevels); // Add this line
+const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
   const [activeTab, setActiveTab] = useState('operacao');
   const [tradeData, setTradeData] = useState<TradeData>({
-    ativo: '',
+    ativo: selectedCrypto || '',
     tipoOperacao: '',
     dataEntrada: '',
     dataSaida: '',
@@ -51,34 +51,33 @@ const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
     saldoConta: 10000, // Saldo inicial fictício
   });
 
-  useEffect(() => {
-    const formatNumber = (num: number): string => {
-      const options: Intl.NumberFormatOptions = {
-        minimumFractionDigits: 2, // Always show at least 2 decimal places
-      };
-
-      if (num >= 1000) {
-        options.maximumFractionDigits = 2; // e.g., 1,234.56
-      } else if (num >= 1) {
-        options.maximumFractionDigits = 4; // e.g., 12.3456
-      } else if (num >= 0.01) { // For numbers like 0.231, 0.919
-        options.maximumFractionDigits = 6; // e.g., 0.123456
-      } else { // For very small numbers like SHIB
-        options.maximumFractionDigits = 8; // e.g., 0.00001234
-      }
-
-      return num.toLocaleString('pt-BR', options);
+  const formatNumber = (num: number): string => {
+    const options: Intl.NumberFormatOptions = {
+      minimumFractionDigits: 2,
     };
+    if (num >= 1000) {
+      options.maximumFractionDigits = 2;
+    } else if (num >= 1) {
+      options.maximumFractionDigits = 4;
+    } else if (num >= 0.01) {
+      options.maximumFractionDigits = 6;
+    } else {
+      options.maximumFractionDigits = 8;
+    }
+    return num.toLocaleString('pt-BR', options);
+  };
 
+  useEffect(() => {
     if (tradeLevels) {
       setTradeData(prev => ({
         ...prev,
+        ativo: selectedCrypto,
         precoEntrada: formatNumber(tradeLevels.entry),
         takeProfit: formatNumber(tradeLevels.takeProfit),
         stopLoss: formatNumber(tradeLevels.stopLoss),
       }));
     }
-  }, [tradeLevels]);
+  }, [tradeLevels, selectedCrypto]);
 
   useEffect(() => {
     const precoEntrada = parseFloat(tradeData.precoEntrada) || 0;
@@ -124,7 +123,37 @@ const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
   const handleNumericInputChange = (field: keyof TradeData, value: string) => {
     const cleanedValue = value.replace(/\./g, '').replace(/,/g, '.');
     const parsedValue = parseFloat(cleanedValue);
-    updateTradeData(field, isNaN(parsedValue) ? '' : parsedValue.toString()); // Store as string, but ensure it's a valid number or empty
+    updateTradeData(field, isNaN(parsedValue) ? '' : parsedValue.toString());
+  };
+
+  const handleSaveOperation = async () => {
+    console.log(`Buscando preço de fechamento para ${selectedCrypto}...`);
+    try {
+      const response = await fetch(`/api/binance/klines?symbol=${selectedCrypto}&interval=1m&limit=1`);
+      if (!response.ok) {
+        throw new Error("Falha ao buscar o preço atual do ativo.");
+      }
+      const data = await response.json();
+      if (data && data.length > 0) {
+        const currentPrice = parseFloat(data[0][4]);
+        const currentDate = new Date().toISOString().split('T')[0];
+
+        const updatedData = {
+          ...tradeData,
+          precoSaida: formatNumber(currentPrice),
+          dataSaida: currentDate,
+        };
+        
+        setTradeData(updatedData);
+        console.log("Operação atualizada com preço de saída. Pronta para salvar:", updatedData);
+        alert(`Operação para ${selectedCrypto} atualizada com preço de saída: ${formatNumber(currentPrice)}`);
+      } else {
+        throw new Error("API não retornou dados para o ativo.");
+      }
+    } catch (error) {
+      console.error("Erro ao salvar operação:", error);
+      alert(error instanceof Error ? error.message : "Ocorreu um erro desconhecido.");
+    }
   };
 
   return (
@@ -275,7 +304,7 @@ const TradeJournal = ({ tradeLevels }: TradeJournalProps) => {
                     </div>
                 </CardContent>
             </Card>
-            <Button className={`${styles.button} ${styles.buttonPrimary}`} style={{width: '100%', padding: '12px'}}>
+            <Button onClick={handleSaveOperation} className={`${styles.button} ${styles.buttonPrimary}`} style={{width: '100%', padding: '12px'}}>
                 Salvar Operação
             </Button>
         </div>

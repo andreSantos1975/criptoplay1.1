@@ -94,7 +94,7 @@ const DashboardPage = () => {
               selectedCrypto={selectedCrypto} // Pass selectedCrypto
               onCryptoSelect={handleCryptoSelect} // Pass handler
             >
-              <TradeJournal tradeLevels={tradeLevels} />
+              <TradeJournal tradeLevels={tradeLevels} selectedCrypto={selectedCrypto} />
             </TechnicalAnalysisChart>
           </>
         );
