@@ -7,6 +7,7 @@ import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTabl
 import dynamic from "next/dynamic";
 import TradeJournal from "@/components/dashboard/TradeJournal/TradeJournal";
 import { TradePanel } from "@/components/dashboard/TradePanel/TradePanel";
+import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
 
 const TechnicalAnalysisChart = dynamic(
   () =>
@@ -21,6 +22,7 @@ import styles from "./dashboard.module.css";
 
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("painel");
+  const [klines, setKlines] = useState<any[]>([]);
   
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT'); // New state for selected crypto
   const [tradeLevels, setTradeLevels] = useState(() => {
@@ -39,6 +41,7 @@ const DashboardPage = () => {
         const response = await fetch(`/api/binance/klines?symbol=${selectedCrypto}&interval=1d`);
         if (!response.ok) throw new Error("Network response was not ok");
         const data = await response.json();
+        setKlines(data);
         if (data && data.length > 0) {
           const lastPrice = parseFloat(data[data.length - 1][4]); // Close price is at index 4
           const newLevels = {
@@ -73,15 +76,27 @@ const DashboardPage = () => {
       case "pessoal":
         return <PersonalFinanceTable />;
       case "analise":
+        const latestKline = klines && klines.length > 0 ? klines[klines.length - 1] : null;
         return (
-          <TechnicalAnalysisChart
-            tradeLevels={tradeLevels}
-            onLevelsChange={setTradeLevels}
-            selectedCrypto={selectedCrypto} // Pass selectedCrypto
-            onCryptoSelect={handleCryptoSelect} // Pass handler
-          >
-            <TradeJournal tradeLevels={tradeLevels} />
-          </TechnicalAnalysisChart>
+          <>
+            {latestKline && (
+              <AssetHeader
+                symbol={selectedCrypto}
+                price={parseFloat(latestKline[4])}
+                open={parseFloat(latestKline[1])}
+                high={parseFloat(latestKline[2])}
+                low={parseFloat(latestKline[3])}
+              />
+            )}
+            <TechnicalAnalysisChart
+              tradeLevels={tradeLevels}
+              onLevelsChange={setTradeLevels}
+              selectedCrypto={selectedCrypto} // Pass selectedCrypto
+              onCryptoSelect={handleCryptoSelect} // Pass handler
+            >
+              <TradeJournal tradeLevels={tradeLevels} />
+            </TechnicalAnalysisChart>
+          </>
         );
       case "relatorios":
         return <ReportsSection />;
