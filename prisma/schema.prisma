@@ -21,6 +21,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   trades        Trade[]
+  capitalMovements CapitalMovement[]
 }
 
 model Account {
@@ -78,4 +79,22 @@ model Trade {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
+}
+
+enum CapitalMovementType {
+  DEPOSIT
+  WITHDRAWAL
+}
+
+model CapitalMovement {
+  id          String                @id @default(cuid())
+  userId      String
+  amount      Decimal               @db.Decimal(18, 2)
+  type        CapitalMovementType
+  date        DateTime              @default(now())
+  description String?               @db.Text
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

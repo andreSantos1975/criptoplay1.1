@@ -1,31 +1,18 @@
 .reportsSection {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem; /* space-y-6 */
+  gap: 2rem;
 }
 
 .chartsGrid {
   display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 1.5rem; /* gap-6 */
-}
-
-@media (min-width: 1024px) {
-  .chartsGrid {
-    grid-template-columns: repeat(2, 1fr); /* lg:grid-cols-2 */
-  }
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
 }
 
 .chartContainer {
-  height: 16rem; /* h-64 */
-}
-
-.positiveValue {
-  color: hsl(var(--profit));
-}
-
-.negativeValue {
-  color: hsl(var(--loss));
+  height: 300px;
+  width: 100%;
 }
 
 .timeframeSelector {
@@ -35,20 +22,91 @@
 }
 
 .timeframeButton {
-  background-color: hsl(var(--secondary));
-  color: hsl(var(--secondary-foreground));
   padding: 0.5rem 1rem;
+  border: 1px solid hsl(var(--border));
   border-radius: var(--radius);
-  border: none;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease-in-out;
 }
 
 .timeframeButton:hover {
-  background-color: hsl(var(--secondary-hover));
+  background-color: hsl(var(--muted));
 }
 
 .timeframeButtonActive {
   background-color: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
+  border-color: hsl(var(--primary));
+}
+
+.timeframeButtonActive:hover {
+  background-color: hsl(var(--primary-hover));
+}
+
+.positiveValue {
+  color: hsl(var(--chart-green));
+}
+
+.negativeValue {
+  color: hsl(var(--chart-red));
+}
+
+/* Form styles */
+.formCard {
+  margin-bottom: 2rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input, .select, .textarea {
+  padding: 0.75rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background-color: hsl(var(--input));
+  color: hsl(var(--foreground));
+  font-size: 1rem;
+}
+
+.input:focus, .select:focus, .textarea:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsla(var(--primary), 0.2);
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.submitButton {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: var(--radius);
+  cursor: pointer;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: hsl(var(--primary-hover));
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

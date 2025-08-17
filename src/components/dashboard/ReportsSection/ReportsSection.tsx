@@ -1,4 +1,7 @@
+"use client";
+
 import { useState, useMemo } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -22,6 +25,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
 
 // --- Mock Data ---
@@ -70,7 +74,11 @@ const investmentData = [
 ];
 
 export const ReportsSection = () => {
+  const queryClient = useQueryClient();
   const [timeframe, setTimeframe] = useState("Mensal");
+  const [amount, setAmount] = useState<string>('');
+  const [type, setType] = useState<'DEPOSIT' | 'WITHDRAWAL'>('DEPOSIT');
+  const [description, setDescription] = useState<string>('');
 
   const timeframes = ["Diário", "Semanal", "Mensal", "Anual"];
 
@@ -88,8 +96,104 @@ export const ReportsSection = () => {
     }
   }, [timeframe]);
 
+  const addCapitalMovementMutation = useMutation({
+    mutationFn: async (newMovement: { amount: number; type: 'DEPOSIT' | 'WITHDRAWAL'; description?: string; date?: string }) => {
+      const response = await fetch('/api/capital-movements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMovement),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao registrar movimento de capital.');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      alert('Movimento de capital registrado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['capitalMovements'] });
+      setAmount(''); // Clear form
+      setType('DEPOSIT');
+      setDescription('');
+    },
+    onError: (error: Error) => {
+      console.error('Erro ao registrar movimento:', error);
+      alert(`Erro: ${error.message}`);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsedAmount = parseFloat(amount.replace(',', '.')); // Handle comma as decimal
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert('O valor deve ser um número positivo.');
+      return;
+    }
+    addCapitalMovementMutation.mutate({
+      amount: parsedAmount,
+      type,
+      description,
+      date: new Date().toISOString(), // Record current date/time
+    });
+  };
+
   return (
     <div className={styles.reportsSection}>
+      {/* Formulário de Registro de Movimento de Capital */}
+      <Card className={styles.formCard}>
+        <CardHeader>
+          <CardTitle>Registrar Movimento de Capital</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className={styles.formGrid}>
+            <div className={styles.inputGroup}>
+              <label htmlFor="amount">Valor (R$)</label>
+              <input
+                id="amount"
+                type="text"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0,00"
+                className={styles.input}
+                required
+              />
+            </div>
+            <div className={styles.inputGroup}>
+              <label htmlFor="type">Tipo</label>
+              <select
+                id="type"
+                value={type}
+                onChange={(e) => setType(e.target.value as 'DEPOSIT' | 'WITHDRAWAL')}
+                className={styles.select}
+                required
+              >
+                <option value="DEPOSIT">Aporte</option>
+                <option value="WITHDRAWAL">Retirada</option>
+              </select>
+            </div>
+            <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}>
+              <label htmlFor="description">Descrição (Opcional)</label>
+              <textarea
+                id="description"
+                rows={2}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ex: Aporte inicial, Retirada para despesas"
+                className={styles.textarea}
+              ></textarea>
+            </div>
+            <Button
+              type="submit"
+              disabled={addCapitalMovementMutation.isPending}
+              className={styles.submitButton}
+              style={{ gridColumn: 'span 2' }}
+            >
+              {addCapitalMovementMutation.isPending ? 'Registrando...' : 'Registrar Movimento'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
       {/* Profit & Loss Chart */}
       <Card>
         <CardHeader>

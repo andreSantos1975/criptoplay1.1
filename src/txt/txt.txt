@@ -44,6 +44,6 @@ npm run lint
 npm run build 
 ---------------------------------------------------------------------------------
 
- Agora você precisa conectar os componentes do frontend a esta API:
+
 
 

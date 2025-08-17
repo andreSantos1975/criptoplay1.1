@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 interface TradeFormData {
   ativo: string;
   tipoOperacao: 'compra' | 'venda' | '';
-  dataEntrada: string;
   precoEntrada: string;
   quantidade: string;
   stopLoss: string;
@@ -22,7 +21,7 @@ interface TradeFormData {
 interface OpenTradePayload {
   symbol: string;
   type: string;
-  entryDate: string;
+  entryDate: string; // Agora capturada no momento do clique
   entryPrice: number;
   quantity: number;
   stopLoss: number;
@@ -45,7 +44,6 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
   const [tradeData, setTradeData] = useState<TradeFormData>({
     ativo: selectedCrypto || '',
     tipoOperacao: '',
-    dataEntrada: new Date().toISOString().split('T')[0],
     precoEntrada: '',
     quantidade: '',
     stopLoss: '',
@@ -91,7 +89,8 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
     },
     onSuccess: () => {
       alert('Operação aberta com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['trades'] });
+      queryClient.invalidateQueries({ queryKey: ['trades'] }); 
+      // Opcional: Limpar o formulário aqui
     },
     onError: (error: Error) => {
       console.error("Erro ao abrir operação:", error);
@@ -100,15 +99,15 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
   });
 
   const handleOpenOperation = () => {
-    if (!tradeData.ativo || !tradeData.tipoOperacao || !tradeData.dataEntrada || !tradeData.precoEntrada || !tradeData.quantidade) {
-        alert("Preencha os campos obrigatórios: Ativo, Tipo, Data, Preço e Quantidade.");
+    if (!tradeData.ativo || !tradeData.tipoOperacao || !tradeData.precoEntrada || !tradeData.quantidade) {
+        alert("Preencha os campos obrigatórios: Ativo, Tipo, Preço e Quantidade.");
         return;
     }
 
     const payload: OpenTradePayload = {
       symbol: tradeData.ativo,
       type: tradeData.tipoOperacao,
-      entryDate: tradeData.dataEntrada,
+      entryDate: new Date().toISOString(), // Captura a data e hora exatas do clique
       entryPrice: parseNumericValue(tradeData.precoEntrada),
       quantity: parseNumericValue(tradeData.quantidade),
       stopLoss: parseNumericValue(tradeData.stopLoss),
@@ -163,10 +162,7 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
                                         </select>
                                     </div>
                                 </div>
-                                <div className={styles.inputGroup}>
-                                    <label className={styles.label} htmlFor="dataEntrada">Data de Entrada</label>
-                                    <input id="dataEntrada" type="date" className={styles.input} value={tradeData.dataEntrada} onChange={(e) => updateTradeData('dataEntrada', e.target.value)} />
-                                </div>
+                                {/* Removido o campo Data de Entrada */}
                                 <div className={styles.gridThreeCols}>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="precoEntrada">Preço de Entrada</label>
