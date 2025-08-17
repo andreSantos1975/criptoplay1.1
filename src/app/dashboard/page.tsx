@@ -6,7 +6,6 @@ import { NavigationTabs } from "@/components/dashboard/NavigationTabs/Navigation
 import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable";
 import dynamic from "next/dynamic";
 import TradeJournal from "@/components/dashboard/TradeJournal/TradeJournal";
-import { TradePanel } from "@/components/dashboard/TradePanel/TradePanel";
 import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
 
 const TechnicalAnalysisChart = dynamic(
@@ -20,9 +19,24 @@ import { ReportsSection } from "@/components/dashboard/ReportsSection/ReportsSec
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview/DashboardOverview";
 import styles from "./dashboard.module.css";
 
+type BinanceKline = [
+  number, // Open time
+  string, // Open
+  string, // High
+  string, // Low
+  string, // Close
+  string, // Volume
+  number, // Close time
+  string, // Quote asset volume
+  number, // Number of trades
+  string, // Taker buy base asset volume
+  string, // Taker buy quote asset volume
+  string, // Ignore
+];
+
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("painel");
-  const [klines, setKlines] = useState<any[]>([]);
+  const [klines, setKlines] = useState<BinanceKline[]>([]);
   
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT'); // New state for selected crypto
   const [tradeLevels, setTradeLevels] = useState(() => {

@@ -116,7 +116,7 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
     });
   }, [tradeData]);
 
-  const updateTradeData = (field: keyof TradeData, value: any) => {
+  const updateTradeData = (field: keyof TradeData, value: string) => {
     setTradeData(prev => ({ ...prev, [field]: value }));
   };
 
