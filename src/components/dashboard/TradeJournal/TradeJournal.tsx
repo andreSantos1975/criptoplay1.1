@@ -77,18 +77,6 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
     return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  useEffect(() => {
-    if (tradeLevels) {
-      setTradeData(prev => ({
-        ...prev,
-        ativo: selectedCrypto,
-        precoEntrada: tradeLevels.entry > 0 ? formatNumber(tradeLevels.entry) : '',
-        takeProfit: tradeLevels.takeProfit > 0 ? formatNumber(tradeLevels.takeProfit) : '',
-        stopLoss: tradeLevels.stopLoss > 0 ? formatNumber(tradeLevels.stopLoss) : '',
-      }));
-    }
-  }, [tradeLevels, selectedCrypto]);
-
   const { data: usdtToBrlData, isLoading: usdtToBrlLoading, error: usdtToBrlError } = useQuery({
     queryKey: ['usdtToBrlRate'],
     queryFn: async () => {
@@ -105,17 +93,29 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
   });
 
   useEffect(() => {
+    if (tradeLevels && usdtToBrlData) {
+      const brlRate = usdtToBrlData || 1;
+      setTradeData(prev => ({
+        ...prev,
+        ativo: selectedCrypto,
+        precoEntrada: tradeLevels.entry > 0 ? formatNumber(tradeLevels.entry * brlRate) : '',
+        takeProfit: tradeLevels.takeProfit > 0 ? formatNumber(tradeLevels.takeProfit * brlRate) : '',
+        stopLoss: tradeLevels.stopLoss > 0 ? formatNumber(tradeLevels.stopLoss * brlRate) : '',
+      }));
+    }
+  }, [tradeLevels, selectedCrypto, usdtToBrlData]);
+
+  useEffect(() => {
     const entryPrice = parseNumericValue(tradeData.precoEntrada);
     const quantity = parseNumericValue(tradeData.quantidade);
-    const usdtToBrlRate = usdtToBrlData; // Use data from useQuery
 
-    if (entryPrice > 0 && quantity > 0 && usdtToBrlRate !== null && usdtToBrlRate !== undefined) {
-      const cost = entryPrice * quantity * usdtToBrlRate;
+    if (entryPrice > 0 && quantity > 0) {
+      const cost = entryPrice * quantity;
       setTradeCostInBRL(cost);
     } else {
       setTradeCostInBRL(null);
     }
-  }, [tradeData.precoEntrada, tradeData.quantidade, usdtToBrlData]); // Depend on usdtToBrlData
+  }, [tradeData.precoEntrada, tradeData.quantidade]);
 
   const parseNumericValue = (value: string): number => {
     if (!value) return 0;
@@ -160,14 +160,16 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
         return;
     }
 
+    const brlRate = usdtToBrlData || 1;
+
     const payload: OpenTradePayload = {
       symbol: tradeData.ativo,
       type: tradeData.tipoOperacao,
-      entryDate: new Date().toISOString(), // Captura a data e hora exatas do clique
-      entryPrice: parseNumericValue(tradeData.precoEntrada),
+      entryDate: new Date().toISOString(),
+      entryPrice: parseNumericValue(tradeData.precoEntrada) / brlRate,
       quantity: parseNumericValue(tradeData.quantidade),
-      stopLoss: parseNumericValue(tradeData.stopLoss),
-      takeProfit: parseNumericValue(tradeData.takeProfit),
+      stopLoss: parseNumericValue(tradeData.stopLoss) / brlRate,
+      takeProfit: parseNumericValue(tradeData.takeProfit) / brlRate,
       notes: tradeData.observacoes,
     };
     

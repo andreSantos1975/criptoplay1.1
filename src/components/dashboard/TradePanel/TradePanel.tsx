@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import styles from './TradePanel.module.css';
 
 interface TradePanelProps {
@@ -14,33 +15,46 @@ interface TradePanelProps {
 }
 
 export const TradePanel = ({ tradeLevels, onLevelsChange }: TradePanelProps) => {
+  const { data: exchangeRateData } = useQuery({
+    queryKey: ["exchangeRate"],
+    queryFn: async () => {
+      const response = await fetch("/api/exchange-rate");
+      if (!response.ok) throw new Error("Failed to fetch exchange rate");
+      return response.json();
+    },
+    refetchInterval: 60000,
+  });
+
+  const brlRate = exchangeRateData?.usdtToBrl || 1;
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    // Remove o separador de milhares (ponto) e substitui a vírgula decimal por ponto
     const cleanedValue = value.replace(/\./g, '').replace(/,/g, '.');
     const parsedValue = parseFloat(cleanedValue);
+    const valueInUSD = parsedValue / brlRate;
     onLevelsChange({
       ...tradeLevels,
-      [name]: isNaN(parsedValue) ? 0 : parsedValue,
+      [name]: isNaN(valueInUSD) ? 0 : valueInUSD,
     });
   };
 
   const formatNumber = (num: number) => {
+    const numInBRL = num * brlRate;
     const options: Intl.NumberFormatOptions = {
-      minimumFractionDigits: 2, // Always show at least 2 decimal places
+      minimumFractionDigits: 2,
     };
 
-    if (num >= 1000) {
-      options.maximumFractionDigits = 2; // e.g., 1,234.56
-    } else if (num >= 1) {
-      options.maximumFractionDigits = 4; // e.g., 12.3456
-    } else if (num >= 0.01) { // For numbers like 0.231, 0.919
-      options.maximumFractionDigits = 6; // e.g., 0.123456
-    } else { // For very small numbers like SHIB
-      options.maximumFractionDigits = 8; // e.g., 0.00001234
+    if (numInBRL >= 1000) {
+      options.maximumFractionDigits = 2;
+    } else if (numInBRL >= 1) {
+      options.maximumFractionDigits = 4;
+    } else if (numInBRL >= 0.01) {
+      options.maximumFractionDigits = 6;
+    } else {
+      options.maximumFractionDigits = 8;
     }
 
-    return num.toLocaleString('pt-BR', options);
+    return numInBRL.toLocaleString('pt-BR', options);
   };
 
   return (
