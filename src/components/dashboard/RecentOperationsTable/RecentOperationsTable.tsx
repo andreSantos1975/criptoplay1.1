@@ -31,7 +31,17 @@ interface Trade {
 const fetchTrades = async (): Promise<Trade[]> => {
   const response = await fetch("/api/trades");
   if (!response.ok) throw new Error("Falha ao buscar as operações.");
-  return response.json();
+  const data = await response.json();
+  // --- DEBUG LOG ---
+  console.log("Raw trades data from API:", data);
+  // --- END DEBUG LOG ---
+  return data.map((trade: any) => ({
+    ...trade,
+    entryPrice: parseFloat(trade.entryPrice) || 0,
+    exitPrice: trade.exitPrice != null ? parseFloat(trade.exitPrice) : null,
+    quantity: parseFloat(trade.quantity) || 0,
+    pnl: trade.pnl != null ? parseFloat(trade.pnl) : null,
+  }));
 };
 
 // Helper para formatar moeda
