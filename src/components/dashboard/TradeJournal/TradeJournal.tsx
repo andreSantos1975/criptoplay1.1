@@ -69,12 +69,12 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
       options.maximumFractionDigits = 8;
     }
 
-    return num.toLocaleString('pt-BR', options);
+    return num.toLocaleString('pt-BR', options).replace(/,/g, '.');
   };
 
   const formatCurrencyBRL = (num: number): string => {
     if (isNaN(num) || num === null) return 'R$ 0,00';
-    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }).replace(/,/g, '.');
   };
 
   const { data: usdtToBrlData, isLoading: usdtToBrlLoading, error: usdtToBrlError } = useQuery({

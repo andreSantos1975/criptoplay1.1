@@ -54,7 +54,7 @@ export const TradePanel = ({ tradeLevels, onLevelsChange }: TradePanelProps) => 
       options.maximumFractionDigits = 8;
     }
 
-    return numInBRL.toLocaleString('pt-BR', options);
+    return numInBRL.toLocaleString('pt-BR', options).replace(/,/g, '.');
   };
 
   return (
