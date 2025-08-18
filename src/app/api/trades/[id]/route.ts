@@ -53,6 +53,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const quantity = tradeToClose.quantity;
     let pnl: Decimal;
 
+    // --- DEBUG LOG ---
+    console.log('--- PNL Calculation Debug ---');
+    console.log('Trade ID:', tradeId);
+    console.log('Entry Price:', entryPrice.toString());
+    console.log('Exit Price (from Binance):', exitPrice.toString());
+    console.log('Quantity:', quantity.toString());
+    // --- END DEBUG LOG ---
+
     if (tradeToClose.type === 'compra' || tradeToClose.type === 'long') {
       pnl = (exitPrice.minus(entryPrice)).times(quantity);
     } else { // 'venda' or 'short'
