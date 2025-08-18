@@ -81,9 +81,28 @@ interface CryptoListProps {
 }
 
 export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) => {
+  const { data: exchangeRateData } = useQuery({
+    queryKey: ["exchangeRate"],
+    queryFn: async () => {
+      const response = await fetch("/api/exchange-rate");
+      if (!response.ok) throw new Error("Failed to fetch exchange rate");
+      return response.json();
+    },
+    refetchInterval: 60000, // Refetch every minute
+  });
+
   const { data: cryptos, isLoading, error } = useQuery<CryptoData[]>({
-    queryKey: ["cryptos", watchedSymbols],
-    queryFn: () => fetchCryptoData(watchedSymbols),
+    queryKey: ["cryptos", watchedSymbols, exchangeRateData],
+    queryFn: async () => {
+      const data = await fetchCryptoData(watchedSymbols);
+      const brlRate = exchangeRateData?.usdtToBrl || 1;
+      return data.map(crypto => ({
+        ...crypto,
+        current_price: crypto.current_price * brlRate,
+        quote_volume: crypto.quote_volume * brlRate,
+      }));
+    },
+    enabled: !!exchangeRateData,
     refetchInterval: 30000,
   });
 

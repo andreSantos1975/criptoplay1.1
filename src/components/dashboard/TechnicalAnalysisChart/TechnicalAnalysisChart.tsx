@@ -89,22 +89,36 @@ export const TechnicalAnalysisChart = memo(
       'DOGEUSDT',
       'SHIBUSDT',
     ]);
+    const { data: exchangeRateData } = useQuery({
+      queryKey: ["exchangeRate"],
+      queryFn: async () => {
+        const response = await fetch("/api/exchange-rate");
+        if (!response.ok) throw new Error("Failed to fetch exchange rate");
+        return response.json();
+      },
+      refetchInterval: 60000, // Refetch every minute
+    });
+
     const { data: chartData, isLoading, error } = useQuery({
-      queryKey: ["binanceKlines", interval, selectedCrypto], // Use selectedCrypto
+      queryKey: ["binanceKlines", interval, selectedCrypto, exchangeRateData], // Depend on exchangeRateData
       queryFn: async () => {
         const response = await fetch(
-          `/api/binance/klines?symbol=${selectedCrypto}&interval=${interval}` // Use selectedCrypto
+          `/api/binance/klines?symbol=${selectedCrypto}&interval=${interval}`
         );
         if (!response.ok) throw new Error("Network response was not ok");
         const data: BinanceKlineData[] = await response.json();
+        
+        const brlRate = exchangeRateData?.usdtToBrl || 1; // Default to 1 if rate not available
+
         return data.map((k) => ({
           time: (k[0] / 1000) as UTCTimestamp,
-          open: parseFloat(k[1]),
-          high: parseFloat(k[2]),
-          low: parseFloat(k[3]),
-          close: parseFloat(k[4]),
+          open: parseFloat(k[1]) * brlRate,
+          high: parseFloat(k[2]) * brlRate,
+          low: parseFloat(k[3]) * brlRate,
+          close: parseFloat(k[4]) * brlRate,
         }));
       },
+      enabled: !!exchangeRateData, // Only run this query when exchange rate is available
       refetchInterval: 60000,
     });
 
@@ -130,6 +144,9 @@ export const TechnicalAnalysisChart = memo(
         crosshair: { mode: CrosshairMode.Normal },
         handleScroll: true,
         handleScale: true,
+        localization: {
+          priceFormatter: (price: number) => `R$ ${price.toFixed(2)}`,
+        },
       });
       chartRef.current = chart; // Store the new chart instance
 
@@ -141,10 +158,10 @@ export const TechnicalAnalysisChart = memo(
         wickUpColor: "#26a69a",
         wickDownColor: "#ef5350",
         title: selectedCrypto,
-        priceFormat: { // Add this block
+        priceFormat: {
           type: 'price',
-          precision: 8, // Set a high precision
-          minMove: 0.00000001, // Smallest price increment
+          precision: 2,
+          minMove: 0.01,
         },
       });
       candlestickSeries.setData(chartData);
@@ -154,9 +171,10 @@ export const TechnicalAnalysisChart = memo(
       const primarySeries = candlestickSeries;
 
       if (primarySeries) {
+        const brlRate = exchangeRateData?.usdtToBrl || 1;
         const createPriceLine = (price: number, color: string, title: string) =>
           primarySeries.createPriceLine({
-            price,
+            price: price * brlRate,
             color,
             lineWidth: 2,
             lineStyle: LineStyle.Dashed,
@@ -177,7 +195,9 @@ export const TechnicalAnalysisChart = memo(
         // já estava arrastando -> solta e confirma
         if (draggedLineRef.current) {
           const { key, line } = draggedLineRef.current;
-          onLevelsChange({ ...latestTradeLevelsRef.current, [key]: line.options().price });
+          const brlRate = exchangeRateData?.usdtToBrl || 1;
+          const priceInUSD = line.options().price / brlRate;
+          onLevelsChange({ ...latestTradeLevelsRef.current, [key]: priceInUSD });
           draggedLineRef.current = null;
           chart.applyOptions({ handleScroll: true, handleScale: true }); // Use local 'chart' variable
           return;
@@ -233,13 +253,14 @@ export const TechnicalAnalysisChart = memo(
     }, [chartData, selectedCrypto]); // Depend on selectedCrypto
 
     useEffect(() => {
+      const brlRate = exchangeRateData?.usdtToBrl || 1;
       if (priceLinesRef.current.entry)
-        priceLinesRef.current.entry.applyOptions({ price: tradeLevels.entry });
+        priceLinesRef.current.entry.applyOptions({ price: tradeLevels.entry * brlRate });
       if (priceLinesRef.current.takeProfit)
-        priceLinesRef.current.takeProfit.applyOptions({ price: tradeLevels.takeProfit });
+        priceLinesRef.current.takeProfit.applyOptions({ price: tradeLevels.takeProfit * brlRate });
       if (priceLinesRef.current.stopLoss)
-        priceLinesRef.current.stopLoss.applyOptions({ price: tradeLevels.stopLoss });
-    }, [tradeLevels]);
+        priceLinesRef.current.stopLoss.applyOptions({ price: tradeLevels.stopLoss * brlRate });
+    }, [tradeLevels, exchangeRateData]);
 
     if (isLoading) return <div>Loading chart...</div>;
     if (error) return <div>Error fetching chart data</div>;
