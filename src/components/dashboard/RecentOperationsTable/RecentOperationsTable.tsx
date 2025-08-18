@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -76,10 +77,25 @@ const formatDate = (dateString: string | undefined): string => {
   });
 };
 
+interface CryptoData {
+  symbol: string;
+  lastPrice: string;
+}
+
+const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
+  const response = await fetch("https://api.binance.com/api/v3/ticker/24hr");
+  if (!response.ok) {
+    throw new Error("Erro ao buscar dados da Binance API");
+  }
+  const data = await response.json();
+  return data.filter((crypto: any) => symbols.includes(crypto.symbol));
+};
+
 
 
 export const RecentOperationsTable = () => {
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<'open' | 'closed'>('open');
 
   const { data: exchangeRateData } = useQuery({
     queryKey: ["exchangeRate"],
@@ -104,6 +120,14 @@ export const RecentOperationsTable = () => {
       }));
     },
     enabled: !!exchangeRateData,
+  });
+
+  const symbols = trades?.filter(t => t.status === 'OPEN').map(t => t.symbol) || [];
+  const { data: cryptoData, isLoading: isLoadingCryptoData } = useQuery<CryptoData[]>({ 
+    queryKey: ['cryptoData', symbols], 
+    queryFn: () => fetchCryptoData(symbols),
+    enabled: symbols.length > 0,
+    refetchInterval: 30000,
   });
 
   
@@ -132,22 +156,51 @@ export const RecentOperationsTable = () => {
     }
   };
 
-  const calculatePnlPercent = (trade: Trade): string => {
-    if (trade.status !== 'CLOSED' || !trade.pnl) return "N/A";
+  const calculatePnlPercent = (trade: Trade, currentPrice?: number): string => {
     const initialCost = trade.entryPrice * trade.quantity;
     if (initialCost === 0) return "N/A";
-    const percent = (trade.pnl / initialCost) * 100;
-    return `${percent.toFixed(2)}%`;
+
+    if (trade.status === 'CLOSED' && trade.pnl) {
+      const percent = (trade.pnl / initialCost) * 100;
+      return `${percent.toFixed(2)}%`;
+    }
+
+    if (trade.status === 'OPEN' && currentPrice) {
+      const pnl = (trade.type === 'compra' ? (currentPrice - trade.entryPrice) : (trade.entryPrice - currentPrice)) * trade.quantity;
+      const percent = (pnl / initialCost) * 100;
+      return `${percent.toFixed(2)}%`;
+    }
+
+    return "N/A";
   };
 
   const renderTableContent = () => {
-    const isLoading = isLoadingTrades;
-    if (isLoading) return <TableRow><TableCell colSpan={10} className="text-center">Carregando...</TableCell></TableRow>;
-    if (errorTrades) return <TableRow><TableCell colSpan={10} className="text-center text-red-500">Erro: {errorTrades.message}</TableCell></TableRow>;
-    if (!trades || trades.length === 0) return <TableRow><TableCell colSpan={10} className="text-center">Nenhuma operação encontrada.</TableCell></TableRow>;
+    const isLoading = isLoadingTrades || isLoadingCryptoData;
+    if (isLoading) return <TableRow><TableCell colSpan={activeTab === 'open' ? 10 : 9} className="text-center">Carregando...</TableCell></TableRow>;
+    if (errorTrades) return <TableRow><TableCell colSpan={activeTab === 'open' ? 10 : 9} className="text-center text-red-500">Erro: {errorTrades.message}</TableCell></TableRow>;
+    if (!trades || trades.length === 0) return <TableRow><TableCell colSpan={activeTab === 'open' ? 10 : 9} className="text-center">Nenhuma operação encontrada.</TableCell></TableRow>;
 
-    return trades.map((trade) => {
-      const pnl = trade.status === 'CLOSED' ? trade.pnl : null;
+    const filteredTrades = trades.filter(trade => {
+      if (activeTab === 'open') {
+        return trade.status === 'OPEN';
+      } else {
+        return trade.status === 'CLOSED';
+      }
+    });
+
+    if (filteredTrades.length === 0) return <TableRow><TableCell colSpan={activeTab === 'open' ? 10 : 9} className="text-center">Nenhuma operação encontrada para esta categoria.</TableCell></TableRow>;
+
+    return filteredTrades.map((trade) => {
+      const currentCrypto = cryptoData?.find(c => c.symbol === trade.symbol);
+      const currentPrice = currentCrypto ? parseFloat(currentCrypto.lastPrice) * (exchangeRateData?.usdtToBrl || 1) : undefined;
+
+      let pnl = null;
+      if (trade.status === 'CLOSED') {
+        pnl = trade.pnl;
+      } else if (trade.status === 'OPEN' && currentPrice) {
+        pnl = (trade.type === 'compra' ? (currentPrice - trade.entryPrice) : (trade.entryPrice - currentPrice)) * trade.quantity;
+      }
+
       const isProfit = pnl !== null && pnl >= 0;
 
       return (
@@ -161,7 +214,7 @@ export const RecentOperationsTable = () => {
             {formatCurrency(pnl)}
           </TableCell>
           <TableCell className={pnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
-            {calculatePnlPercent(trade)}
+            {calculatePnlPercent(trade, currentPrice)}
           </TableCell>
           <TableCell>
             <span className={`${styles.status} ${trade.status === 'CLOSED' ? styles.statusPaid : styles.statusPending}`}>
@@ -173,18 +226,20 @@ export const RecentOperationsTable = () => {
               ? formatDate(trade.entryDate)
               : `${formatDate(trade.entryDate)} -> ${formatDate(trade.exitDate)}`}
           </TableCell>
-          <TableCell>
-            {trade.status === 'OPEN' && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleCloseTrade(trade.id)}
-                disabled={closeTradeMutation.isPending && closeTradeMutation.variables === trade.id}
-              >
-                {closeTradeMutation.isPending && closeTradeMutation.variables === trade.id ? 'Fechando...' : 'Fechar'}
-              </Button>
-            )}
-          </TableCell>
+          {activeTab === 'open' && (
+            <TableCell>
+              {trade.status === 'OPEN' && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleCloseTrade(trade.id)}
+                  disabled={closeTradeMutation.isPending && closeTradeMutation.variables === trade.id}
+                >
+                  {closeTradeMutation.isPending && closeTradeMutation.variables === trade.id ? 'Fechando...' : 'Fechar'}
+                </Button>
+              )}
+            </TableCell>
+          )}
         </TableRow>
       );
     });
@@ -192,8 +247,26 @@ export const RecentOperationsTable = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Operações Recentes</CardTitle>
+      <CardHeader className={styles.cardHeader}>
+        <CardTitle>Operações</CardTitle>
+        <div className={styles.toggleButtons}>
+          <Button
+            variant={activeTab === 'open' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('open')}
+            className={styles.toggleButton}
+          >
+            Abertas
+          </Button>
+          <Button
+            variant={activeTab === 'closed' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('closed')}
+            className={styles.toggleButton}
+          >
+            Fechadas
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -208,7 +281,7 @@ export const RecentOperationsTable = () => {
               <TableHead>Resultado (%)</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Data/Hora</TableHead>
-              <TableHead>Ações</TableHead>
+              {activeTab === 'open' && <TableHead>Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
