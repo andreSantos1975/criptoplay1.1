@@ -238,6 +238,9 @@ export const DashboardOverview = () => {
     );
   }
 
+  const lastPortfolioValue = portfolioData.length > 0 ? portfolioData[portfolioData.length - 1].portfolio : 0;
+  const isNegative = lastPortfolioValue < 0;
+
   return (
     <div className={styles.overviewContainer}>
       <Card>
@@ -268,8 +271,8 @@ export const DashboardOverview = () => {
               <AreaChart data={portfolioData}>
                 <defs>
                   <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--chart-green))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--chart-green))" stopOpacity={0} />
+                    <stop offset="5%" stopColor={isNegative ? "hsl(var(--chart-red))" : "hsl(var(--chart-green))"} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={isNegative ? "hsl(var(--chart-red))" : "hsl(var(--chart-green))"} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -302,7 +305,7 @@ export const DashboardOverview = () => {
                 <Area
                   type="monotone"
                   dataKey="portfolio"
-                  stroke="hsl(var(--chart-green))"
+                  stroke={isNegative ? "hsl(var(--chart-red))" : "hsl(var(--chart-green))"}
                   fillOpacity={1}
                   fill="url(#portfolioGradient)"
                   strokeWidth={2}

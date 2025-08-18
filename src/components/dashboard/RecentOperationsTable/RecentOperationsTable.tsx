@@ -74,9 +74,30 @@ const formatDate = (dateString: string | undefined): string => {
 
 export const RecentOperationsTable = () => {
   const queryClient = useQueryClient();
+
+  const { data: exchangeRateData } = useQuery({
+    queryKey: ["exchangeRate"],
+    queryFn: async () => {
+      const response = await fetch("/api/exchange-rate");
+      if (!response.ok) throw new Error("Failed to fetch exchange rate");
+      return response.json();
+    },
+    refetchInterval: 60000,
+  });
+
   const { data: trades, isLoading, error } = useQuery<Trade[]>({ 
-    queryKey: ['trades'], 
-    queryFn: fetchTrades 
+    queryKey: ['trades', exchangeRateData], 
+    queryFn: async () => {
+      const data = await fetchTrades();
+      const brlRate = exchangeRateData?.usdtToBrl || 1;
+      return data.map(trade => ({
+        ...trade,
+        entryPrice: trade.entryPrice * brlRate,
+        exitPrice: trade.exitPrice ? trade.exitPrice * brlRate : undefined,
+        pnl: trade.pnl ? trade.pnl * brlRate : undefined,
+      }));
+    },
+    enabled: !!exchangeRateData,
   });
 
   // Mutação para fechar (atualizar) um trade
