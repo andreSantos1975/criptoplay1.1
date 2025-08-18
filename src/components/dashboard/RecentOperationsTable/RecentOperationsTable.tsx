@@ -48,15 +48,19 @@ const fetchTrades = async (): Promise<Trade[]> => {
 const formatCurrency = (value: number | null | undefined) => {
   if (value === null || value === undefined) return "N/A";
 
-  // Aumenta a precisão para valores fracionários pequenos
   const options: Intl.NumberFormatOptions = {
     style: "currency",
-    currency: "BRL", // Changed to BRL
+    currency: "BRL",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 6, // Mostra até 6 casas decimais se necessário
   };
 
-  return new Intl.NumberFormat("pt-BR", options).format(value); // Changed to pt-BR
+  if (Math.abs(value) < 1.0) {
+    options.maximumFractionDigits = 8;
+  } else {
+    options.maximumFractionDigits = 2;
+  }
+
+  return new Intl.NumberFormat("pt-BR", options).format(value);
 };
 
 // Helper para formatar data e hora
@@ -146,8 +150,8 @@ export const RecentOperationsTable = () => {
           <TableCell>{trade.symbol.replace("USDT", "")}</TableCell>
           <TableCell>{trade.type}</TableCell>
           <TableCell>{trade.quantity}</TableCell>
-          <TableCell>{formatCurrency(trade.entryPrice)}</TableCell>
-          <TableCell>{formatCurrency(trade.exitPrice)}</TableCell>
+          <TableCell>{formatCurrency(trade.entryPrice * trade.quantity)}</TableCell>
+          <TableCell>{formatCurrency(trade.exitPrice ? trade.exitPrice * trade.quantity : null)}</TableCell>
           <TableCell className={pnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
             {formatCurrency(pnl)}
           </TableCell>
@@ -193,8 +197,8 @@ export const RecentOperationsTable = () => {
               <TableHead>Crypto</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Quantidade</TableHead>
-              <TableHead>Preço Entrada</TableHead>
-              <TableHead>Preço Saída</TableHead>
+              <TableHead>Valor Entrada</TableHead>
+              <TableHead>Valor Saída</TableHead>
               <TableHead>Resultado</TableHead>
               <TableHead>Resultado (%)</TableHead>
               <TableHead>Status</TableHead>
