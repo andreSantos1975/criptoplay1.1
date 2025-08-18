@@ -53,9 +53,23 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
 
   const [tradeCostInBRL, setTradeCostInBRL] = useState<number | null>(null);
 
-  const formatNumber = (num: number): string => {
+  const formatNumber = (num: number) => {
     if (isNaN(num)) return '';
-    return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 8 });
+    const options: Intl.NumberFormatOptions = {
+      minimumFractionDigits: 2,
+    };
+
+    if (num >= 1000) {
+      options.maximumFractionDigits = 2;
+    } else if (num >= 1) {
+      options.maximumFractionDigits = 4;
+    } else if (num >= 0.01) {
+      options.maximumFractionDigits = 6;
+    } else {
+      options.maximumFractionDigits = 8;
+    }
+
+    return num.toLocaleString('pt-BR', options);
   };
 
   const formatCurrencyBRL = (num: number): string => {
@@ -68,9 +82,9 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
       setTradeData(prev => ({
         ...prev,
         ativo: selectedCrypto,
-        precoEntrada: formatNumber(tradeLevels.entry),
-        takeProfit: formatNumber(tradeLevels.takeProfit),
-        stopLoss: formatNumber(tradeLevels.stopLoss),
+        precoEntrada: tradeLevels.entry > 0 ? formatNumber(tradeLevels.entry) : '',
+        takeProfit: tradeLevels.takeProfit > 0 ? formatNumber(tradeLevels.takeProfit) : '',
+        stopLoss: tradeLevels.stopLoss > 0 ? formatNumber(tradeLevels.stopLoss) : '',
       }));
     }
   }, [tradeLevels, selectedCrypto]);
