@@ -10,32 +10,41 @@ interface AssetHeaderProps {
   low: number;
 }
 
+const formatAsUSD = (value: number) => {
+  return value.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6, // Show more precision for crypto
+  });
+};
+
 const AssetHeader: React.FC<AssetHeaderProps> = ({ symbol, price, open, high, low }) => {
   const change = price - open;
-  const changePercent = (change / open) * 100;
+  const changePercent = open !== 0 ? (change / open) * 100 : 0;
   const isPositive = change >= 0;
 
   return (
     <div className={styles.headerContainer}>
       <div className={styles.symbolInfo}>
         <h2 className={styles.symbol}>{symbol}</h2>
-        <p className={styles.price}>{price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+        <p className={styles.price}>{formatAsUSD(price)}</p>
         <p className={`${styles.change} ${isPositive ? styles.positive : styles.negative}`}>
-          {change.toFixed(2)} ({changePercent.toFixed(2)}%)
+          {change.toFixed(4)} ({changePercent.toFixed(2)}%)
         </p>
       </div>
       <div className={styles.marketInfo}>
         <div className={styles.infoItem}>
           <span className={styles.label}>Abertura</span>
-          <span className={styles.value}>{open.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+          <span className={styles.value}>{formatAsUSD(open)}</span>
         </div>
         <div className={styles.infoItem}>
           <span className={styles.label}>Máxima</span>
-          <span className={styles.value}>{high.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+          <span className={styles.value}>{formatAsUSD(high)}</span>
         </div>
         <div className={styles.infoItem}>
           <span className={styles.label}>Mínima</span>
-          <span className={styles.value}>{low.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+          <span className={styles.value}>{formatAsUSD(low)}</span>
         </div>
       </div>
     </div>

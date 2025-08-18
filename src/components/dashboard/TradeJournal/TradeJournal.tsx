@@ -119,7 +119,14 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
 
   const parseNumericValue = (value: string): number => {
     if (!value) return 0;
-    const cleanedValue = value.replace(/\./g, '').replace(/,/g, '.');
+    let cleanedValue = value;
+    if (value.includes(',')) {
+      // If comma is present, assume it's the decimal separator
+      cleanedValue = value.replace(/\./g, '').replace(/,/g, '.');
+    } else {
+      // If no comma, assume period is the decimal separator or it's an integer
+      // parseFloat will handle it correctly
+    }
     return parseFloat(cleanedValue) || 0;
   };
 
