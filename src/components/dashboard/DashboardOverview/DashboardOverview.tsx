@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AreaChart,
@@ -12,6 +13,7 @@ import {
 } from "recharts";
 import styles from "./DashboardOverview.module.css";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 
 // Interface for a Trade
 interface Trade {
@@ -24,7 +26,7 @@ interface Trade {
   entryPrice: number;
   exitPrice?: number;
   quantity: number;
-  pnl?: number; // Now guaranteed to be a number after fetchTrades
+  pnl?: number;
 }
 
 // Interface for CapitalMovement
@@ -46,17 +48,13 @@ const fetchTrades = async (): Promise<Trade[]> => {
     throw new Error("Falha ao buscar as operações.");
   }
   const data = await response.json();
-  // Map over the data to convert Decimal objects (from Prisma) to numbers
-  return data.map((trade: any) => {
-    console.log("Raw trade.pnl from API:", trade.pnl, "Type:", typeof trade.pnl);
-    return {
-      ...trade,
-      entryPrice: parseFloat(trade.entryPrice) || 0, // Robust parsing
-      exitPrice: trade.exitPrice != null ? (parseFloat(trade.exitPrice) || 0) : null,
-      quantity: parseFloat(trade.quantity) || 0,
-      pnl: trade.pnl != null ? (parseFloat(trade.pnl) || 0) : null,
-    };
-  });
+  return data.map((trade: any) => ({
+    ...trade,
+    entryPrice: parseFloat(trade.entryPrice) || 0,
+    exitPrice: trade.exitPrice != null ? parseFloat(trade.exitPrice) : null,
+    quantity: parseFloat(trade.quantity) || 0,
+    pnl: trade.pnl != null ? parseFloat(trade.pnl) : null,
+  }));
 };
 
 // Function to fetch capital movements
@@ -68,7 +66,7 @@ const fetchCapitalMovements = async (): Promise<CapitalMovement[]> => {
   const data = await response.json();
   return data.map((movement: any) => ({
     ...movement,
-    amount: parseFloat(movement.amount) || 0, // Robust parsing
+    amount: parseFloat(movement.amount) || 0,
   }));
 };
 
@@ -84,80 +82,89 @@ const formatCurrency = (value: number | null | undefined) => {
   return new Intl.NumberFormat("pt-BR", options).format(value);
 };
 
-// Function to generate portfolio data from trades and capital movements
+// Function to generate portfolio data
 const generatePortfolioData = (
   trades: Trade[],
   capitalMovements: CapitalMovement[],
-  defaultInitialCapital: number = 0 // Default to 0 if no movements
+  granularity: 'weekly' | 'monthly',
+  defaultInitialCapital: number = 0
 ) => {
-  console.log("--- generatePortfolioData START ---");
-  console.log("Input Trades:", trades);
-  console.log("Input Capital Movements:", capitalMovements);
+  console.log(`--- generatePortfolioData START (Granularity: ${granularity}) ---`);
 
-  // Calculate the net initial capital from movements
   let calculatedInitialCapital = defaultInitialCapital;
   capitalMovements.forEach(movement => {
     if (movement.type === 'DEPOSIT') {
-      calculatedInitialCapital += Number(movement.amount); // Ensure it's a number
+      calculatedInitialCapital += Number(movement.amount);
     } else if (movement.type === 'WITHDRAWAL') {
-      calculatedInitialCapital -= Number(movement.amount); // Ensure it's a number
-    } 
+      calculatedInitialCapital -= Number(movement.amount);
+    }
   });
-  console.log("Calculated Initial Capital:", calculatedInitialCapital);
 
-  // If no trades, return data based on calculatedInitialCapital
-  if (!trades || trades.length === 0) {
-    console.log("No trades, returning default data.");
-    console.log("--- generatePortfolioData END ---");
-    return [
-      { date: "Jan", portfolio: calculatedInitialCapital },
-      { date: "Fev", portfolio: calculatedInitialCapital },
-      { date: "Mar", portfolio: calculatedInitialCapital },
-      { date: "Abr", portfolio: calculatedInitialCapital },
-      { date: "Mai", portfolio: calculatedInitialCapital },
-      { date: "Jun", portfolio: calculatedInitialCapital },
+  const closedTrades = trades.filter(t => t.status === 'CLOSED' && t.pnl != null && t.exitDate != null);
+
+  if (closedTrades.length === 0) {
+    console.log("No closed trades, returning default data based on capital.");
+    const defaultData = [
+      { date: "Início", portfolio: calculatedInitialCapital },
     ];
+    return defaultData;
   }
 
-  const monthlyPnl: { [key: string]: number } = {};
+  const chartData: { date: string; portfolio: number }[] = [];
+  let currentPortfolioValue = calculatedInitialCapital;
 
-  // Filter for closed trades with PnL and aggregate by month
-  trades.filter(t => t.status === 'CLOSED' && t.pnl != null && t.exitDate != null).forEach(trade => { 
-    const exitDate = new Date(trade.exitDate!); 
-    if (isNaN(exitDate.getTime())) { 
-      console.warn("Invalid exitDate for trade, skipping:", trade);
-      return; 
-    }
-    const yearMonth = `${exitDate.getFullYear()}-${(exitDate.getMonth() + 1).toString().padStart(2, '0')}`;
-    monthlyPnl[yearMonth] = Number(monthlyPnl[yearMonth] || 0) + Number(trade.pnl || 0); // Explicitly convert to number
-  });
-  console.log("Monthly PnL:", monthlyPnl);
+  if (granularity === 'monthly') {
+    const monthlyPnl: { [key: string]: number } = {};
+    closedTrades.forEach(trade => {
+      const exitDate = new Date(trade.exitDate!);
+      if (isNaN(exitDate.getTime())) return;
+      const yearMonth = `${exitDate.getFullYear()}-${(exitDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      monthlyPnl[yearMonth] = (monthlyPnl[yearMonth] || 0) + Number(trade.pnl || 0);
+    });
 
-  const sortedMonths = Object.keys(monthlyPnl).sort();
-  const chartData = [];
-  let currentPortfolioValue = calculatedInitialCapital; // Start from calculated capital
+    const sortedMonths = Object.keys(monthlyPnl).sort();
+    sortedMonths.forEach(yearMonth => {
+      currentPortfolioValue += monthlyPnl[yearMonth];
+      const [year, month] = yearMonth.split('-');
+      const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleString('pt-BR', { month: 'short' });
+      chartData.push({ date: `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`, portfolio: currentPortfolioValue });
+    });
 
-  // Generate cumulative portfolio data
-  sortedMonths.forEach(yearMonth => {
-    currentPortfolioValue += monthlyPnl[yearMonth];
-    const [year, month] = yearMonth.split('-');
-    const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleString('pt-BR', { month: 'short' });
-    chartData.push({ date: `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`, portfolio: currentPortfolioValue });
-  });
+  } else { // weekly
+    const weeklyPnl: { [key: string]: number } = {};
+    const getMonday = (d: Date) => {
+      const date = new Date(d);
+      const day = date.getDay();
+      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(date.setDate(diff));
+      monday.setHours(0, 0, 0, 0);
+      return monday;
+    };
+
+    closedTrades.forEach(trade => {
+      const exitDate = new Date(trade.exitDate!);
+      if (isNaN(exitDate.getTime())) return;
+      const monday = getMonday(exitDate);
+      const weekKey = monday.toISOString().split('T')[0];
+      weeklyPnl[weekKey] = (weeklyPnl[weekKey] || 0) + Number(trade.pnl || 0);
+    });
+
+    const sortedWeeks = Object.keys(weeklyPnl).sort();
+    sortedWeeks.forEach(weekKey => {
+      currentPortfolioValue += weeklyPnl[weekKey];
+      const date = new Date(weekKey);
+      const monthName = date.toLocaleString('pt-BR', { month: 'short' });
+      const day = date.getDate();
+      const label = `${day} ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+      chartData.push({ date: label, portfolio: currentPortfolioValue });
+    });
+  }
+
   console.log("Final Chart Data:", chartData);
   console.log("--- generatePortfolioData END ---");
 
-  // If chartData is empty after processing trades, return initial data
   if (chartData.length === 0) {
-    console.log("Chart data empty after processing, returning default.");
-    return [
-      { date: "Jan", portfolio: calculatedInitialCapital },
-      { date: "Fev", portfolio: calculatedInitialCapital },
-      { date: "Mar", portfolio: calculatedInitialCapital },
-      { date: "Abr", portfolio: calculatedInitialCapital },
-      { date: "Mai", portfolio: calculatedInitialCapital },
-      { date: "Jun", portfolio: calculatedInitialCapital },
-    ];
+    return [{ date: "Início", portfolio: calculatedInitialCapital }];
   }
 
   return chartData;
@@ -165,20 +172,22 @@ const generatePortfolioData = (
 
 
 export const DashboardOverview = () => {
-  const { data: trades, isLoading: isLoadingTrades, error: errorTrades } = useQuery<Trade[]>({ 
-    queryKey: ['trades'], 
-    queryFn: fetchTrades, 
+  const [chartGranularity, setChartGranularity] = useState<'weekly' | 'monthly'>('monthly');
+
+  const { data: trades, isLoading: isLoadingTrades, error: errorTrades } = useQuery<Trade[]>({
+    queryKey: ['trades'],
+    queryFn: fetchTrades,
   });
 
-  const { data: capitalMovements, isLoading: isLoadingCapital, error: errorCapital } = useQuery<CapitalMovement[]>({ 
-    queryKey: ['capitalMovements'], 
-    queryFn: fetchCapitalMovements, 
+  const { data: capitalMovements, isLoading: isLoadingCapital, error: errorCapital } = useQuery<CapitalMovement[]>({
+    queryKey: ['capitalMovements'],
+    queryFn: fetchCapitalMovements,
   });
 
   const isLoading = isLoadingTrades || isLoadingCapital;
   const error = errorTrades || errorCapital;
 
-  const portfolioData = generatePortfolioData(trades || [], capitalMovements || []); 
+  const portfolioData = generatePortfolioData(trades || [], capitalMovements || [], chartGranularity);
 
   if (isLoading) {
     return (
@@ -200,10 +209,27 @@ export const DashboardOverview = () => {
 
   return (
     <div className={styles.overviewContainer}>
-      {/* Portfolio Performance Chart */}
       <Card>
-        <CardHeader>
+        <CardHeader className={styles.cardHeader}>
           <CardTitle>Evolução do Portfólio</CardTitle>
+          <div className={styles.toggleButtons}>
+            <Button
+              variant={chartGranularity === 'weekly' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setChartGranularity('weekly')}
+              className={styles.toggleButton}
+            >
+              Semanal
+            </Button>
+            <Button
+              variant={chartGranularity === 'monthly' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setChartGranularity('monthly')}
+              className={styles.toggleButton}
+            >
+              Mensal
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className={styles.chartContainer}>
@@ -228,7 +254,7 @@ export const DashboardOverview = () => {
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(value) => formatCurrency(value)} // Use formatCurrency for Y-axis
+                  tickFormatter={(value) => formatCurrency(value)}
                 />
                 <Tooltip
                   contentStyle={{
@@ -238,12 +264,12 @@ export const DashboardOverview = () => {
                     color: "hsl(var(--foreground))",
                   }}
                   formatter={(value: number) => [
-                    formatCurrency(value), // Use formatCurrency for Tooltip
+                    formatCurrency(value),
                     "Portfólio",
                   ]}
                 />
                 <Area
-                  type="monotone" 
+                  type="monotone"
                   dataKey="portfolio"
                   stroke="hsl(var(--chart-green))"
                   fillOpacity={1}

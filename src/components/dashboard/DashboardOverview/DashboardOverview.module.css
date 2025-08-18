@@ -89,3 +89,19 @@
   background-color: hsla(38, 92%, 50%, 0.1);
   color: hsl(38, 92%, 60%);
 }
+
+/* Styles for the Card Header */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toggleButtons {
+  display: flex;
+  gap: 0.5rem; /* space between buttons */
+}
+
+.toggleButton {
+  /* Specific styles for toggle buttons if needed */
+}
