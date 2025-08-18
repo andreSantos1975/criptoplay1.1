@@ -76,6 +76,20 @@ const formatDate = (dateString: string | undefined): string => {
   });
 };
 
+interface CryptoData {
+  symbol: string;
+  lastPrice: string;
+}
+
+const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
+  const response = await fetch("https://api.binance.com/api/v3/ticker/24hr");
+  if (!response.ok) {
+    throw new Error("Erro ao buscar dados da Binance API");
+  }
+  const data = await response.json();
+  return data.filter((crypto: any) => symbols.includes(crypto.symbol));
+};
+
 export const RecentOperationsTable = () => {
   const queryClient = useQueryClient();
 
@@ -89,8 +103,9 @@ export const RecentOperationsTable = () => {
     refetchInterval: 60000,
   });
 
-  const { data: trades, isLoading, error } = useQuery<Trade[]>({ 
-    queryKey: ['trades', exchangeRateData], 
+  const { data: trades, isLoading: isLoadingTrades, error: errorTrades } = useQuery<Trade[]>({
+    queryKey: ['trades'],
+    queryKey: ['trades', exchangeRateData],
     queryFn: async () => {
       const data = await fetchTrades();
       const brlRate = exchangeRateData?.usdtToBrl || 1;
@@ -102,6 +117,14 @@ export const RecentOperationsTable = () => {
       }));
     },
     enabled: !!exchangeRateData,
+  });
+
+  const symbols = trades?.filter(t => t.status === 'OPEN').map(t => t.symbol) || [];
+  const { data: cryptoData, isLoading: isLoadingCryptoData } = useQuery<CryptoData[]>({ 
+    queryKey: ['cryptoData', symbols], 
+    queryFn: () => fetchCryptoData(symbols),
+    enabled: symbols.length > 0,
+    refetchInterval: 30000,
   });
 
   // Mutação para fechar (atualizar) um trade
@@ -128,21 +151,41 @@ export const RecentOperationsTable = () => {
     }
   };
 
-  const calculatePnlPercent = (trade: Trade): string => {
-    if (trade.status !== 'CLOSED' || !trade.pnl) return "N/A";
+  const calculatePnlPercent = (trade: Trade, currentPrice?: number): string => {
     const initialCost = trade.entryPrice * trade.quantity;
     if (initialCost === 0) return "N/A";
-    const percent = (trade.pnl / initialCost) * 100;
-    return `${percent.toFixed(2)}%`;
+
+    if (trade.status === 'CLOSED' && trade.pnl) {
+      const percent = (trade.pnl / initialCost) * 100;
+      return `${percent.toFixed(2)}%`;
+    }
+
+    if (trade.status === 'OPEN' && currentPrice) {
+      const pnl = (trade.type === 'compra' ? (currentPrice - trade.entryPrice) : (trade.entryPrice - currentPrice)) * trade.quantity;
+      const percent = (pnl / initialCost) * 100;
+      return `${percent.toFixed(2)}%`;
+    }
+
+    return "N/A";
   };
 
   const renderTableContent = () => {
-    if (isLoading) return <TableRow><TableCell colSpan={10} className="text-center">Carregando...</TableCell></TableRow>;
-    if (error) return <TableRow><TableCell colSpan={10} className="text-center text-red-500">Erro: {error.message}</TableCell></TableRow>;
-    if (!trades || trades.length === 0) return <TableRow><TableCell colSpan={10} className="text-center">Nenhuma operação encontrada.</TableCell></TableRow>;
+    const isLoading = isLoadingTrades || isLoadingCryptoData;
+    if (isLoading) return <TableRow><TableCell colSpan={11} className="text-center">Carregando...</TableCell></TableRow>;
+    if (errorTrades) return <TableRow><TableCell colSpan={11} className="text-center text-red-500">Erro: {errorTrades.message}</TableCell></TableRow>;
+    if (!trades || trades.length === 0) return <TableRow><TableCell colSpan={11} className="text-center">Nenhuma operação encontrada.</TableCell></TableRow>;
 
     return trades.map((trade) => {
-      const pnl = trade.status === 'CLOSED' ? trade.pnl : null;
+      const currentCrypto = cryptoData?.find(c => c.symbol === trade.symbol);
+      const currentPrice = currentCrypto ? parseFloat(currentCrypto.lastPrice) * (exchangeRateData?.usdtToBrl || 1) : undefined;
+
+      let pnl = null;
+      if (trade.status === 'CLOSED') {
+        pnl = trade.pnl;
+      } else if (trade.status === 'OPEN' && currentPrice) {
+        pnl = (trade.type === 'compra' ? (currentPrice - trade.entryPrice) : (trade.entryPrice - currentPrice)) * trade.quantity;
+      }
+
       const isProfit = pnl !== null && pnl >= 0;
 
       return (
@@ -152,11 +195,12 @@ export const RecentOperationsTable = () => {
           <TableCell>{trade.quantity}</TableCell>
           <TableCell>{formatCurrency(trade.entryPrice * trade.quantity)}</TableCell>
           <TableCell>{formatCurrency(trade.exitPrice ? trade.exitPrice * trade.quantity : null)}</TableCell>
+          <TableCell>{formatCurrency(currentPrice)}</TableCell>
           <TableCell className={pnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
             {formatCurrency(pnl)}
           </TableCell>
           <TableCell className={pnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
-            {calculatePnlPercent(trade)}
+            {calculatePnlPercent(trade, currentPrice)}
           </TableCell>
           <TableCell>
             <span className={`${styles.status} ${trade.status === 'CLOSED' ? styles.statusPaid : styles.statusPending}`}>
@@ -199,6 +243,7 @@ export const RecentOperationsTable = () => {
               <TableHead>Quantidade</TableHead>
               <TableHead>Valor Entrada</TableHead>
               <TableHead>Valor Saída</TableHead>
+              <TableHead>Preço Atual</TableHead>
               <TableHead>Resultado</TableHead>
               <TableHead>Resultado (%)</TableHead>
               <TableHead>Status</TableHead>
