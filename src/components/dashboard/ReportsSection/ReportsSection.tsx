@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -24,63 +24,211 @@ import {
   Cell,
   LineChart,
   Line,
+  Legend
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
 
-// --- Mock Data ---
-const dailyData = [
-  { period: "10/08/2025", operacoes: 5, lucro: 850, prejuizo: 200, retorno: 1.5 },
-  { period: "11/08/2025", operacoes: 7, lucro: 1200, prejuizo: 450, retorno: 2.1 },
-];
+// Interfaces (copied from DashboardOverview for consistency)
+interface Trade {
+  id: string;
+  symbol: string;
+  type: string;
+  status: 'OPEN' | 'CLOSED';
+  entryDate: string;
+  exitDate?: string;
+  entryPrice: number;
+  exitPrice?: number;
+  quantity: number;
+  pnl?: number;
+}
 
-const weeklyData = [
-  { period: "Semana 32", operacoes: 25, lucro: 3500, prejuizo: 1100, retorno: 5.2 },
-  { period: "Semana 33", operacoes: 31, lucro: 4100, prejuizo: 800, retorno: 6.9 },
-];
+interface CapitalMovement {
+  id: string;
+  userId: string;
+  amount: number;
+  type: 'DEPOSIT' | 'WITHDRAWAL';
+  date: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-const monthlyData = [
-  { period: "Julho 2025", operacoes: 45, lucro: 4500, prejuizo: 1200, retorno: 7.5 },
-  { period: "Agosto 2025", operacoes: 38, lucro: 3200, prejuizo: 900, retorno: 6.8 },
-];
+// Function to fetch trades (copied from DashboardOverview)
+const fetchTrades = async (): Promise<Trade[]> => {
+  const response = await fetch("/api/trades");
+  if (!response.ok) {
+    throw new Error("Falha ao buscar as operações.");
+  }
+  const data = await response.json();
+  return data.map((trade: any) => ({
+    ...trade,
+    entryPrice: parseFloat(trade.entryPrice) || 0,
+    exitPrice: trade.exitPrice != null ? parseFloat(trade.exitPrice) : null,
+    quantity: parseFloat(trade.quantity) || 0,
+    pnl: trade.pnl != null ? parseFloat(trade.pnl) : null,
+  }));
+};
 
-const yearlyData = [
-  { period: "2024", operacoes: 550, lucro: 45000, prejuizo: 15000, retorno: 30.0 },
-  { period: "2025", operacoes: 480, lucro: 38000, prejuizo: 11000, retorno: 27.0 },
-];
+// Function to fetch capital movements (copied from DashboardOverview)
+const fetchCapitalMovements = async (): Promise<CapitalMovement[]> => {
+  const response = await fetch("/api/capital-movements");
+  if (!response.ok) {
+    throw new Error("Falha ao buscar movimentos de capital.");
+  }
+  const data = await response.json();
+  return data.map((movement: any) => ({
+    ...movement,
+    amount: parseFloat(movement.amount) || 0,
+  }));
+};
 
-const profitLossData = [
-  { month: "Jan", profit: 2500, loss: -800 },
-  { month: "Fev", profit: 3200, loss: -1200 },
-  { month: "Mar", profit: 4100, loss: -900 },
-  { month: "Abr", profit: 3800, loss: -1500 },
-  { month: "Mai", profit: 4500, loss: -1100 },
-  { month: "Jun", profit: 5200, loss: -800 },
-];
+// Helper to format currency (copied from DashboardOverview)
+const formatCurrency = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return "N/A";
+  const options: Intl.NumberFormatOptions = {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6,
+  };
+  return new Intl.NumberFormat("pt-BR", options).format(value);
+};
 
-const cryptoDistribution = [
-  { name: "Bitcoin", value: 45, color: "hsl(var(--primary))" },
-  { name: "Ethereum", value: 30, color: "hsl(var(--chart-green))" },
-  { name: "Altcoins", value: 25, color: "hsl(var(--accent))" },
-];
+interface MonthlyReportData {
+  month: string; // e.g., "Jan 2025", "Fev 2025"
+  pnl: number;
+  deposits: number;
+  withdrawals: number;
+  tradeCount: number;
+}
 
-const investmentData = [
-  { month: "Jan", investment: 5000, returns: 5800 },
-  { month: "Fev", investment: 8000, returns: 9200 },
-  { month: "Mar", investment: 12000, returns: 14100 },
-  { month: "Abr", investment: 16000, returns: 18300 },
-  { month: "Mai", investment: 20000, returns: 23400 },
-  { month: "Jun", investment: 25000, returns: 29800 },
-];
+const generateMonthlyReportData = (
+  trades: Trade[],
+  capitalMovements: CapitalMovement[]
+): MonthlyReportData[] => {
+  const monthlyDataMap: { [key: string]: { pnl: number; deposits: number; withdrawals: number; tradeCount: number } } = {};
+
+  // Process trades
+  trades.filter(t => t.status === 'CLOSED' && t.pnl != null && t.exitDate != null).forEach(trade => {
+    const exitDate = new Date(trade.exitDate!);
+    if (isNaN(exitDate.getTime())) return;
+    const yearMonth = `${exitDate.getFullYear()}-${(exitDate.getMonth() + 1).toString().padStart(2, '0')}`;
+
+    if (!monthlyDataMap[yearMonth]) {
+      monthlyDataMap[yearMonth] = { pnl: 0, deposits: 0, withdrawals: 0, tradeCount: 0 };
+    }
+    monthlyDataMap[yearMonth].pnl += Number(trade.pnl);
+    monthlyDataMap[yearMonth].tradeCount += 1;
+  });
+
+  // Process capital movements
+  capitalMovements.forEach(movement => {
+    const date = new Date(movement.date);
+    if (isNaN(date.getTime())) return;
+    const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+
+    if (!monthlyDataMap[yearMonth]) {
+      monthlyDataMap[yearMonth] = { pnl: 0, deposits: 0, withdrawals: 0, tradeCount: 0 };
+    }
+    if (movement.type === 'DEPOSIT') {
+      monthlyDataMap[yearMonth].deposits += Number(movement.amount);
+    } else if (movement.type === 'WITHDRAWAL') {
+      monthlyDataMap[yearMonth].withdrawals += Number(movement.amount);
+    }
+  });
+
+  const sortedMonths = Object.keys(monthlyDataMap).sort();
+  const reportData: MonthlyReportData[] = [];
+
+  sortedMonths.forEach(yearMonth => {
+    const [year, month] = yearMonth.split('-');
+    const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleString('pt-BR', { month: 'short' });
+    reportData.push({
+      month: `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`,
+      pnl: monthlyDataMap[yearMonth].pnl,
+      deposits: monthlyDataMap[yearMonth].deposits,
+      withdrawals: monthlyDataMap[yearMonth].withdrawals,
+      tradeCount: monthlyDataMap[yearMonth].tradeCount,
+    });
+  });
+
+  return reportData;
+};
 
 export const ReportsSection = () => {
   const queryClient = useQueryClient();
-  const [timeframe, setTimeframe] = useState("Mensal");
+  const [timeframe, setTimeframe] = useState("Mensal"); // This state is for the table below, not the main chart
   const [amount, setAmount] = useState<string>('');
   const [type, setType] = useState<'DEPOSIT' | 'WITHDRAWAL'>('DEPOSIT');
   const [description, setDescription] = useState<string>('');
 
-  const timeframes = ["Diário", "Semanal", "Mensal", "Anual"];
+  // Fetch real data for the report chart
+  const { data: trades, isLoading: isLoadingTrades, error: errorTrades } = useQuery<Trade[]>({
+    queryKey: ['trades'],
+    queryFn: fetchTrades,
+  });
+
+  const { data: capitalMovements, isLoading: isLoadingCapital, error: errorCapital } = useQuery<CapitalMovement[]>({
+    queryKey: ['capitalMovements'],
+    queryFn: fetchCapitalMovements,
+  });
+
+  const isLoading = isLoadingTrades || isLoadingCapital;
+  const error = errorTrades || errorCapital;
+
+  const monthlyReportData = useMemo(() => {
+    if (trades && capitalMovements) {
+      return generateMonthlyReportData(trades, capitalMovements);
+    }
+    return [];
+  }, [trades, capitalMovements]);
+
+  // --- Mock Data (for other charts/tables, keep for now as per original file) ---
+  const dailyData = [
+    { period: "10/08/2025", operacoes: 5, lucro: 850, prejuizo: 200, retorno: 1.5 },
+    { period: "11/08/2025", operacoes: 7, lucro: 1200, prejuizo: 450, retorno: 2.1 },
+  ];
+  
+  const weeklyData = [
+    { period: "Semana 32", operacoes: 25, lucro: 3500, prejuizo: 1100, retorno: 5.2 },
+    { period: "Semana 33", operacoes: 31, lucro: 4100, prejuizo: 800, retorno: 6.9 },
+  ];
+  
+  const monthlyData = [
+    { period: "Julho 2025", operacoes: 45, lucro: 4500, prejuizo: 1200, retorno: 7.5 },
+    { period: "Agosto 2025", operacoes: 38, lucro: 3200, prejuizo: 900, retorno: 6.8 },
+  ];
+  
+  const yearlyData = [
+    { period: "2024", operacoes: 550, lucro: 45000, prejuizo: 15000, retorno: 30.0 },
+    { period: "2025", operacoes: 480, lucro: 38000, prejuizo: 11000, retorno: 27.0 },
+  ];
+  
+  const profitLossData = [
+    { month: "Jan", profit: 2500, loss: -800 },
+    { month: "Fev", profit: 3200, loss: -1200 },
+    { month: "Mar", profit: 4100, loss: -900 },
+    { month: "Abr", profit: 3800, loss: -1500 },
+    { month: "Mai", profit: 4500, loss: -1100 },
+    { month: "Jun", profit: 5200, loss: -800 },
+  ];
+  
+  const cryptoDistribution = [
+    { name: "Bitcoin", value: 45, color: "hsl(var(--primary))" },
+    { name: "Ethereum", value: 30, color: "hsl(var(--chart-green))" },
+    { name: "Altcoins", value: 25, color: "hsl(var(--accent))" },
+  ];
+  
+  const investmentData = [
+    { month: "Jan", investment: 5000, returns: 5800 },
+    { month: "Fev", investment: 8000, returns: 9200 },
+    { month: "Mar", investment: 12000, returns: 14100 },
+    { month: "Abr", investment: 16000, returns: 18300 },
+    { month: "Mai", investment: 20000, returns: 23400 },
+    { month: "Jun", investment: 25000, returns: 29800 },
+  ];
+  // --- END Mock Data ---
 
   const { tableData, header } = useMemo(() => {
     switch (timeframe) {
@@ -136,6 +284,30 @@ export const ReportsSection = () => {
       date: new Date().toISOString(), // Record current date/time
     });
   };
+
+  const timeframes = ["Diário", "Semanal", "Mensal", "Anual"]; // Re-added timeframes
+
+  if (isLoading) {
+    return (
+      <div className={styles.reportsSection}>
+        <Card>
+          <CardHeader><CardTitle>Carregando Relatórios...</CardTitle></CardHeader>
+          <CardContent>Carregando dados de trades e movimentos de capital...</CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.reportsSection}>
+        <Card>
+          <CardHeader><CardTitle>Erro ao Carregar Relatórios</CardTitle></CardHeader>
+          <CardContent>Erro: {error.message}</CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.reportsSection}>
@@ -194,27 +366,35 @@ export const ReportsSection = () => {
         </CardContent>
       </Card>
 
-      {/* Profit & Loss Chart */}
+      {/* Monthly Report Chart (P&L, Deposits, Withdrawals, Trade Count) */}
       <Card>
         <CardHeader>
-          <CardTitle>Lucro e Prejuízo Mensal</CardTitle>
+          <CardTitle>Relatório Mensal de Desempenho</CardTitle>
         </CardHeader>
         <CardContent>
           <div className={styles.chartContainer}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={profitLossData}>
+              <BarChart data={monthlyReportData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip />
-                <Bar dataKey="profit" fill="hsl(var(--chart-green))" name="Lucro" />
-                <Bar dataKey="loss" fill="hsl(var(--chart-red))" name="Prejuízo" />
+                <YAxis yAxisId="left" orientation="left" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrency(value)} />
+                <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(value: number, name: string) => {
+                  if (name === 'Trades') return [value, name];
+                  return [formatCurrency(value), name];
+                }} />
+                <Legend />
+                <Bar yAxisId="left" dataKey="pnl" fill="hsl(var(--chart-green))" name="Lucro/Prejuízo" />
+                <Bar yAxisId="left" dataKey="deposits" fill="hsl(var(--primary))" name="Aportes" />
+                <Bar yAxisId="left" dataKey="withdrawals" fill="hsl(var(--chart-red))" name="Retiradas" />
+                <Bar yAxisId="right" dataKey="tradeCount" fill="hsl(var(--chart-blue))" name="Trades" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
+      {/* Other charts/tables (keep for now as per original file) */}
       <div className={styles.chartsGrid}>
         {/* Crypto Distribution Chart */}
         <Card>

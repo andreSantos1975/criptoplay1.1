@@ -41,12 +41,12 @@ const formatCurrency = (value: number | null | undefined) => {
   // Aumenta a precisão para valores fracionários pequenos
   const options: Intl.NumberFormatOptions = {
     style: "currency",
-    currency: "BRL",
+    currency: "USD", // Changed to USD
     minimumFractionDigits: 2,
     maximumFractionDigits: 6, // Mostra até 6 casas decimais se necessário
   };
 
-  return new Intl.NumberFormat("pt-BR", options).format(value);
+  return new Intl.NumberFormat("en-US", options).format(value); // Changed to en-US
 };
 
 // Helper para formatar data e hora

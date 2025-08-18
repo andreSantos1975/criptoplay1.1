@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AreaChart,
@@ -87,6 +87,7 @@ const generatePortfolioData = (
   trades: Trade[],
   capitalMovements: CapitalMovement[],
   granularity: 'weekly' | 'monthly',
+  usdtToBrlRate: number, // New parameter for exchange rate
   defaultInitialCapital: number = 0
 ) => {
   console.log(`--- generatePortfolioData START (Granularity: ${granularity}) ---`);
@@ -119,7 +120,10 @@ const generatePortfolioData = (
       const exitDate = new Date(trade.exitDate!);
       if (isNaN(exitDate.getTime())) return;
       const yearMonth = `${exitDate.getFullYear()}-${(exitDate.getMonth() + 1).toString().padStart(2, '0')}`;
-      monthlyPnl[yearMonth] = (monthlyPnl[yearMonth] || 0) + Number(trade.pnl || 0);
+      
+      // Convert PnL from USDT to BRL
+      const pnlInBRL = Number(trade.pnl) * usdtToBrlRate;
+      monthlyPnl[yearMonth] = (monthlyPnl[yearMonth] || 0) + pnlInBRL;
     });
 
     const sortedMonths = Object.keys(monthlyPnl).sort();
@@ -146,7 +150,10 @@ const generatePortfolioData = (
       if (isNaN(exitDate.getTime())) return;
       const monday = getMonday(exitDate);
       const weekKey = monday.toISOString().split('T')[0];
-      weeklyPnl[weekKey] = (weeklyPnl[weekKey] || 0) + Number(trade.pnl || 0);
+
+      // Convert PnL from USDT to BRL
+      const pnlInBRL = Number(trade.pnl) * usdtToBrlRate;
+      weeklyPnl[weekKey] = (weeklyPnl[weekKey] || 0) + pnlInBRL;
     });
 
     const sortedWeeks = Object.keys(weeklyPnl).sort();
@@ -184,10 +191,34 @@ export const DashboardOverview = () => {
     queryFn: fetchCapitalMovements,
   });
 
-  const isLoading = isLoadingTrades || isLoadingCapital;
-  const error = errorTrades || errorCapital;
+  // Fetch USDT to BRL exchange rate
+  const { data: usdtToBrlData, isLoading: isLoadingUsdtToBrl, error: errorUsdtToBrl } = useQuery({
+    queryKey: ['usdtToBrlRate'],
+    queryFn: async () => {
+      const response = await fetch('/api/exchange-rate');
+      if (!response.ok) {
+        throw new Error('Failed to fetch USDT to BRL rate');
+      }
+      const data = await response.json();
+      return data.usdtToBrl;
+    },
+    staleTime: 5 * 60 * 1000, // Data is considered fresh for 5 minutes
+    cacheTime: 10 * 60 * 1000, // Data stays in cache for 10 minutes
+    refetchOnWindowFocus: false, // Do not refetch on window focus
+  });
 
-  const portfolioData = generatePortfolioData(trades || [], capitalMovements || [], chartGranularity);
+  const isLoading = isLoadingTrades || isLoadingCapital || isLoadingUsdtToBrl;
+  const error = errorTrades || errorCapital || errorUsdtToBrl;
+
+  // Default to 1 if rate is not available to prevent division by zero or NaN issues
+  const usdtToBrlRate = usdtToBrlData || 1;
+
+  const portfolioData = useMemo(() => {
+    if (trades && capitalMovements) {
+      return generatePortfolioData(trades, capitalMovements, chartGranularity, usdtToBrlRate);
+    }
+    return [];
+  }, [trades, capitalMovements, chartGranularity, usdtToBrlRate]);
 
   if (isLoading) {
     return (
