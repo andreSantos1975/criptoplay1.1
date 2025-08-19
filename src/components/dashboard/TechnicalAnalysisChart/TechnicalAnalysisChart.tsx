@@ -144,11 +144,38 @@ export const TechnicalAnalysisChart = memo(
         crosshair: { mode: CrosshairMode.Normal },
         handleScroll: true,
         handleScale: true,
-        localization: {
-          priceFormatter: (price: number) => `R$ ${price.toFixed(2)}`,
-        },
       });
       chartRef.current = chart; // Store the new chart instance
+
+      // Helper function to calculate precision
+      const calculatePrecision = (price: number) => {
+        if (price === 0) return 2; // Default precision
+        const priceString = price.toString();
+        if (priceString.includes('.')) {
+          const decimalPart = priceString.split('.')[1];
+          let leadingZeros = 0;
+          for (const char of decimalPart) {
+            if (char === '0') {
+              leadingZeros++;
+            } else {
+              break;
+            }
+          }
+          // Add a few extra digits for precision beyond the first significant digit
+          return leadingZeros + 4;
+        }
+        return 2; // Default for whole numbers
+      };
+
+      const firstPrice = chartData[0]?.close || 0;
+      const precision = calculatePrecision(firstPrice);
+      const minMove = 1 / Math.pow(10, precision);
+
+      chart.applyOptions({
+        localization: {
+          priceFormatter: (price: number) => `R$ ${price.toFixed(precision)}`,
+        },
+      });
 
       const candlestickSeries = chart.addSeries(CandlestickSeries, {
         upColor: "#26a69a",
@@ -160,8 +187,8 @@ export const TechnicalAnalysisChart = memo(
         title: selectedCrypto,
         priceFormat: {
           type: 'price',
-          precision: 2,
-          minMove: 0.01,
+          precision: precision,
+          minMove: minMove,
         },
       });
       candlestickSeries.setData(chartData);
