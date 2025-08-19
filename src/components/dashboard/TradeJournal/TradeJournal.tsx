@@ -52,6 +52,8 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
   });
 
   const [tradeCostInBRL, setTradeCostInBRL] = useState<number | null>(null);
+  const [potentialLoss, setPotentialLoss] = useState<number | null>(null);
+  const [potentialProfit, setPotentialProfit] = useState<number | null>(null);
 
   const formatNumber = (num: number) => {
     if (isNaN(num)) return '';
@@ -116,6 +118,32 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
       setTradeCostInBRL(null);
     }
   }, [tradeData.precoEntrada, tradeData.quantidade]);
+
+  useEffect(() => {
+    const entryPrice = parseNumericValue(tradeData.precoEntrada);
+    const quantity = parseNumericValue(tradeData.quantidade);
+    const stopLossPrice = parseNumericValue(tradeData.stopLoss);
+    const takeProfitPrice = parseNumericValue(tradeData.takeProfit);
+    const tradeType = tradeData.tipoOperacao;
+
+    if (entryPrice > 0 && quantity > 0 && stopLossPrice > 0) {
+      const loss = (tradeType === 'compra')
+        ? (stopLossPrice - entryPrice) * quantity
+        : (entryPrice - stopLossPrice) * quantity;
+      setPotentialLoss(loss);
+    } else {
+      setPotentialLoss(null);
+    }
+
+    if (entryPrice > 0 && quantity > 0 && takeProfitPrice > 0) {
+      const profit = (tradeType === 'compra')
+        ? (takeProfitPrice - entryPrice) * quantity
+        : (entryPrice - takeProfitPrice) * quantity;
+      setPotentialProfit(profit);
+    } else {
+      setPotentialProfit(null);
+    }
+  }, [tradeData.precoEntrada, tradeData.quantidade, tradeData.stopLoss, tradeData.takeProfit, tradeData.tipoOperacao]);
 
   const parseNumericValue = (value: string): number => {
     if (!value) return 0;
@@ -236,12 +264,20 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
                             <CardContent>
                                 <div className={styles.gridTwoCols}>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="stopLoss">Stop Loss</label>
+                                        <label className={styles.label} htmlFor="stopLoss">Stop Loss (Preço)</label>
                                         <input id="stopLoss" type="text" className={styles.input} placeholder="0,00" value={tradeData.stopLoss} onChange={(e) => updateTradeData('stopLoss', e.target.value)} />
                                     </div>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label} htmlFor="takeProfit">Take Profit</label>
+                                        <label className={styles.label} htmlFor="takeProfit">Take Profit (Preço)</label>
                                         <input id="takeProfit" type="text" className={styles.input} placeholder="0,00" value={tradeData.takeProfit} onChange={(e) => updateTradeData('takeProfit', e.target.value)} />
+                                    </div>
+                                    <div className={styles.inputGroup}>
+                                        <label className={styles.label}>Perda Potencial (BRL)</label>
+                                        <input type="text" className={`${styles.input} ${potentialLoss !== null && potentialLoss < 0 ? styles.textLoss : ''}`} value={potentialLoss !== null ? formatCurrencyBRL(potentialLoss) : 'R$ 0,00'} readOnly />
+                                    </div>
+                                    <div className={styles.inputGroup}>
+                                        <label className={styles.label}>Lucro Potencial (BRL)</label>
+                                        <input type="text" className={`${styles.input} ${potentialProfit !== null && potentialProfit > 0 ? styles.textProfit : ''}`} value={potentialProfit !== null ? formatCurrencyBRL(potentialProfit) : 'R$ 0,00'} readOnly />
                                     </div>
                                 </div>
                             </CardContent>

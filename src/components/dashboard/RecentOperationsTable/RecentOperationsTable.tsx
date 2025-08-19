@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import Modal from "@/components/ui/modal/Modal"; // Import the modal
 import styles from "./RecentOperationsTable.module.css";
 
 // Estrutura de um Trade, conforme a API
@@ -26,6 +27,9 @@ interface Trade {
   exitPrice?: number;
   quantity: number;
   pnl?: number;
+  stopLoss: number;
+  takeProfit: number;
+  notes?: string;
 }
 
 // Função para buscar os trades
@@ -33,15 +37,14 @@ const fetchTrades = async (): Promise<Trade[]> => {
   const response = await fetch("/api/trades");
   if (!response.ok) throw new Error("Falha ao buscar as operações.");
   const data = await response.json();
-  // --- DEBUG LOG ---
-  console.log("Raw trades data from API:", data);
-  // --- END DEBUG LOG ---
   return data.map((trade: any) => ({
     ...trade,
     entryPrice: parseFloat(trade.entryPrice) || 0,
     exitPrice: trade.exitPrice != null ? parseFloat(trade.exitPrice) : null,
     quantity: parseFloat(trade.quantity) || 0,
     pnl: trade.pnl != null ? parseFloat(trade.pnl) : null,
+    stopLoss: parseFloat(trade.stopLoss) || 0,
+    takeProfit: parseFloat(trade.takeProfit) || 0,
   }));
 };
 
@@ -96,6 +99,8 @@ const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
 export const RecentOperationsTable = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'open' | 'closed'>('open');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
 
   const { data: exchangeRateData } = useQuery({
     queryKey: ["exchangeRate"],
@@ -156,6 +161,11 @@ export const RecentOperationsTable = () => {
     }
   };
 
+  const handleRowClick = (trade: Trade) => {
+    setSelectedTrade(trade);
+    setIsModalOpen(true);
+  };
+
   const calculatePnlPercent = (trade: Trade, currentPrice?: number): string => {
     const initialCost = trade.entryPrice * trade.quantity;
     if (initialCost === 0) return "N/A";
@@ -204,7 +214,7 @@ export const RecentOperationsTable = () => {
       const isProfit = pnl !== null && pnl >= 0;
 
       return (
-        <TableRow key={trade.id}>
+        <TableRow key={trade.id} onClick={() => handleRowClick(trade)} className={styles.clickableRow}>
           <TableCell>{trade.symbol.replace("USDT", "")}</TableCell>
           <TableCell>{trade.type}</TableCell>
           <TableCell>{trade.quantity}</TableCell>
@@ -289,6 +299,32 @@ export const RecentOperationsTable = () => {
           </TableBody>
         </Table>
       </CardContent>
+
+      {isModalOpen && selectedTrade && (
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Detalhes da Operação">
+          <div className={styles.modalContent}>
+            <h4>Dados da Operação</h4>
+            <div className={styles.modalGrid}>
+              <div><strong>Ativo / Par:</strong> {selectedTrade.symbol}</div>
+              <div><strong>Tipo:</strong> {selectedTrade.type}</div>
+              <div><strong>Preço de Entrada:</strong> {formatCurrency(selectedTrade.entryPrice)}</div>
+              <div><strong>Quantidade:</strong> {selectedTrade.quantity}</div>
+              <div><strong>Custo Total (BRL):</strong> {formatCurrency(selectedTrade.entryPrice * selectedTrade.quantity)}</div>
+            </div>
+            <h4>Gestão de Risco</h4>
+            <div className={styles.modalGrid}>
+              <div><strong>Stop Loss:</strong> {formatCurrency(selectedTrade.stopLoss)}</div>
+              <div><strong>Take Profit:</strong> {formatCurrency(selectedTrade.takeProfit)}</div>
+            </div>
+            {selectedTrade.notes && (
+              <>
+                <h4>Análise e Observações</h4>
+                <p>{selectedTrade.notes}</p>
+              </>
+            )}
+          </div>
+        </Modal>
+      )}
     </Card>
   );
 };

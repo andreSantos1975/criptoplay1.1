@@ -24,3 +24,39 @@
 .loss {
   color: #ef5350;
 }
+
+.clickableRow {
+  cursor: pointer;
+}
+
+.clickableRow:hover {
+  background-color: #2a2e39;
+}
+
+.modalContent h4 {
+  font-size: 1.2rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+  border-bottom: 1px solid #4a4e59;
+  padding-bottom: 0.5rem;
+}
+
+.modalGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modalGrid div {
+  background-color: #1e222d;
+  padding: 0.75rem;
+  border-radius: 4px;
+}
+
+.modalGrid div strong {
+  color: #aeb8c4;
+  display: block;
+  margin-bottom: 0.25rem;
+}
