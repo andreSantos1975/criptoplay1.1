@@ -56,15 +56,8 @@ const formatCurrency = (value: number | null | undefined) => {
     style: "currency",
     currency: "BRL",
     minimumFractionDigits: 2,
+    maximumFractionDigits: 2, // Garante sempre 2 casas decimais
   };
-
-  if (Math.abs(value) < 1.0) {
-    options.maximumFractionDigits = 8;
-  } else if (Math.abs(value) < 100) {
-    options.maximumFractionDigits = 4;
-  } else {
-    options.maximumFractionDigits = 2;
-  }
 
   return new Intl.NumberFormat("pt-BR", options).format(value);
 };

@@ -42,19 +42,10 @@ export const TradePanel = ({ tradeLevels, onLevelsChange }: TradePanelProps) => 
     const numInBRL = num * brlRate;
     const options: Intl.NumberFormatOptions = {
       minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     };
 
-    if (numInBRL >= 1000) {
-      options.maximumFractionDigits = 2;
-    } else if (numInBRL >= 1) {
-      options.maximumFractionDigits = 4;
-    } else if (numInBRL >= 0.01) {
-      options.maximumFractionDigits = 6;
-    } else {
-      options.maximumFractionDigits = 8;
-    }
-
-    return numInBRL.toLocaleString('pt-BR', options).replace(/,/g, '.');
+    return numInBRL.toLocaleString('pt-BR', options);
   };
 
   return (

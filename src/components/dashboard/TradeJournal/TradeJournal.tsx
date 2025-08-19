@@ -59,17 +59,8 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
     if (isNaN(num)) return '';
     const options: Intl.NumberFormatOptions = {
       minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     };
-
-    if (num >= 1000) {
-      options.maximumFractionDigits = 2;
-    } else if (num >= 1) {
-      options.maximumFractionDigits = 4;
-    } else if (num >= 0.01) {
-      options.maximumFractionDigits = 6;
-    } else {
-      options.maximumFractionDigits = 8;
-    }
 
     return num.toLocaleString('pt-BR', options);
   };
