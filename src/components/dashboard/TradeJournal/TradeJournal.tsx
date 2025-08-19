@@ -69,12 +69,12 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
       options.maximumFractionDigits = 8;
     }
 
-    return num.toLocaleString('pt-BR', options).replace(/,/g, '.');
+    return num.toLocaleString('pt-BR', options);
   };
 
   const formatCurrencyBRL = (num: number): string => {
     if (isNaN(num) || num === null) return 'R$ 0,00';
-    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }).replace(/,/g, '.');
+    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
   const { data: usdtToBrlData, isLoading: usdtToBrlLoading, error: usdtToBrlError } = useQuery({
@@ -119,14 +119,8 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
 
   const parseNumericValue = (value: string): number => {
     if (!value) return 0;
-    let cleanedValue = value;
-    if (value.includes(',')) {
-      // If comma is present, assume it's the decimal separator
-      cleanedValue = value.replace(/\./g, '').replace(/,/g, '.');
-    } else {
-      // If no comma, assume period is the decimal separator or it's an integer
-      // parseFloat will handle it correctly
-    }
+    // Remove thousand separators (.) and replace decimal separator (,) with a dot.
+    const cleanedValue = value.replace(/\./g, '').replace(',', '.');
     return parseFloat(cleanedValue) || 0;
   };
 

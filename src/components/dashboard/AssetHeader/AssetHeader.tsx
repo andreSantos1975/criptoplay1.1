@@ -8,52 +8,59 @@ interface AssetHeaderProps {
   open: number;
   high: number;
   low: number;
+  brlRate: number;
 }
 
-const formatAsUSD = (value: number) => {
-  return value.toLocaleString('en-US', {
+const formatAsBRL = (value: number) => {
+  return value.toLocaleString('pt-BR', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'BRL',
     minimumFractionDigits: 2,
-    maximumFractionDigits: 6, // Show more precision for crypto
+    maximumFractionDigits: 6,
   });
 };
 
-const AssetHeader: React.FC<AssetHeaderProps> = ({ symbol, price, open, high, low }) => {
-  const change = price - open;
-  const changePercent = open !== 0 ? (change / open) * 100 : 0;
-  const isPositive = change >= 0;
+const AssetHeader: React.FC<AssetHeaderProps> = ({ symbol, price, open, high, low, brlRate }) => {
+  const priceInBRL = price * brlRate;
+  const openInBRL = open * brlRate;
+  const highInBRL = high * brlRate;
+  const lowInBRL = low * brlRate;
+
+  const changeInBRL = priceInBRL - openInBRL;
+  const changePercent = open !== 0 ? ((price - open) / open) * 100 : 0;
+  const isPositive = changeInBRL >= 0;
 
   const calculatePrecision = (value: number) => {
     if (value === 0) return 4;
     const absValue = Math.abs(value);
     const logValue = Math.floor(Math.log10(absValue));
-    return logValue < 0 ? -logValue + 2 : 4;
+    // Adjust precision for BRL values
+    return logValue < 0 ? -logValue + 2 : 2;
   };
 
-  const changePrecision = calculatePrecision(change);
+  const changePrecision = calculatePrecision(changeInBRL);
 
   return (
     <div className={styles.headerContainer}>
       <div className={styles.symbolInfo}>
         <h2 className={styles.symbol}>{symbol}</h2>
-        <p className={styles.price}>{formatAsUSD(price)}</p>
+        <p className={styles.price}>{formatAsBRL(priceInBRL)}</p>
         <p className={`${styles.change} ${isPositive ? styles.positive : styles.negative}`}>
-          {change.toFixed(changePrecision)} ({changePercent.toFixed(2)}%)
+          {formatAsBRL(changeInBRL)} ({changePercent.toFixed(2)}%)
         </p>
       </div>
       <div className={styles.marketInfo}>
         <div className={styles.infoItem}>
           <span className={styles.label}>Abertura</span>
-          <span className={styles.value}>{formatAsUSD(open)}</span>
+          <span className={styles.value}>{formatAsBRL(openInBRL)}</span>
         </div>
         <div className={styles.infoItem}>
           <span className={styles.label}>Máxima</span>
-          <span className={styles.value}>{formatAsUSD(high)}</span>
+          <span className={styles.value}>{formatAsBRL(highInBRL)}</span>
         </div>
         <div className={styles.infoItem}>
           <span className={styles.label}>Mínima</span>
-          <span className={styles.value}>{formatAsUSD(low)}</span>
+          <span className={styles.value}>{formatAsBRL(lowInBRL)}</span>
         </div>
       </div>
     </div>

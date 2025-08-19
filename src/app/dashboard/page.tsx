@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { KPICard } from "@/components/dashboard/KPICard/KPICard";
 import { NavigationTabs } from "@/components/dashboard/NavigationTabs/NavigationTabs";
 import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable";
-import { RecentOperationsTable } from "@/components/dashboard/RecentOperationsTable/RecentOperationsTable"; // Importando o novo componente
+import { RecentOperationsTable } from "@/components/dashboard/RecentOperationsTable/RecentOperationsTable";
 import dynamic from "next/dynamic";
 import TradeJournal from "@/components/dashboard/TradeJournal/TradeJournal";
 import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
@@ -38,8 +39,18 @@ type BinanceKline = [
 const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("painel");
   const [klines, setKlines] = useState<BinanceKline[]>([]);
-  
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT');
+
+  const { data: exchangeRateData } = useQuery({
+    queryKey: ["exchangeRate"],
+    queryFn: async () => {
+      const response = await fetch("/api/exchange-rate");
+      if (!response.ok) throw new Error("Failed to fetch exchange rate");
+      return response.json();
+    },
+    refetchInterval: 60000, // Refetch every minute
+  });
+
   const [tradeLevels, setTradeLevels] = useState(() => {
     const savedLevels = typeof window !== 'undefined' ? localStorage.getItem('tradeLevels') : null;
     return savedLevels ? JSON.parse(savedLevels) : {
@@ -96,6 +107,7 @@ const DashboardPage = () => {
         return <PersonalFinanceTable />;
       case "analise":
         const latestKline = klines && klines.length > 0 ? klines[klines.length - 1] : null;
+        const brlRate = exchangeRateData?.usdtToBrl || 1; // Default to 1 if rate not available
         return (
           <>
             {latestKline && (
@@ -105,6 +117,7 @@ const DashboardPage = () => {
                 open={parseFloat(latestKline[1])}
                 high={parseFloat(latestKline[2])}
                 low={parseFloat(latestKline[3])}
+                brlRate={brlRate}
               />
             )}
             <TechnicalAnalysisChart
