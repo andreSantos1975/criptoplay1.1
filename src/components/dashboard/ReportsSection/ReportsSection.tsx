@@ -4,14 +4,6 @@ import { useState, useMemo } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   BarChart,
   Bar,
   XAxis,
@@ -29,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
 
-// Interfaces (copied from DashboardOverview for consistency)
+// Interfaces
 interface Trade {
   id: string;
   symbol: string;
@@ -37,488 +29,181 @@ interface Trade {
   status: 'OPEN' | 'CLOSED';
   entryDate: string;
   exitDate?: string;
-  entryPrice: number;
-  exitPrice?: number;
   quantity: number;
   pnl?: number;
 }
 
 interface CapitalMovement {
   id: string;
-  userId: string;
   amount: number;
   type: 'DEPOSIT' | 'WITHDRAWAL';
   date: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
-// Function to fetch trades (copied from DashboardOverview)
+interface BinanceTicker {
+    symbol: string;
+    lastPrice: string;
+}
+
+// Data Fetching
 const fetchTrades = async (): Promise<Trade[]> => {
-  const response = await fetch("/api/trades");
-  if (!response.ok) {
-    throw new Error("Falha ao buscar as operações.");
-  }
-  const data = await response.json();
-  return data.map((trade: any) => ({
-    ...trade,
-    entryPrice: parseFloat(trade.entryPrice) || 0,
-    exitPrice: trade.exitPrice != null ? parseFloat(trade.exitPrice) : null,
-    quantity: parseFloat(trade.quantity) || 0,
-    pnl: trade.pnl != null ? parseFloat(trade.pnl) : null,
-  }));
+  const res = await fetch("/api/trades");
+  if (!res.ok) throw new Error("Falha ao buscar trades.");
+  return res.json();
 };
 
-// Function to fetch capital movements (copied from DashboardOverview)
 const fetchCapitalMovements = async (): Promise<CapitalMovement[]> => {
-  const response = await fetch("/api/capital-movements");
-  if (!response.ok) {
-    throw new Error("Falha ao buscar movimentos de capital.");
-  }
-  const data = await response.json();
-  return data.map((movement: any) => ({
-    ...movement,
-    amount: parseFloat(movement.amount) || 0,
-  }));
+  const res = await fetch("/api/capital-movements");
+  if (!res.ok) throw new Error("Falha ao buscar movimentos de capital.");
+  return res.json();
 };
 
-// Helper to format currency (copied from DashboardOverview)
-const formatCurrency = (value: number | null | undefined) => {
-  if (value === null || value === undefined) return "N/A";
-  const options: Intl.NumberFormatOptions = {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 6,
-  };
-  return new Intl.NumberFormat("pt-BR", options).format(value);
+const fetchBinanceTickers = async (): Promise<BinanceTicker[]> => {
+    const res = await fetch("https://api.binance.com/api/v3/ticker/24hr");
+    if (!res.ok) throw new Error("Falha ao buscar tickers da Binance.");
+    return res.json();
 };
 
-interface MonthlyReportData {
-  month: string; // e.g., "Jan 2025", "Fev 2025"
-  pnl: number;
-  deposits: number;
-  withdrawals: number;
-  tradeCount: number;
-}
+// Helper
+const formatCurrency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-const generateMonthlyReportData = (
-  trades: Trade[],
-  capitalMovements: CapitalMovement[]
-): MonthlyReportData[] => {
-  const monthlyDataMap: { [key: string]: { pnl: number; deposits: number; withdrawals: number; tradeCount: number } } = {};
+// Data Processing
+const generatePortfolioPerformanceData = (trades: Trade[], capitalMovements: CapitalMovement[], brlRate: number) => {
+  const events = [
+    ...trades.filter(t => t.status === 'CLOSED' && t.pnl != null).map(t => ({ date: new Date(t.exitDate!), amount: (Number(t.pnl) || 0) * brlRate })),
+    ...capitalMovements.map(m => ({ date: new Date(m.date), amount: m.type === 'DEPOSIT' ? Number(m.amount) : -Number(m.amount) }))
+  ].sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  // Process trades
-  trades.filter(t => t.status === 'CLOSED' && t.pnl != null && t.exitDate != null).forEach(trade => {
-    const exitDate = new Date(trade.exitDate!);
-    if (isNaN(exitDate.getTime())) return;
-    const yearMonth = `${exitDate.getFullYear()}-${(exitDate.getMonth() + 1).toString().padStart(2, '0')}`;
+  if (events.length === 0) return [{ date: "Início", Saldo: 0 }];
 
-    if (!monthlyDataMap[yearMonth]) {
-      monthlyDataMap[yearMonth] = { pnl: 0, deposits: 0, withdrawals: 0, tradeCount: 0 };
-    }
-    monthlyDataMap[yearMonth].pnl += Number(trade.pnl);
-    monthlyDataMap[yearMonth].tradeCount += 1;
+  let balance = 0;
+  const performance = events.map(e => {
+    balance += e.amount;
+    return { date: e.date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }), Saldo: balance };
   });
 
-  // Process capital movements
-  capitalMovements.forEach(movement => {
-    const date = new Date(movement.date);
-    if (isNaN(date.getTime())) return;
-    const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+  return [{ date: "Início", Saldo: 0 }, ...performance];
+};
 
-    if (!monthlyDataMap[yearMonth]) {
-      monthlyDataMap[yearMonth] = { pnl: 0, deposits: 0, withdrawals: 0, tradeCount: 0 };
-    }
-    if (movement.type === 'DEPOSIT') {
-      monthlyDataMap[yearMonth].deposits += Number(movement.amount);
-    } else if (movement.type === 'WITHDRAWAL') {
-      monthlyDataMap[yearMonth].withdrawals += Number(movement.amount);
+const generatePortfolioDistributionData = (openTrades: Trade[], tickers: BinanceTicker[], brlRate: number) => {
+  const portfolio: { [key: string]: number } = {};
+  openTrades.forEach(trade => {
+    const ticker = tickers.find(t => t.symbol === trade.symbol);
+    if (ticker) {
+      const value = (parseFloat(trade.quantity.toString()) * parseFloat(ticker.lastPrice)) * brlRate;
+      const asset = trade.symbol.replace("USDT", "");
+      portfolio[asset] = (portfolio[asset] || 0) + value;
     }
   });
 
-  const sortedMonths = Object.keys(monthlyDataMap).sort();
-  const reportData: MonthlyReportData[] = [];
+  const colors = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE"];
+  return Object.entries(portfolio).map(([name, value], i) => ({ name, value, color: colors[i % colors.length] }));
+};
 
-  sortedMonths.forEach(yearMonth => {
-    const [year, month] = yearMonth.split('-');
-    const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleString('pt-BR', { month: 'short' });
-    reportData.push({
-      month: `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`,
-      pnl: monthlyDataMap[yearMonth].pnl,
-      deposits: monthlyDataMap[yearMonth].deposits,
-      withdrawals: monthlyDataMap[yearMonth].withdrawals,
-      tradeCount: monthlyDataMap[yearMonth].tradeCount,
+const generateMonthlyReportData = (trades: Trade[], capitalMovements: CapitalMovement[], brlRate: number) => {
+    const monthlyMap: { [key: string]: { pnl: number; deposits: number; withdrawals: number; tradeCount: number } } = {};
+
+    trades.filter(t => t.status === 'CLOSED' && t.pnl != null).forEach(trade => {
+        const date = new Date(trade.exitDate!)
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (!monthlyMap[key]) monthlyMap[key] = { pnl: 0, deposits: 0, withdrawals: 0, tradeCount: 0 };
+        monthlyMap[key].pnl += (Number(trade.pnl) || 0) * brlRate;
+        monthlyMap[key].tradeCount++;
     });
-  });
 
-  return reportData;
+    capitalMovements.forEach(m => {
+        const date = new Date(m.date);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (!monthlyMap[key]) monthlyMap[key] = { pnl: 0, deposits: 0, withdrawals: 0, tradeCount: 0 };
+        if (m.type === 'DEPOSIT') monthlyMap[key].deposits += Number(m.amount);
+        else monthlyMap[key].withdrawals += Number(m.amount);
+    });
+
+    return Object.entries(monthlyMap).map(([key, value]) => ({
+        month: new Date(key + '-02').toLocaleString('pt-BR', { month: 'short', year: '2-digit' }).replace('. de', '/'),
+        ...value
+    })).sort((a, b) => a.month.localeCompare(b.month));
 };
 
 export const ReportsSection = () => {
   const queryClient = useQueryClient();
-  const [timeframe, setTimeframe] = useState("Mensal"); // This state is for the table below, not the main chart
-  const [amount, setAmount] = useState<string>('');
+  const [amount, setAmount] = useState('');
   const [type, setType] = useState<'DEPOSIT' | 'WITHDRAWAL'>('DEPOSIT');
-  const [description, setDescription] = useState<string>('');
+  const [description, setDescription] = useState('');
 
-  // Fetch real data for the report chart
-  const { data: trades, isLoading: isLoadingTrades, error: errorTrades } = useQuery<Trade[]>({
-    queryKey: ['trades'],
-    queryFn: fetchTrades,
+  const { data: trades = [], isLoading: l1, error: e1 } = useQuery<Trade[]>({ queryKey: ['trades'], queryFn: fetchTrades });
+  const { data: capitalMovements = [], isLoading: l2, error: e2 } = useQuery<CapitalMovement[]>({ queryKey: ['capitalMovements'], queryFn: fetchCapitalMovements });
+  const { data: exchangeRateData, isLoading: l3, error: e3 } = useQuery({ queryKey: ["exchangeRate"], queryFn: async () => (await fetch("/api/exchange-rate")).json() });
+  const { data: binanceTickers = [], isLoading: l4, error: e4 } = useQuery<BinanceTicker[]>({ queryKey: ['binanceTickers'], queryFn: fetchBinanceTickers });
+
+  const isLoading = l1 || l2 || l3 || l4;
+  const error = e1 || e2 || e3 || e4;
+
+  const brlRate = exchangeRateData?.usdtToBrl || 1;
+  const openTrades = useMemo(() => trades.filter(t => t.status === 'OPEN'), [trades]);
+
+  const performanceData = useMemo(() => generatePortfolioPerformanceData(trades, capitalMovements, brlRate), [trades, capitalMovements, brlRate]);
+  const distributionData = useMemo(() => generatePortfolioDistributionData(openTrades, binanceTickers, brlRate), [openTrades, binanceTickers, brlRate]);
+  const monthlyReportData = useMemo(() => generateMonthlyReportData(trades, capitalMovements, brlRate), [trades, capitalMovements, brlRate]);
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: (newMovement: Omit<CapitalMovement, 'id' | 'date'> & { date: string }) => fetch('/api/capital-movements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newMovement) }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['capitalMovements', 'trades'] }); alert('Movimento registrado!'); setAmount(''); setDescription(''); },
+    onError: (err) => alert(`Erro: ${err.message}`)
   });
 
-  const { data: capitalMovements, isLoading: isLoadingCapital, error: errorCapital } = useQuery<CapitalMovement[]>({
-    queryKey: ['capitalMovements'],
-    queryFn: fetchCapitalMovements,
-  });
-
-  const isLoading = isLoadingTrades || isLoadingCapital;
-  const error = errorTrades || errorCapital;
-
-  const monthlyReportData = useMemo(() => {
-    if (trades && capitalMovements) {
-      return generateMonthlyReportData(trades, capitalMovements);
-    }
-    return [];
-  }, [trades, capitalMovements]);
-
-  // --- Mock Data (for other charts/tables, keep for now as per original file) ---
-  const dailyData = [
-    { period: "10/08/2025", operacoes: 5, lucro: 850, prejuizo: 200, retorno: 1.5 },
-    { period: "11/08/2025", operacoes: 7, lucro: 1200, prejuizo: 450, retorno: 2.1 },
-  ];
-  
-  const weeklyData = [
-    { period: "Semana 32", operacoes: 25, lucro: 3500, prejuizo: 1100, retorno: 5.2 },
-    { period: "Semana 33", operacoes: 31, lucro: 4100, prejuizo: 800, retorno: 6.9 },
-  ];
-  
-  const monthlyData = [
-    { period: "Julho 2025", operacoes: 45, lucro: 4500, prejuizo: 1200, retorno: 7.5 },
-    { period: "Agosto 2025", operacoes: 38, lucro: 3200, prejuizo: 900, retorno: 6.8 },
-  ];
-  
-  const yearlyData = [
-    { period: "2024", operacoes: 550, lucro: 45000, prejuizo: 15000, retorno: 30.0 },
-    { period: "2025", operacoes: 480, lucro: 38000, prejuizo: 11000, retorno: 27.0 },
-  ];
-  
-  const profitLossData = [
-    { month: "Jan", profit: 2500, loss: -800 },
-    { month: "Fev", profit: 3200, loss: -1200 },
-    { month: "Mar", profit: 4100, loss: -900 },
-    { month: "Abr", profit: 3800, loss: -1500 },
-    { month: "Mai", profit: 4500, loss: -1100 },
-    { month: "Jun", profit: 5200, loss: -800 },
-  ];
-  
-  const cryptoDistribution = [
-    { name: "Bitcoin", value: 45, color: "hsl(var(--primary))" },
-    { name: "Ethereum", value: 30, color: "hsl(var(--chart-green))" },
-    { name: "Altcoins", value: 25, color: "hsl(var(--accent))" },
-  ];
-  
-  const investmentData = [
-    { month: "Jan", investment: 5000, returns: 5800 },
-    { month: "Fev", investment: 8000, returns: 9200 },
-    { month: "Mar", investment: 12000, returns: 14100 },
-    { month: "Abr", investment: 16000, returns: 18300 },
-    { month: "Mai", investment: 20000, returns: 23400 },
-    { month: "Jun", investment: 25000, returns: 29800 },
-  ];
-  // --- END Mock Data ---
-
-  const { tableData, header } = useMemo(() => {
-    switch (timeframe) {
-      case "Diário":
-        return { tableData: dailyData, header: "Dia" };
-      case "Semanal":
-        return { tableData: weeklyData, header: "Semana" };
-      case "Anual":
-        return { tableData: yearlyData, header: "Ano" };
-      case "Mensal":
-      default:
-        return { tableData: monthlyData, header: "Mês" };
-    }
-  }, [timeframe]);
-
-  const addCapitalMovementMutation = useMutation({
-    mutationFn: async (newMovement: { amount: number; type: 'DEPOSIT' | 'WITHDRAWAL'; description?: string; date?: string }) => {
-      const response = await fetch('/api/capital-movements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMovement),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao registrar movimento de capital.');
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      alert('Movimento de capital registrado com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['capitalMovements'] });
-      setAmount(''); // Clear form
-      setType('DEPOSIT');
-      setDescription('');
-    },
-    onError: (error: Error) => {
-      console.error('Erro ao registrar movimento:', error);
-      alert(`Erro: ${error.message}`);
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const parsedAmount = parseFloat(amount.replace(',', '.')); // Handle comma as decimal
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      alert('O valor deve ser um número positivo.');
-      return;
-    }
-    addCapitalMovementMutation.mutate({
-      amount: parsedAmount,
-      type,
-      description,
-      date: new Date().toISOString(), // Record current date/time
-    });
-  };
-
-  const timeframes = ["Diário", "Semanal", "Mensal", "Anual"]; // Re-added timeframes
-
-  if (isLoading) {
-    return (
-      <div className={styles.reportsSection}>
-        <Card>
-          <CardHeader><CardTitle>Carregando Relatórios...</CardTitle></CardHeader>
-          <CardContent>Carregando dados de trades e movimentos de capital...</CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={styles.reportsSection}>
-        <Card>
-          <CardHeader><CardTitle>Erro ao Carregar Relatórios</CardTitle></CardHeader>
-          <CardContent>Erro: {error.message}</CardContent>
-        </Card>
-      </div>
-    );
-  }
+  if (isLoading) return <Card><CardHeader><CardTitle>Carregando Relatórios...</CardTitle></CardHeader></Card>;
+  if (error) return <Card><CardHeader><CardTitle>Erro</CardTitle></CardHeader><CardContent>{error.message}</CardContent></Card>;
 
   return (
     <div className={styles.reportsSection}>
-      {/* Formulário de Registro de Movimento de Capital */}
-      <Card className={styles.formCard}>
-        <CardHeader>
-          <CardTitle>Registrar Movimento de Capital</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className={styles.formGrid}>
-            <div className={styles.inputGroup}>
-              <label htmlFor="amount">Valor (R$)</label>
-              <input
-                id="amount"
-                type="text"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0,00"
-                className={styles.input}
-                required
-              />
-            </div>
-            <div className={styles.inputGroup}>
-              <label htmlFor="type">Tipo</label>
-              <select
-                id="type"
-                value={type}
-                onChange={(e) => setType(e.target.value as 'DEPOSIT' | 'WITHDRAWAL')}
-                className={styles.select}
-                required
-              >
-                <option value="DEPOSIT">Aporte</option>
-                <option value="WITHDRAWAL">Retirada</option>
-              </select>
-            </div>
-            <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}>
-              <label htmlFor="description">Descrição (Opcional)</label>
-              <textarea
-                id="description"
-                rows={2}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ex: Aporte inicial, Retirada para despesas"
-                className={styles.textarea}
-              ></textarea>
-            </div>
-            <Button
-              type="submit"
-              disabled={addCapitalMovementMutation.isPending}
-              className={styles.submitButton}
-              style={{ gridColumn: 'span 2' }}
-            >
-              {addCapitalMovementMutation.isPending ? 'Registrando...' : 'Registrar Movimento'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Monthly Report Chart (P&L, Deposits, Withdrawals, Trade Count) */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Relatório Mensal de Desempenho</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className={styles.chartContainer}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyReportData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="left" orientation="left" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrency(value)} />
-                <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(value: number, name: string) => {
-                  if (name === 'Trades') return [value, name];
-                  return [formatCurrency(value), name];
-                }} />
-                <Legend />
-                <Bar yAxisId="left" dataKey="pnl" fill="hsl(var(--chart-green))" name="Lucro/Prejuízo" />
-                <Bar yAxisId="left" dataKey="deposits" fill="hsl(var(--primary))" name="Aportes" />
-                <Bar yAxisId="left" dataKey="withdrawals" fill="hsl(var(--chart-red))" name="Retiradas" />
-                <Bar yAxisId="right" dataKey="tradeCount" fill="hsl(var(--chart-blue))" name="Trades" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Other charts/tables (keep for now as per original file) */}
-      <div className={styles.chartsGrid}>
-        {/* Crypto Distribution Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribuição do Portfólio</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={styles.chartContainer}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={cryptoDistribution}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label
-                  >
-                    {cryptoDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
+        <Card className={styles.formCard}>
+            <CardHeader><CardTitle>Registrar Movimento de Capital</CardTitle></CardHeader>
+            <CardContent>
+                <form onSubmit={e => { e.preventDefault(); mutate({ amount: parseFloat(amount.replace(',', '.')), type, description, date: new Date().toISOString() }); }} className={styles.formGrid}>
+                    <div className={styles.inputGroup}><label>Valor (R$)</label><input type="text" value={amount} onChange={e => setAmount(e.target.value)} placeholder="100,00" required className={styles.input}/></div>
+                    <div className={styles.inputGroup}><label>Tipo</label><select value={type} onChange={e => setType(e.target.value as any)} required className={styles.select}><option value="DEPOSIT">Aporte</option><option value="WITHDRAWAL">Retirada</option></select></div>
+                    <div className={styles.inputGroup} style={{ gridColumn: 'span 2' }}><label>Descrição</label><textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Aporte inicial" className={styles.textarea}></textarea></div>
+                    <Button type="submit" disabled={isPending} className={styles.submitButton} style={{ gridColumn: 'span 2' }}>{isPending ? 'Registrando...' : 'Registrar'}</Button>
+                </form>
+            </CardContent>
         </Card>
 
-        {/* Investment vs Returns Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Investimento vs. Retorno</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={styles.chartContainer}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={investmentData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="investment"
-                    stroke="hsl(var(--primary))"
-                    name="Investimento"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="returns"
-                    stroke="hsl(var(--chart-green))"
-                    name="Retorno"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        <div className={styles.chartsGrid}>
+            <Card>
+                <CardHeader><CardTitle>Evolução do Patrimônio</CardTitle></CardHeader>
+                <CardContent><ResponsiveContainer width="100%" height={300}><LineChart data={performanceData}><CartesianGrid/><XAxis dataKey="date"/><YAxis tickFormatter={formatCurrency}/><Tooltip formatter={(v:any) => [formatCurrency(v), "Saldo"]}/><Legend/><Line type="monotone" dataKey="Saldo" name="Saldo da Carteira" stroke="#8884d8"/></LineChart></ResponsiveContainer></CardContent>
+            </Card>
 
-      {/* Summary Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Resumo de Desempenho</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className={styles.timeframeSelector}>
-            {timeframes.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTimeframe(t)}
-                className={`${styles.timeframeButton} ${
-                  timeframe === t ? styles.timeframeButtonActive : ""
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{header}</TableHead>
-                <TableHead>Operações</TableHead>
-                <TableHead>Lucro</TableHead>
-                <TableHead>Prejuízo</TableHead>
-                <TableHead>Resultado</TableHead>
-                <TableHead>Retorno (%)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tableData.map((item, index) => {
-                const resultado = item.lucro - item.prejuizo;
-                return (
-                  <TableRow key={index}>
-                    <TableCell>{item.period}</TableCell>
-                    <TableCell>{item.operacoes}</TableCell>
-                    <TableCell className={styles.positiveValue}>
-                      R$ {item.lucro.toLocaleString()},00
-                    </TableCell>
-                    <TableCell className={styles.negativeValue}>
-                      R$ {item.prejuizo.toLocaleString()},00
-                    </TableCell>
-                    <TableCell
-                      className={
-                        resultado >= 0
-                          ? styles.positiveValue
-                          : styles.negativeValue
-                      }
-                    >
-                      R$ {resultado.toLocaleString()},00
-                    </TableCell>
-                    <TableCell className={styles.positiveValue}>
-                      {item.retorno}%
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            <Card>
+                <CardHeader><CardTitle>Distribuição da Carteira (Aberto)</CardTitle></CardHeader>
+                <CardContent>
+                    {distributionData.length > 0 ? 
+                        <ResponsiveContainer width="100%" height={300}><PieChart><Pie data={distributionData} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}><Cell fill="#8884d8"/><Cell fill="#82ca9d"/></Pie><Tooltip formatter={(v:any) => [formatCurrency(v), "Valor"]}/><Legend/></PieChart></ResponsiveContainer> : 
+                        <div className={styles.noData}>Nenhuma posição aberta.</div>}
+                </CardContent>
+            </Card>
+        </div>
+
+        <Card>
+            <CardHeader><CardTitle>Relatório Mensal</CardTitle></CardHeader>
+            <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={monthlyReportData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis yAxisId="left" tickFormatter={formatCurrency} />
+                        <YAxis yAxisId="right" orientation="right" />
+                        <Tooltip formatter={(value: any, name: string) => name === 'Trades' ? value : formatCurrency(value)} />
+                        <Legend />
+                        <Bar yAxisId="left" dataKey="pnl" name="Lucro/Prejuízo" fill="#82ca9d" />
+                        <Bar yAxisId="left" dataKey="deposits" name="Aportes" fill="#8884d8" />
+                        <Bar yAxisId="left" dataKey="withdrawals" name="Retiradas" fill="#ff8042" />
+                        <Bar yAxisId="right" dataKey="tradeCount" name="Trades" fill="#ffc658" />
+                    </BarChart>
+                </ResponsiveContainer>
+            </CardContent>
+        </Card>
     </div>
   );
 };
