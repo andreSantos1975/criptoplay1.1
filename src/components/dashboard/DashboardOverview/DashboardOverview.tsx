@@ -77,7 +77,7 @@ const formatCurrency = (value: number | null | undefined) => {
     style: "currency",
     currency: "BRL",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 6,
+    maximumFractionDigits: 2, // Corrected for BRL
   };
   return new Intl.NumberFormat("pt-BR", options).format(value);
 };

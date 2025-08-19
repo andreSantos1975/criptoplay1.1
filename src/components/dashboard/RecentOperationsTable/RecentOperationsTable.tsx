@@ -122,6 +122,8 @@ export const RecentOperationsTable = () => {
         entryPrice: trade.entryPrice * brlRate,
         exitPrice: trade.exitPrice ? trade.exitPrice * brlRate : undefined,
         pnl: trade.pnl ? trade.pnl * brlRate : undefined,
+        stopLoss: trade.stopLoss * brlRate,
+        takeProfit: trade.takeProfit * brlRate,
       }));
     },
     enabled: !!exchangeRateData,
