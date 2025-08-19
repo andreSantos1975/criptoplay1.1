@@ -60,6 +60,8 @@ const formatCurrency = (value: number | null | undefined) => {
 
   if (Math.abs(value) < 1.0) {
     options.maximumFractionDigits = 8;
+  } else if (Math.abs(value) < 100) {
+    options.maximumFractionDigits = 4;
   } else {
     options.maximumFractionDigits = 2;
   }
@@ -302,31 +304,41 @@ export const RecentOperationsTable = () => {
         </Table>
       </CardContent>
 
-      {isModalOpen && selectedTrade && (
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Detalhes da Operação">
-          <div className={styles.modalContent}>
-            <h4>Dados da Operação</h4>
-            <div className={styles.modalGrid}>
-              <div><strong>Ativo / Par:</strong> {selectedTrade.symbol}</div>
-              <div><strong>Tipo:</strong> {selectedTrade.type}</div>
-              <div><strong>Preço de Entrada:</strong> {formatCurrency(selectedTrade.entryPrice)}</div>
-              <div><strong>Quantidade:</strong> {selectedTrade.quantity}</div>
-              <div><strong>Custo Total (BRL):</strong> {formatCurrency(selectedTrade.entryPrice * selectedTrade.quantity)}</div>
+      {isModalOpen && selectedTrade && (() => {
+        const potentialLoss = (selectedTrade.type === 'compra')
+          ? (selectedTrade.stopLoss - selectedTrade.entryPrice) * selectedTrade.quantity
+          : (selectedTrade.entryPrice - selectedTrade.stopLoss) * selectedTrade.quantity;
+
+        const potentialProfit = (selectedTrade.type === 'compra')
+          ? (selectedTrade.takeProfit - selectedTrade.entryPrice) * selectedTrade.quantity
+          : (selectedTrade.entryPrice - selectedTrade.takeProfit) * selectedTrade.quantity;
+
+        return (
+          <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Detalhes da Operação">
+            <div className={styles.modalContent}>
+              <h4>Dados da Operação</h4>
+              <div className={styles.modalGrid}>
+                <div><strong>Ativo / Par:</strong> {selectedTrade.symbol}</div>
+                <div><strong>Tipo:</strong> {selectedTrade.type}</div>
+                <div><strong>Preço de Entrada:</strong> {formatCurrency(selectedTrade.entryPrice)}</div>
+                <div><strong>Quantidade:</strong> {selectedTrade.quantity}</div>
+                <div><strong>Custo Total (BRL):</strong> {formatCurrency(selectedTrade.entryPrice * selectedTrade.quantity)}</div>
+              </div>
+              <h4>Gestão de Risco</h4>
+              <div className={styles.modalGrid}>
+                <div><strong>Perda Potencial (BRL):</strong> <span className={potentialLoss < 0 ? styles.loss : ''}>{formatCurrency(potentialLoss)}</span></div>
+                <div><strong>Lucro Potencial (BRL):</strong> <span className={potentialProfit > 0 ? styles.profit : ''}>{formatCurrency(potentialProfit)}</span></div>
+              </div>
+              {selectedTrade.notes && (
+                <>
+                  <h4>Análise e Observações</h4>
+                  <p>{selectedTrade.notes}</p>
+                </>
+              )}
             </div>
-            <h4>Gestão de Risco</h4>
-            <div className={styles.modalGrid}>
-              <div><strong>Stop Loss:</strong> {formatCurrency(selectedTrade.stopLoss)}</div>
-              <div><strong>Take Profit:</strong> {formatCurrency(selectedTrade.takeProfit)}</div>
-            </div>
-            {selectedTrade.notes && (
-              <>
-                <h4>Análise e Observações</h4>
-                <p>{selectedTrade.notes}</p>
-              </>
-            )}
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        );
+      })()}
     </Card>
   );
 };
