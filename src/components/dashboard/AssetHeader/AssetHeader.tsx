@@ -24,13 +24,22 @@ const AssetHeader: React.FC<AssetHeaderProps> = ({ symbol, price, open, high, lo
   const changePercent = open !== 0 ? (change / open) * 100 : 0;
   const isPositive = change >= 0;
 
+  const calculatePrecision = (value: number) => {
+    if (value === 0) return 4;
+    const absValue = Math.abs(value);
+    const logValue = Math.floor(Math.log10(absValue));
+    return logValue < 0 ? -logValue + 2 : 4;
+  };
+
+  const changePrecision = calculatePrecision(change);
+
   return (
     <div className={styles.headerContainer}>
       <div className={styles.symbolInfo}>
         <h2 className={styles.symbol}>{symbol}</h2>
         <p className={styles.price}>{formatAsUSD(price)}</p>
         <p className={`${styles.change} ${isPositive ? styles.positive : styles.negative}`}>
-          {change.toFixed(4)} ({changePercent.toFixed(2)}%)
+          {change.toFixed(changePrecision)} ({changePercent.toFixed(2)}%)
         </p>
       </div>
       <div className={styles.marketInfo}>
