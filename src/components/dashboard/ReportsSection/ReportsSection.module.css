@@ -4,6 +4,11 @@
   gap: 2rem;
 }
 
+.modalTriggerContainer {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
 .chartsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
