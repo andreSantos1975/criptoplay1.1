@@ -20,6 +20,7 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
+import CapitalMovementForm from "@/components/CapitalMovementForm/CapitalMovementForm";
 
 // Interfaces
 interface Trade {
@@ -195,9 +196,6 @@ const generateMonthlyReportData = (
 
 export const ReportsSection = () => {
   const queryClient = useQueryClient();
-  const [amount, setAmount] = useState("");
-  const [type, setType] = useState<"DEPOSIT" | "WITHDRAWAL">("DEPOSIT");
-  const [description, setDescription] = useState("");
 
   const {
     data: trades = [],
@@ -252,21 +250,7 @@ export const ReportsSection = () => {
     [trades, capitalMovements, brlRate]
   );
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: (newMovement: Omit<CapitalMovement, "id" | "date"> & { date: string }) =>
-      fetch("/api/capital-movements", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newMovement),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["capitalMovements", "trades"] });
-      alert("Movimento registrado!");
-      setAmount("");
-      setDescription("");
-    },
-    onError: (err: any) => alert(`Erro: ${err.message}`),
-  });
+  
 
   if (isLoading)
     return (
@@ -289,69 +273,7 @@ export const ReportsSection = () => {
   return (
     <div className={styles.reportsSection}>
       {/* Formulário */}
-      <Card className={styles.formCard}>
-        <CardHeader>
-          <CardTitle>Registrar Movimento de Capital</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              mutate({
-                amount: parseFloat(amount.replace(",", ".")),
-                type,
-                description,
-                date: new Date().toISOString(),
-              });
-            }}
-            className={styles.formGrid}
-          >
-            <div className={styles.inputGroup}>
-              <label>Valor (R$)</label>
-              <input
-                type="text"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="100,00"
-                required
-                className={styles.input}
-              />
-            </div>
-            <div className={styles.inputGroup}>
-              <label>Tipo</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value as any)}
-                required
-                className={styles.select}
-              >
-                <option value="DEPOSIT">Aporte</option>
-                <option value="WITHDRAWAL">Retirada</option>
-              </select>
-            </div>
-            <div
-              className={styles.inputGroup}
-              style={{ gridColumn: "span 2" }}
-            >
-              <label>Descrição</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Aporte inicial"
-                className={styles.textarea}
-              ></textarea>
-            </div>
-            <Button
-              type="submit"
-              disabled={isPending}
-              className={styles.submitButton}
-              style={{ gridColumn: "span 2" }}
-            >
-              {isPending ? "Registrando..." : "Registrar"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <CapitalMovementForm />
 
       {/* Gráficos */}
       <div className={styles.chartsGrid}>

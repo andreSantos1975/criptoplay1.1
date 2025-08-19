@@ -1,0 +1,44 @@
+.container {
+  min-height: 100vh;
+  background-color: #f8f8f8; /* A generic background color */
+  padding-top: 3rem; /* Equivalent to Tailwind's py-12 */
+  padding-bottom: 3rem; /* Equivalent to Tailwind's py-12 */
+  padding-left: 1rem; /* Equivalent to Tailwind's px-4 */
+  padding-right: 1rem; /* Equivalent to Tailwind's px-4 */
+}
+
+.contentWrapper {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 56rem; /* Equivalent to Tailwind's max-w-4xl */
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.marginBottom12 {
+  margin-bottom: 3rem; /* Equivalent to Tailwind's mb-12 */
+}
+
+.heading {
+  font-size: 2.25rem; /* Equivalent to Tailwind's text-4xl */
+  font-weight: 700; /* Equivalent to Tailwind's font-bold */
+  color: #333; /* A generic text color */
+  margin-bottom: 1rem; /* Equivalent to Tailwind's mb-4 */
+}
+
+.subheading {
+  font-size: 1.25rem; /* Equivalent to Tailwind's text-xl */
+  color: #666; /* A generic muted text color */
+}
+
+.marginTop8 {
+  margin-top: 2rem; /* Equivalent to Tailwind's mt-8 */
+}
+
+.smallText {
+  font-size: 0.875rem; /* Equivalent to Tailwind's text-sm */
+  color: #666; /* A generic muted text color */
+}
