@@ -21,7 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
 import CapitalMovementForm from "@/components/CapitalMovementForm/CapitalMovementForm";
-import Modal from "@/components/ui/modal/Modal";
 
 // Interfaces
 interface Trade {
@@ -197,7 +196,6 @@ const generateMonthlyReportData = (
 
 export const ReportsSection = () => {
   const queryClient = useQueryClient();
-  const [showModal, setShowModal] = useState(false);
 
   const {
     data: trades = [],
@@ -274,10 +272,8 @@ export const ReportsSection = () => {
 
   return (
     <div className={styles.reportsSection}>
-      {/* Botão para abrir o modal */}
-      <div className={styles.modalTriggerContainer}>
-        <Button onClick={() => setShowModal(true)}>Registrar Novo Movimento</Button>
-      </div>
+      {/* Temporarily render CapitalMovementForm directly for testing */}
+      <CapitalMovementForm />
 
       {/* Gráficos */}
       <div className={styles.chartsGrid}>
@@ -391,10 +387,6 @@ export const ReportsSection = () => {
         </CardContent>
       </Card>
 
-      {/* Modal para o formulário de movimento de capital */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Registrar Movimento de Capital">
-        <CapitalMovementForm />
-      </Modal>
-    </div>
+      </div>
   );
 };
