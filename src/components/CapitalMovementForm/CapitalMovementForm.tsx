@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,18 +10,49 @@ import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import styles from './CapitalMovementForm.module.css';
 
 interface CapitalMovementFormData {
-  valor: string;
-  tipo: 'DEPOSIT' | 'WITHDRAWAL' | '';
-  descricao: string;
+  amount: number;
+  type: 'DEPOSIT' | 'WITHDRAWAL';
+  description: string;
 }
 
 const CapitalMovementForm: React.FC = () => {
-  const [formData, setFormData] = useState<CapitalMovementFormData>({
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
     valor: '',
-    tipo: '',
+    tipo: '' as 'DEPOSIT' | 'WITHDRAWAL' | '',
     descricao: ''
   });
-  const [isLoading, setIsLoading] = useState(false);
+
+  const mutation = useMutation({
+    mutationFn: (newMovement: CapitalMovementFormData) => {
+      return fetch('/api/capital-movements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newMovement),
+      }).then(res => {
+        if (!res.ok) {
+          throw new Error('Falha ao registrar movimento');
+        }
+        return res.json();
+      });
+    },
+    onSuccess: () => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['capitalMovements'] });
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
+      setFormData({
+        valor: '',
+        tipo: '',
+        descricao: ''
+      });
+    },
+    onError: (error) => {
+      console.error("Erro ao registrar movimento:", error);
+      // Here you could add a toast notification to inform the user
+    }
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,22 +61,16 @@ const CapitalMovementForm: React.FC = () => {
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Movimento registrado:', formData);
-      setIsLoading(false);
-      // Reset form
-      setFormData({
-        valor: '',
-        tipo: '',
-        descricao: ''
-      });
-    }, 2000);
+    const amount = parseFloat(formData.valor.replace('.', '').replace(',', '.'));
+
+    mutation.mutate({
+      amount,
+      type: formData.tipo as 'DEPOSIT' | 'WITHDRAWAL',
+      description: formData.descricao
+    });
   };
 
-  const handleInputChange = (field: keyof CapitalMovementFormData, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -158,10 +184,10 @@ const CapitalMovementForm: React.FC = () => {
           <div className={styles.pt4}>
             <Button
               type="submit"
-              disabled={!isFormValid || isLoading}
+              disabled={!isFormValid || mutation.isPending}
               className={styles.button}
             >
-              {isLoading ? (
+              {mutation.isPending ? (
                 <>
                   <Loader2 className={styles.loaderIcon} />
                   Registrando...

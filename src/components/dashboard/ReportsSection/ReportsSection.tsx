@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -347,10 +348,10 @@ export const ReportsSection = () => {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={monthlyReportData}>
+            <BarChart data={monthlyReportData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
-              <YAxis yAxisId="left" tickFormatter={formatCurrency} />
+              <YAxis yAxisId="left" tickFormatter={formatCurrency} width={100} />
               <YAxis yAxisId="right" orientation="right" />
               <Tooltip
                 formatter={(value: any, name: string) =>

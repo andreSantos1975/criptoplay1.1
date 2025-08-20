@@ -41,9 +41,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { amount, type, date, description } = body;
 
-    // Basic validation
-    if (amount == null || !type) {
-        return NextResponse.json({ error: 'Amount and type are required' }, { status: 400 });
+    // Enhanced validation
+    if (amount == null || typeof amount !== 'number' || isNaN(amount) || !type) {
+        return NextResponse.json({ error: 'Amount must be a valid number and type is required' }, { status: 400 });
     }
     if (type !== 'DEPOSIT' && type !== 'WITHDRAWAL') {
         return NextResponse.json({ error: 'Invalid movement type' }, { status: 400 });
