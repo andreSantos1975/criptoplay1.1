@@ -115,3 +115,23 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.kpiValue {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.positive {
+  color: #22c55e; /* green-500 */
+}
+
+.negative {
+  color: #ef4444; /* red-500 */
+}

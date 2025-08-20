@@ -253,6 +253,29 @@ export const ReportsSection = () => {
 
   
 
+  const kpiData = useMemo(() => {
+    const totalDeposits = capitalMovements
+      .filter((m) => m.type === 'DEPOSIT')
+      .reduce((acc, m) => acc + Number(m.amount), 0);
+
+    const totalWithdrawals = capitalMovements
+      .filter((m) => m.type === 'WITHDRAWAL')
+      .reduce((acc, m) => acc + Number(m.amount), 0);
+
+    const totalPnl = trades
+      .filter((t) => t.status === 'CLOSED' && t.pnl != null)
+      .reduce((acc, t) => acc + Number(t.pnl) * brlRate, 0);
+
+    const patrimonioAtual = totalDeposits - totalWithdrawals + totalPnl;
+
+    return {
+      totalDeposits,
+      totalWithdrawals,
+      totalPnl,
+      patrimonioAtual,
+    };
+  }, [trades, capitalMovements, brlRate]);
+
   if (isLoading)
     return (
       <Card>
@@ -273,8 +296,43 @@ export const ReportsSection = () => {
 
   return (
     <div className={styles.reportsSection}>
-      {/* Temporarily render CapitalMovementForm directly for testing */}
-      <CapitalMovementForm />
+      {/* KPIs */}
+      <div className={styles.kpiGrid}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Patrimônio Atual</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={styles.kpiValue}>{formatCurrency(kpiData.patrimonioAtual)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Lucro/Prejuízo Total</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={`${styles.kpiValue} ${kpiData.totalPnl >= 0 ? styles.positive : styles.negative}`}>
+              {formatCurrency(kpiData.totalPnl)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Total de Aportes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={styles.kpiValue}>{formatCurrency(kpiData.totalDeposits)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Total de Retiradas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={styles.kpiValue}>{formatCurrency(kpiData.totalWithdrawals)}</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Gráficos */}
       <div className={styles.chartsGrid}>
