@@ -123,33 +123,33 @@ export const TechnicalAnalysisChart = memo(
     });
 
     useEffect(() => {
-      if (!chartContainerRef.current || !chartData || chartData.length === 0) return;
-
-      // If a chart already exists, remove it and clear its series
-      if (chartRef.current) {
-        Object.values(seriesRef.current).forEach(series => {
-          if (series) chartRef.current?.removeSeries(series); // Remove from the *old* chart
-        });
-        chartRef.current.remove(); // Remove the old chart instance
-        chartRef.current = null; // Clear the ref
-        seriesRef.current = {}; // Clear series ref as well
+      if (
+        !chartContainerRef.current ||
+        !chartData ||
+        chartData.length === 0
+      ) {
+        return;
       }
 
-      // Create a new chart instance
       const chart = createChart(chartContainerRef.current, {
-        layout: { background: { type: ColorType.Solid, color: "#131722" }, textColor: "#D9D9D9" },
-        grid: { vertLines: { color: "#2A2E39" }, horzLines: { color: "#2A2E39" } },
+        layout: {
+          background: { type: ColorType.Solid, color: '#131722' },
+          textColor: '#D9D9D9',
+        },
+        grid: {
+          vertLines: { color: '#2A2E39' },
+          horzLines: { color: '#2A2E39' },
+        },
         width: chartContainerRef.current.clientWidth,
         height: 400,
         crosshair: { mode: CrosshairMode.Normal },
         handleScroll: true,
         handleScale: true,
       });
-      chartRef.current = chart; // Store the new chart instance
+      chartRef.current = chart;
 
-      // Helper function to calculate precision
       const calculatePrecision = (price: number) => {
-        if (price === 0) return 2; // Default precision
+        if (price === 0) return 2;
         const priceString = price.toString();
         if (priceString.includes('.')) {
           const decimalPart = priceString.split('.')[1];
@@ -161,10 +161,9 @@ export const TechnicalAnalysisChart = memo(
               break;
             }
           }
-          // Add a few extra digits for precision beyond the first significant digit
           return leadingZeros + 4;
         }
-        return 2; // Default for whole numbers
+        return 2;
       };
 
       const firstPrice = chartData[0]?.close || 0;
@@ -178,12 +177,12 @@ export const TechnicalAnalysisChart = memo(
       });
 
       const candlestickSeries = chart.addSeries(CandlestickSeries, {
-        upColor: "#26a69a",
-        downColor: "#ef5350",
-        borderUpColor: "#26a69a",
-        borderDownColor: "#ef5350",
-        wickUpColor: "#26a69a",
-        wickDownColor: "#ef5350",
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderUpColor: '#26a69a',
+        borderDownColor: '#ef5350',
+        wickUpColor: '#26a69a',
+        wickDownColor: '#ef5350',
         title: selectedCrypto,
         priceFormat: {
           type: 'price',
@@ -194,7 +193,6 @@ export const TechnicalAnalysisChart = memo(
       candlestickSeries.setData(chartData);
       seriesRef.current[selectedCrypto] = candlestickSeries;
 
-      // Price lines will be associated with the primary series
       const primarySeries = candlestickSeries;
 
       if (primarySeries) {
@@ -209,28 +207,40 @@ export const TechnicalAnalysisChart = memo(
             title,
           });
 
-        priceLinesRef.current.entry = createPriceLine(tradeLevels.entry, "#42A5F5", "Entrada");
-        priceLinesRef.current.takeProfit = createPriceLine(tradeLevels.takeProfit, "#26A69A", "Take Profit");
-        priceLinesRef.current.stopLoss = createPriceLine(tradeLevels.stopLoss, "#EF5350", "Stop Loss");
+        priceLinesRef.current.entry = createPriceLine(
+          tradeLevels.entry,
+          '#42A5F5',
+          'Entrada'
+        );
+        priceLinesRef.current.takeProfit = createPriceLine(
+          tradeLevels.takeProfit,
+          '#26A69A',
+          'Take Profit'
+        );
+        priceLinesRef.current.stopLoss = createPriceLine(
+          tradeLevels.stopLoss,
+          '#EF5350',
+          'Stop Loss'
+        );
       }
 
-      // Click para "pegar/soltar" a linha + mover com o crosshair
       const onClick = (param: MouseEventParams) => {
-        const series = primarySeries; // Use primarySeries for price line interaction
+        const series = primarySeries;
         if (!series || !param.point) return;
 
-        // já estava arrastando -> solta e confirma
         if (draggedLineRef.current) {
           const { key, line } = draggedLineRef.current;
           const brlRate = exchangeRateData?.usdtToBrl || 1;
           const priceInUSD = line.options().price / brlRate;
-          onLevelsChange({ ...latestTradeLevelsRef.current, [key]: priceInUSD });
+          onLevelsChange({
+            ...latestTradeLevelsRef.current,
+            [key]: priceInUSD,
+          });
           draggedLineRef.current = null;
-          chart.applyOptions({ handleScroll: true, handleScale: true }); // Use local 'chart' variable
+          chart.applyOptions({ handleScroll: true, handleScale: true });
           return;
         }
 
-        // tenta "pegar" uma linha próxima
         const y = param.point.y;
         const priceAtCursor = series.coordinateToPrice(y);
         if (priceAtCursor == null) return;
@@ -240,44 +250,55 @@ export const TechnicalAnalysisChart = memo(
         if (pTop == null || pBottom == null) return;
         const tolerance = Math.abs(pTop - pBottom);
 
-        (Object.keys(priceLinesRef.current) as PriceLineKey[]).forEach((key) => {
-          const line = priceLinesRef.current[key];
-          if (!line) return;
-          if (Math.abs(line.options().price - priceAtCursor) <= tolerance) {
-            draggedLineRef.current = { line, key };
-            chart.applyOptions({ handleScroll: false, handleScale: false }); // Use local 'chart' variable
+        (Object.keys(priceLinesRef.current) as PriceLineKey[]).forEach(
+          (key) => {
+            const line = priceLinesRef.current[key];
+            if (!line) return;
+            if (
+              Math.abs(line.options().price - priceAtCursor) <= tolerance
+            ) {
+              draggedLineRef.current = { line, key };
+              chart.applyOptions({
+                handleScroll: false,
+                handleScale: false,
+              });
+            }
           }
-        });
+        );
       };
 
       const onCrosshairMove = (param: MouseEventParams) => {
         if (!draggedLineRef.current) return;
-        const series = primarySeries; // Use primarySeries for price line interaction
+        const series = primarySeries;
         if (!series || !param.point) return;
 
         const price = series.coordinateToPrice(param.point.y);
-        if (price != null) draggedLineRef.current.line.applyOptions({ price });
+        if (price != null) {
+          draggedLineRef.current.line.applyOptions({ price });
+        }
       };
 
       chart.subscribeClick(onClick);
       chart.subscribeCrosshairMove(onCrosshairMove);
 
-      const handleResize = () =>
-        chart.applyOptions({ width: chartContainerRef.current?.clientWidth || 0 });
-      window.addEventListener("resize", handleResize);
+      const handleResize = () => {
+        chart.applyOptions({
+          width: chartContainerRef.current?.clientWidth || 0,
+        });
+      };
+      window.addEventListener('resize', handleResize);
 
       return () => {
-        window.removeEventListener("resize", handleResize);
-        // Only remove chart if it was created in this effect run
-        if (chartRef.current) {
-          chartRef.current.unsubscribeClick(onClick);
-          chartRef.current.unsubscribeCrosshairMove(onCrosshairMove);
-          chartRef.current.remove();
-          chartRef.current = null; // Clear the ref
-        }
+        window.removeEventListener('resize', handleResize);
+        chart.unsubscribeClick(onClick);
+        chart.unsubscribeCrosshairMove(onCrosshairMove);
+        chart.remove();
+        chartRef.current = null;
+        seriesRef.current = {};
+        priceLinesRef.current = {};
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [chartData, selectedCrypto]); // Depend on selectedCrypto
+    }, [chartData, selectedCrypto, exchangeRateData, onLevelsChange, tradeLevels]); // Depend on selectedCrypto
 
     useEffect(() => {
       const brlRate = exchangeRateData?.usdtToBrl || 1;
