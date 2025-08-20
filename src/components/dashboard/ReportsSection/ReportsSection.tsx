@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
@@ -22,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
 import CapitalMovementForm from "@/components/CapitalMovementForm/CapitalMovementForm";
+import Modal from "@/components/ui/modal/Modal";
 
 // Interfaces
 interface Trade {
@@ -196,7 +196,7 @@ const generateMonthlyReportData = (
 };
 
 export const ReportsSection = () => {
-  const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
     data: trades = [],
@@ -251,8 +251,6 @@ export const ReportsSection = () => {
     [trades, capitalMovements, brlRate]
   );
 
-  
-
   const kpiData = useMemo(() => {
     const totalDeposits = capitalMovements
       .filter((m) => m.type === 'DEPOSIT')
@@ -290,12 +288,25 @@ export const ReportsSection = () => {
         <CardHeader>
           <CardTitle>Erro</CardTitle>
         </CardHeader>
-        <CardContent>{(error as any).message}</CardContent>
+        <CardContent>{(error as Error).message}</CardContent>
       </Card>
     );
 
   return (
     <div className={styles.reportsSection}>
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title="Registrar Movimento de Capital"
+      >
+        <CapitalMovementForm onFormSubmit={() => setIsModalOpen(false)} />
+      </Modal>
+
+      <div className={styles.headerContainer}>
+        <h1 className={styles.mainTitle}>Relatórios</h1>
+        <Button onClick={() => setIsModalOpen(true)}>Adicionar Movimentação</Button>
+      </div>
+
       {/* KPIs */}
       <div className={styles.kpiGrid}>
         <Card>
@@ -348,7 +359,7 @@ export const ReportsSection = () => {
                 <XAxis dataKey="date" />
                 <YAxis tickFormatter={formatCurrency} width={100} />
                 <Tooltip
-                  formatter={(v: any) => [formatCurrency(v), "Saldo"]}
+                  formatter={(v: number) => [formatCurrency(v), "Saldo"]}
                 />
                 <Legend />
                 <Line
@@ -387,7 +398,7 @@ export const ReportsSection = () => {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(v: any) => [formatCurrency(v), "Valor"]}
+                    formatter={(v: number) => [formatCurrency(v), "Valor"]}
                   />
                   <Legend />
                 </PieChart>
@@ -412,7 +423,7 @@ export const ReportsSection = () => {
               <YAxis yAxisId="left" tickFormatter={formatCurrency} width={100} />
               <YAxis yAxisId="right" orientation="right" />
               <Tooltip
-                formatter={(value: any, name: string) =>
+                formatter={(value: number, name: string) =>
                   name === "Trades" ? value : formatCurrency(value)
                 }
               />
@@ -446,6 +457,6 @@ export const ReportsSection = () => {
         </CardContent>
       </Card>
 
-      </div>
+    </div>
   );
 };

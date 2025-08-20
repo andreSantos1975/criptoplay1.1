@@ -48,7 +48,7 @@ const fetchTrades = async (): Promise<Trade[]> => {
     throw new Error("Falha ao buscar as operações.");
   }
   const data = await response.json();
-  return data.map((trade: any) => ({
+  return data.map((trade: Trade) => ({
     ...trade,
     entryPrice: parseFloat(trade.entryPrice) || 0,
     exitPrice: trade.exitPrice != null ? parseFloat(trade.exitPrice) : null,
@@ -64,7 +64,7 @@ const fetchCapitalMovements = async (): Promise<CapitalMovement[]> => {
     throw new Error("Falha ao buscar movimentos de capital.");
   }
   const data = await response.json();
-  return data.map((movement: any) => ({
+  return data.map((movement: CapitalMovement) => ({
     ...movement,
     amount: parseFloat(movement.amount) || 0,
   }));

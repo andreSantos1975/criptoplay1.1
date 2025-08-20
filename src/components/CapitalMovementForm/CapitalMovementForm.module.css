@@ -186,3 +186,27 @@
 .pt4 {
   padding-top: 1rem; /* Equivalent to Tailwind's pt-4 */
 }
+
+.radioGroup {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  height: 3rem; /* Match input height */
+}
+
+.radioItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.radioInput {
+  accent-color: #6366f1; /* Match button gradient */
+  width: 1rem;
+  height: 1rem;
+}
+
+.radioLabel {
+  font-weight: 500; /* fontMedium */
+  color: #1f2937; /* textCardForeground */
+}

@@ -37,7 +37,7 @@ const fetchTrades = async (): Promise<Trade[]> => {
   const response = await fetch("/api/trades");
   if (!response.ok) throw new Error("Falha ao buscar as operações.");
   const data = await response.json();
-  return data.map((trade: any) => ({
+  return data.map((trade: Trade) => ({
     ...trade,
     entryPrice: parseFloat(trade.entryPrice) || 0,
     exitPrice: trade.exitPrice != null ? parseFloat(trade.exitPrice) : null,
@@ -86,7 +86,7 @@ const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
     throw new Error("Erro ao buscar dados da Binance API");
   }
   const data = await response.json();
-  return data.filter((crypto: any) => symbols.includes(crypto.symbol));
+  return data.filter((crypto: CryptoData) => symbols.includes(crypto.symbol));
 };
 
 

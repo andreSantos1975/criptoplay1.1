@@ -135,3 +135,15 @@
 .negative {
   color: #ef4444; /* red-500 */
 }
+
+.headerContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.mainTitle {
+  font-size: 2.25rem;
+  font-weight: bold;
+}

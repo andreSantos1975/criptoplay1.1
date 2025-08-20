@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Loader2, TrendingUp } from 'lucide-react';
 import styles from './CapitalMovementForm.module.css';
 
 interface CapitalMovementFormData {
@@ -15,7 +14,11 @@ interface CapitalMovementFormData {
   description: string;
 }
 
-const CapitalMovementForm: React.FC = () => {
+interface CapitalMovementFormProps {
+  onFormSubmit?: () => void;
+}
+
+const CapitalMovementForm: React.FC<CapitalMovementFormProps> = ({ onFormSubmit }) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     valor: '',
@@ -39,7 +42,6 @@ const CapitalMovementForm: React.FC = () => {
       });
     },
     onSuccess: () => {
-      // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ['capitalMovements'] });
       queryClient.invalidateQueries({ queryKey: ['trades'] });
       setFormData({
@@ -47,10 +49,10 @@ const CapitalMovementForm: React.FC = () => {
         tipo: '',
         descricao: ''
       });
+      onFormSubmit?.();
     },
     onError: (error) => {
       console.error("Erro ao registrar movimento:", error);
-      // Here you could add a toast notification to inform the user
     }
   });
 
@@ -70,11 +72,16 @@ const CapitalMovementForm: React.FC = () => {
     });
   };
 
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({ ...prev, valor: e.target.value }));
+  };
+
+  const handleTipoChange = (value: 'DEPOSIT' | 'WITHDRAWAL' | '') => {
+    setFormData(prev => ({ ...prev, tipo: value }));
+  };
+
+  const handleDescricaoChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, descricao: e.target.value }));
   };
 
   const isFormValid = formData.valor && formData.tipo && formData.descricao;
@@ -92,9 +99,7 @@ const CapitalMovementForm: React.FC = () => {
       
       <CardContent>
         <form onSubmit={handleSubmit} className={styles.formSpaceY}>
-          {/* Grid layout for form fields */}
           <div className={styles.gridCols1MdCols2}>
-            {/* Valor Field */}
             <div className={styles.spaceY2}>
               <Label 
                 htmlFor="valor" 
@@ -107,7 +112,7 @@ const CapitalMovementForm: React.FC = () => {
                 type="text"
                 placeholder="100,00"
                 value={formData.valor}
-                onChange={(e) => handleInputChange('valor', e.target.value)}
+                onChange={handleValorChange}
                 className={styles.input}
                 aria-describedby="valor-help"
                 required
@@ -117,48 +122,44 @@ const CapitalMovementForm: React.FC = () => {
               </p>
             </div>
 
-            {/* Tipo Field */}
             <div className={styles.spaceY2}>
-              <Label 
-                htmlFor="tipo" 
-                className={`${styles.textSm} ${styles.fontMedium} ${styles.textCardForeground}`}
-              >
+              <Label className={`${styles.textSm} ${styles.fontMedium} ${styles.textCardForeground}`}>
                 Tipo
               </Label>
-              <Select 
-                value={formData.tipo} 
-                onValueChange={(value: 'DEPOSIT' | 'WITHDRAWAL') => handleInputChange('tipo', value)}
-                required
-              >
-                <SelectTrigger 
-                  id="tipo"
-                  className={styles.selectTrigger}
-                  aria-describedby="tipo-help"
-                >
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent className={styles.selectContent}>
-                  <SelectItem value="DEPOSIT" className={styles.selectItem}>
-                    <div className={styles.flexItemsCenterGap2}>
-                      <TrendingUp className={`h-4 w-4 ${styles.textSuccess}`} />
-                      Aporte
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="WITHDRAWAL" className={styles.selectItem}>
-                    <div className={styles.flexItemsCenterGap2}>
-                      <TrendingDown className={`h-4 w-4 ${styles.textDestructive}`} />
-                      Retirada
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div role="radiogroup" className={styles.radioGroup} aria-labelledby="tipo-label">
+                <div className={styles.radioItem}>
+                  <input
+                    type="radio"
+                    id="deposit"
+                    name="tipo"
+                    value="DEPOSIT"
+                    checked={formData.tipo === 'DEPOSIT'}
+                    onChange={() => handleTipoChange('DEPOSIT')}
+                    className={styles.radioInput}
+                    required
+                  />
+                  <Label htmlFor="deposit" className={styles.radioLabel}>Aporte</Label>
+                </div>
+                <div className={styles.radioItem}>
+                  <input
+                    type="radio"
+                    id="withdrawal"
+                    name="tipo"
+                    value="WITHDRAWAL"
+                    checked={formData.tipo === 'WITHDRAWAL'}
+                    onChange={() => handleTipoChange('WITHDRAWAL')}
+                    className={styles.radioInput}
+                    required
+                  />
+                  <Label htmlFor="withdrawal" className={styles.radioLabel}>Retirada</Label>
+                </div>
+              </div>
               <p id="tipo-help" className={`${styles.textXs} ${styles.textMutedForeground}`}>
                 Escolha entre aporte ou retirada
               </p>
             </div>
           </div>
 
-          {/* Descrição Field - Full width */}
           <div className={styles.spaceY2}>
             <Label 
               htmlFor="descricao" 
@@ -170,7 +171,7 @@ const CapitalMovementForm: React.FC = () => {
               id="descricao"
               placeholder="Aporte inicial"
               value={formData.descricao}
-              onChange={(e) => handleInputChange('descricao', e.target.value)}
+              onChange={handleDescricaoChange}
               className={styles.textarea}
               aria-describedby="descricao-help"
               required
@@ -180,7 +181,6 @@ const CapitalMovementForm: React.FC = () => {
             </p>
           </div>
 
-          {/* Submit Button */}
           <div className={styles.pt4}>
             <Button
               type="submit"

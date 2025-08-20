@@ -30,15 +30,9 @@ const AssetHeader: React.FC<AssetHeaderProps> = ({ symbol, price, open, high, lo
   const changePercent = open !== 0 ? ((price - open) / open) * 100 : 0;
   const isPositive = changeInBRL >= 0;
 
-  const calculatePrecision = (value: number) => {
-    if (value === 0) return 4;
-    const absValue = Math.abs(value);
-    const logValue = Math.floor(Math.log10(absValue));
-    // Adjust precision for BRL values
-    return logValue < 0 ? -logValue + 2 : 2;
-  };
+  
 
-  const changePrecision = calculatePrecision(changeInBRL);
+  
 
   return (
     <div className={styles.headerContainer}>

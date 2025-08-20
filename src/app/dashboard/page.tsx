@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { KPICard } from "@/components/dashboard/KPICard/KPICard";
+
 import { NavigationTabs } from "@/components/dashboard/NavigationTabs/NavigationTabs";
 import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable";
 import { RecentOperationsTable } from "@/components/dashboard/RecentOperationsTable/RecentOperationsTable";

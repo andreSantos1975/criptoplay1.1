@@ -15,3 +15,18 @@
    * TRXUSDT (Tron / Tether)
    * MATICUSDT (Polygon / Tether)
    * UNIUSDT (Uniswap / Tether)
+
+   ---------------------------------------------
+
+
+
+   1. src/components/dashboard/ReportsSection/ReportsSection.tsx: Para adicionar o estado que
+      controla o modal, o botão que o abre e o próprio componente do modal.
+   2. src/components/CapitalMovementForm/CapitalMovementForm.tsx: Para que, após o envio
+      bem-sucedido do formulário, ele possa "avisar" a página para fechar o modal.
+      ---------------------------
+
+       1. src/components/dashboard/ReportsSection/ReportsSection.tsx: Para ver como o modal é chamado.
+   2. src/components/CapitalMovementForm/CapitalMovementForm.tsx: Para ver o formulário em si.
+   3. src/components/ui/modal/Modal.tsx: Para entender como o componente de modal funciona.
+   4. src/components/ui/select/select.tsx: Para inspecionar o componente de seleção.

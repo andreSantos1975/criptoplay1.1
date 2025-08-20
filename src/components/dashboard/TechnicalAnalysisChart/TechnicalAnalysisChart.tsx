@@ -297,7 +297,7 @@ export const TechnicalAnalysisChart = memo(
         seriesRef.current = {};
         priceLinesRef.current = {};
       };
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      
     }, [chartData, selectedCrypto, exchangeRateData, onLevelsChange, tradeLevels]); // Depend on selectedCrypto
 
     useEffect(() => {
