@@ -49,6 +49,26 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Invalid movement type' }, { status: 400 });
     }
 
+    if (type === 'WITHDRAWAL') {
+      const movements = await prisma.capitalMovement.findMany({
+        where: {
+          userId: session.user.id,
+        },
+      });
+
+      const totalEquity = movements.reduce((acc, movement) => {
+        if (movement.type === 'DEPOSIT') {
+          return acc.plus(movement.amount);
+        } else {
+          return acc.minus(movement.amount);
+        }
+      }, new Decimal(0));
+
+      if (new Decimal(amount).greaterThan(totalEquity)) {
+        return NextResponse.json({ error: 'Insufficient funds for withdrawal' }, { status: 400 });
+      }
+    }
+
     const newMovement = await prisma.capitalMovement.create({
       data: {
         userId: session.user.id,
