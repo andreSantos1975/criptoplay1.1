@@ -1,6 +1,6 @@
 .card {
   width: 100%;
-  max-width: 42rem; /* Equivalent to Tailwind's max-w-2xl */
+  max-width: 38rem; /* Equivalent to Tailwind's max-w-xl */
   margin-left: auto;
   margin-right: auto;
   border-radius: 1rem; /* Equivalent to Tailwind's rounded-2xl */
