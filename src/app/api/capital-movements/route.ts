@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       }, new Decimal(0));
 
       if (new Decimal(amount).greaterThan(totalEquity)) {
-        return NextResponse.json({ error: 'Insufficient funds for withdrawal' }, { status: 400 });
+        return NextResponse.json({ error: 'Saldo insuficiente para retirada' }, { status: 400 });
       }
     }
 

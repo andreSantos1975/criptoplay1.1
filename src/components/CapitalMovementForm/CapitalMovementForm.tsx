@@ -26,33 +26,45 @@ const CapitalMovementForm: React.FC<CapitalMovementFormProps> = ({ onFormSubmit 
     descricao: ''
   });
 
+  const [error, setError] = useState<string | null>(null);
+
   const mutation = useMutation({
-    mutationFn: (newMovement: CapitalMovementFormData) => {
-      return fetch('/api/capital-movements', {
+    mutationFn: async (newMovement: CapitalMovementFormData) => {
+      const response = await fetch('/api/capital-movements', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(newMovement),
-      }).then(res => {
-        if (!res.ok) {
-          throw new Error('Falha ao registrar movimento');
-        }
-        return res.json();
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { error: errorData.error || 'Falha ao registrar movimento' };
+      }
+
+      return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['capitalMovements'] });
-      queryClient.invalidateQueries({ queryKey: ['trades'] });
-      setFormData({
-        valor: '',
-        tipo: '',
-        descricao: ''
-      });
-      onFormSubmit?.();
+    onSuccess: (data) => {
+      if (data.error) {
+        // Trata como erro de regra de negócio (saldo insuficiente, etc.)
+        setError(data.error);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['capitalMovements'] });
+        queryClient.invalidateQueries({ queryKey: ['trades'] });
+        setFormData({
+          valor: '',
+          tipo: '',
+          descricao: ''
+        });
+        setError(null);
+        onFormSubmit?.();
+      }
     },
     onError: (error) => {
-      console.error("Erro ao registrar movimento:", error);
+      // Aqui sim é um erro real de rede/servidor
+      setError(error.message);
+      console.error("Erro inesperado ao registrar movimento:", error);
     }
   });
 
@@ -74,14 +86,17 @@ const CapitalMovementForm: React.FC<CapitalMovementFormProps> = ({ onFormSubmit 
 
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({ ...prev, valor: e.target.value }));
+    setError(null);
   };
 
   const handleTipoChange = (value: 'DEPOSIT' | 'WITHDRAWAL' | '') => {
     setFormData(prev => ({ ...prev, tipo: value }));
+    setError(null);
   };
 
   const handleDescricaoChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, descricao: e.target.value }));
+    setError(null);
   };
 
   const isFormValid = formData.valor && formData.tipo && formData.descricao;
@@ -99,6 +114,7 @@ const CapitalMovementForm: React.FC<CapitalMovementFormProps> = ({ onFormSubmit 
       
       <CardContent>
         <form onSubmit={handleSubmit} className={styles.formSpaceY}>
+          {error && <div key={error}><p className="text-red-500">{error}</p></div>}
           <div className={styles.gridCols1MdCols2}>
             <div className={styles.spaceY2}>
               <Label 
