@@ -193,39 +193,8 @@ export const TechnicalAnalysisChart = memo(
       candlestickSeries.setData(chartData);
       seriesRef.current[selectedCrypto] = candlestickSeries;
 
-      const primarySeries = candlestickSeries;
-
-      if (primarySeries) {
-        const brlRate = exchangeRateData?.usdtToBrl || 1;
-        const createPriceLine = (price: number, color: string, title: string) =>
-          primarySeries.createPriceLine({
-            price: price * brlRate,
-            color,
-            lineWidth: 2,
-            lineStyle: LineStyle.Dashed,
-            axisLabelVisible: true,
-            title,
-          });
-
-        priceLinesRef.current.entry = createPriceLine(
-          tradeLevels.entry,
-          '#42A5F5',
-          'Entrada'
-        );
-        priceLinesRef.current.takeProfit = createPriceLine(
-          tradeLevels.takeProfit,
-          '#26A69A',
-          'Take Profit'
-        );
-        priceLinesRef.current.stopLoss = createPriceLine(
-          tradeLevels.stopLoss,
-          '#EF5350',
-          'Stop Loss'
-        );
-      }
-
       const onClick = (param: MouseEventParams) => {
-        const series = primarySeries;
+        const series = seriesRef.current[selectedCrypto];
         if (!series || !param.point) return;
 
         if (draggedLineRef.current) {
@@ -269,7 +238,7 @@ export const TechnicalAnalysisChart = memo(
 
       const onCrosshairMove = (param: MouseEventParams) => {
         if (!draggedLineRef.current) return;
-        const series = primarySeries;
+        const series = seriesRef.current[selectedCrypto];
         if (!series || !param.point) return;
 
         const price = series.coordinateToPrice(param.point.y);
@@ -297,18 +266,50 @@ export const TechnicalAnalysisChart = memo(
         seriesRef.current = {};
         priceLinesRef.current = {};
       };
-      
-    }, [chartData, selectedCrypto, exchangeRateData, onLevelsChange, tradeLevels]); // Depend on selectedCrypto
+    }, [chartData, selectedCrypto, exchangeRateData, onLevelsChange]);
 
     useEffect(() => {
+      const primarySeries = seriesRef.current[selectedCrypto];
       const brlRate = exchangeRateData?.usdtToBrl || 1;
-      if (priceLinesRef.current.entry)
-        priceLinesRef.current.entry.applyOptions({ price: tradeLevels.entry * brlRate });
-      if (priceLinesRef.current.takeProfit)
-        priceLinesRef.current.takeProfit.applyOptions({ price: tradeLevels.takeProfit * brlRate });
-      if (priceLinesRef.current.stopLoss)
-        priceLinesRef.current.stopLoss.applyOptions({ price: tradeLevels.stopLoss * brlRate });
-    }, [tradeLevels, exchangeRateData]);
+
+      if (!primarySeries || !brlRate) return;
+
+      const createOrUpdatePriceLine = (
+        key: PriceLineKey,
+        price: number,
+        color: string,
+        title: string
+      ) => {
+        const line = priceLinesRef.current[key];
+        const newPrice = price * brlRate;
+        if (line) {
+          line.applyOptions({ price: newPrice });
+        } else {
+          priceLinesRef.current[key] = primarySeries.createPriceLine({
+            price: newPrice,
+            color,
+            lineWidth: 2,
+            lineStyle: LineStyle.Dashed,
+            axisLabelVisible: true,
+            title,
+          });
+        }
+      };
+
+      createOrUpdatePriceLine('entry', tradeLevels.entry, '#42A5F5', 'Entrada');
+      createOrUpdatePriceLine(
+        'takeProfit',
+        tradeLevels.takeProfit,
+        '#26A69A',
+        'Take Profit'
+      );
+      createOrUpdatePriceLine(
+        'stopLoss',
+        tradeLevels.stopLoss,
+        '#EF5350',
+        'Stop Loss'
+      );
+    }, [tradeLevels, exchangeRateData, chartData, selectedCrypto]);
 
     if (isLoading) return <div>Loading chart...</div>;
     if (error) return <div>Error fetching chart data</div>;
