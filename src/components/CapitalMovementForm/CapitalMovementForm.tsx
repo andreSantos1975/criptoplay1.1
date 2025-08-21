@@ -63,7 +63,7 @@ const CapitalMovementForm: React.FC<CapitalMovementFormProps> = ({ onFormSubmit 
       return;
     }
 
-    const amount = parseFloat(formData.valor.replace('.', '').replace(',', '.'));
+    const amount = parseFloat(formData.valor.replace(',', '.'));
 
     mutation.mutate({
       amount,
