@@ -298,7 +298,7 @@ export const TechnicalAnalysisChart = memo(
         priceLinesRef.current = {};
       };
       
-    }, [chartData, selectedCrypto, exchangeRateData, onLevelsChange, tradeLevels]); // Depend on selectedCrypto
+    }, [chartData, selectedCrypto, exchangeRateData, onLevelsChange]); // Depend on selectedCrypto
 
     useEffect(() => {
       const brlRate = exchangeRateData?.usdtToBrl || 1;
