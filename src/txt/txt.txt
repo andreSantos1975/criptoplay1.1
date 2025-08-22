@@ -46,6 +46,59 @@ npm run lint
 npm run build 
 ---------------------------------------------------------------------------------
 
+🔑 Funções Essenciais da Aba de Finança Pessoal
+1. Visão Geral (Dashboard)
+
+Saldo atual (contas, carteira digital, investimentos).
+
+Entradas e saídas recentes.
+
+Gráfico simples de evolução do saldo ou despesas do mês.
+
+Destaques (ex.: “Você gastou mais em alimentação este mês”).
+
+2. Controle de Receitas e Despesas
+
+Cadastro rápido de transações (com categorias: alimentação, transporte, lazer, etc.).
+
+Possibilidade de anexar comprovantes/notas fiscais (foto ou PDF).
+
+Opção de adicionar transações recorrentes (salário, aluguel, assinatura Netflix).
+
+Filtros por data, categoria, conta.
+
+3. Orçamentos e Metas
+
+Definição de limites mensais por categoria (ex.: R$ 800 em alimentação).
+
+Alertas quando estiver próximo de estourar o orçamento.
+
+Metas financeiras (ex.: guardar R$ 5.000 até dezembro).
+
+4. Gestão de Contas e Cartões
+
+Cadastro de múltiplas contas (corrente, poupança, carteira digital, crédito).
+
+Controle de limite do cartão de crédito e fatura.
+
+Possibilidade de conciliação bancária manual ou automática (se houver integração).
+
+5. Relatórios e Gráficos
+
+Gráficos de pizza (distribuição de gastos por categoria).
+
+Gráficos de linha/barras (evolução mensal de receitas, despesas e saldo).
+
+Relatórios exportáveis (PDF, Excel).
+
+6. Alertas e Notificações Inteligentes
+
+Aviso de contas a pagar e a receber.
+
+Lembretes de metas e orçamentos.
+
+Insights automáticos (“Você gastou 20% a mais com transporte este mês”).
+
 
 
 
