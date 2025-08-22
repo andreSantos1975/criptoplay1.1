@@ -1,0 +1,90 @@
+.summaryGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(1, 1fr);
+}
+
+@media (min-width: 768px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .summaryGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.summaryCard {
+  background: var(--gradient-card, linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(218 15% 98%) 100%));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease-in-out;
+}
+
+.summaryCard:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+}
+
+.cardTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.icon {
+  height: 1rem;
+  width: 1rem;
+  color: var(--muted-foreground);
+}
+
+.value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.description {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.pendingCard {
+  background: hsl(0 84% 60% / 0.1); /* --destructive with alpha */
+}
+
+.pendingCard .value,
+.pendingCard .icon {
+  color: hsl(var(--destructive));
+}
+
+.paidCard {
+  background: hsl(var(--success-light));
+}
+
+.paidCard .value,
+.paidCard .icon {
+  color: hsl(var(--success));
+}
+
+.economyCard {
+  background: var(--gradient-hero);
+}
+
+.economyCard .cardTitle,
+.economyCard .value,
+.economyCard .description,
+.economyCard .icon {
+  color: hsl(var(--primary-foreground));
+}

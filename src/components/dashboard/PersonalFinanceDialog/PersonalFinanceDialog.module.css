@@ -1,0 +1,73 @@
+.dialogOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.dialogContent {
+  background-color: hsl(var(--card));
+  padding: 1.5rem;
+  border-radius: 0.75rem; /* --radius */
+  width: 90%;
+  max-width: 450px; /* Slightly wider */
+  box-shadow: var(--shadow-strong);
+  border: 1px solid hsl(var(--border));
+}
+
+.dialogHeader {
+  margin-bottom: 1rem;
+}
+
+.dialogTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.dialogDescription {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.formGrid {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.formGroup {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.dialogFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.saveButton {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: var(--radius);
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.saveButton:hover {
+  background: hsl(var(--primary-muted));
+}
+
+.saveButton:disabled {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  cursor: not-allowed;
+}
