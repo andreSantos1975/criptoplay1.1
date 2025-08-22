@@ -3,48 +3,61 @@ import { Expense } from "@/types/personal-finance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import styles from "./PersonalFinanceDialog.module.css";
 
 interface PersonalFinanceDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (expense: Omit<Expense, 'id'>) => void;
+  onSave: (expense: Omit<Expense, "id">) => void;
   expense?: Expense;
 }
 
-export function PersonalFinanceDialog({ isOpen, onClose, onSave, expense }: PersonalFinanceDialogProps) {
+export function PersonalFinanceDialog({
+  isOpen,
+  onClose,
+  onSave,
+  expense,
+}: PersonalFinanceDialogProps) {
   const [categoria, setCategoria] = useState("");
   const [valor, setValor] = useState("");
-  const [dataVencimento, setDataVencimento] = useState("");
-  const [status, setStatus] = useState<'Pendente' | 'Pago'>('Pendente');
+  const [dataVencimento, setDataVencimento] = useState<Date | undefined>();
+  const [status, setStatus] = useState<"Pendente" | "Pago">("Pendente");
 
   useEffect(() => {
-    if (isOpen) {
-      if (expense) {
-        setCategoria(expense.categoria);
-        setValor(expense.valor.toString());
-        setDataVencimento(new Date(expense.dataVencimento).toISOString().split('T')[0]);
-        setStatus(expense.status as 'Pendente' | 'Pago');
+    if (expense) {
+      setCategoria(expense.categoria);
+      setValor(expense.valor.toString());
+
+      // 🔹 Garantir que dataVencimento seja um Date válido
+      if (expense.dataVencimento) {
+        const parsedDate =
+          expense.dataVencimento instanceof Date
+            ? expense.dataVencimento
+            : new Date(expense.dataVencimento);
+        setDataVencimento(parsedDate);
       } else {
-        setCategoria("");
-        setValor("");
-        setDataVencimento("");
-        setStatus('Pendente');
+        setDataVencimento(undefined);
       }
+
+      setStatus(expense.status);
+    } else {
+      setCategoria("");
+      setValor("");
+      setDataVencimento(undefined);
+      setStatus("Pendente");
     }
   }, [expense, isOpen]);
 
   const handleSave = () => {
     if (!categoria || !valor || !dataVencimento) return;
 
-    const valorNumerico = parseFloat(valor.replace(',', '.'));
+    const valorNumerico = parseFloat(valor.replace(",", "."));
     if (isNaN(valorNumerico)) return;
 
     onSave({
       categoria,
       valor: valorNumerico,
-      dataVencimento: new Date(`${dataVencimento}T00:00:00`),
+      dataVencimento,
       status,
     });
 
@@ -53,11 +66,15 @@ export function PersonalFinanceDialog({ isOpen, onClose, onSave, expense }: Pers
 
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
-    value = value.replace(/[^\d,.]/g, '');
+    value = value.replace(/[^\d,.]/g, "");
     setValor(value);
   };
 
-  const isFormValid = categoria && valor && dataVencimento && !isNaN(parseFloat(valor.replace(',', '.')));
+  const isFormValid =
+    categoria &&
+    valor &&
+    dataVencimento &&
+    !isNaN(parseFloat(valor.replace(",", ".")));
 
   if (!isOpen) return null;
 
@@ -65,9 +82,13 @@ export function PersonalFinanceDialog({ isOpen, onClose, onSave, expense }: Pers
     <div className={styles.dialogOverlay}>
       <div className={styles.dialogContent}>
         <div className={styles.dialogHeader}>
-          <h3 className={styles.dialogTitle}>{expense ? 'Editar Despesa' : 'Nova Despesa'}</h3>
+          <h3 className={styles.dialogTitle}>
+            {expense ? "Editar Despesa" : "Nova Despesa"}
+          </h3>
           <p className={styles.dialogDescription}>
-            {expense ? 'Altere os dados da despesa.' : 'Adicione uma nova despesa ao seu controle financeiro.'}
+            {expense
+              ? "Altere os dados da despesa."
+              : "Adicione uma nova despesa ao seu controle financeiro."}
           </p>
         </div>
 
@@ -97,22 +118,29 @@ export function PersonalFinanceDialog({ isOpen, onClose, onSave, expense }: Pers
             <Input
               id="dataVencimento"
               type="date"
-              value={dataVencimento}
-              onChange={(e) => setDataVencimento(e.target.value)}
+              value={
+                dataVencimento instanceof Date &&
+                !isNaN(dataVencimento.getTime())
+                  ? dataVencimento.toISOString().split("T")[0]
+                  : ""
+              }
+              onChange={(e) => setDataVencimento(new Date(e.target.value))}
             />
           </div>
 
           <div className={styles.formGroup}>
-            <Label>Status</Label>
-            <Select value={status} onValueChange={(value: 'Pendente' | 'Pago') => setStatus(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Pendente">Pendente</SelectItem>
-                <SelectItem value="Pago">Pago</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="status">Status</Label>
+            <select
+              id="status"
+              className={styles.selectInput}
+              value={status}
+              onChange={(e) =>
+                setStatus(e.target.value as "Pendente" | "Pago")
+              }
+            >
+              <option value="Pendente">Pendente</option>
+              <option value="Pago">Pago</option>
+            </select>
           </div>
         </div>
 
@@ -120,12 +148,12 @@ export function PersonalFinanceDialog({ isOpen, onClose, onSave, expense }: Pers
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={!isFormValid}
             className={styles.saveButton}
           >
-            {expense ? 'Salvar Alterações' : 'Adicionar Despesa'}
+            {expense ? "Salvar Alterações" : "Adicionar Despesa"}
           </Button>
         </div>
       </div>
