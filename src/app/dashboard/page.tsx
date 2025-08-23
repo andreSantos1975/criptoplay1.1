@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { NavigationTabs } from "@/components/dashboard/NavigationTabs/NavigationTabs";
 import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable";
 import { RecentOperationsTable } from "@/components/dashboard/RecentOperationsTable/RecentOperationsTable";
+import { IncomeTable } from "@/components/dashboard/IncomeTable/IncomeTable";
+import { PersonalFinanceDialog } from "@/components/dashboard/PersonalFinanceDialog/PersonalFinanceDialog";
+import { Expense, Income } from "@/types/personal-finance";
 import dynamic from "next/dynamic";
 import TradeJournal from "@/components/dashboard/TradeJournal/TradeJournal";
 import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
@@ -40,6 +43,46 @@ const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("painel");
   const [klines, setKlines] = useState<BinanceKline[]>([]);
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT');
+
+  const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
+  const [isIncomeDialogOpen, setIsIncomeDialogOpen] = useState(false);
+  const [editingIncome, setEditingIncome] = useState<Income | undefined>();
+
+  const { data: expenses = [], isLoading: isLoadingExpenses, isError: isErrorExpenses } = useQuery<Expense[]>({
+    queryKey: ['expenses'],
+    queryFn: async () => {
+      const response = await fetch("/api/expenses");
+      if (!response.ok) throw new Error("Network response was not ok");
+      return response.json();
+    },
+  });
+
+  const { data: incomes = [], isLoading: isLoadingIncomes, isError: isErrorIncomes } = useQuery<Income[]>({
+    queryKey: ['incomes'],
+    queryFn: async () => {
+      const response = await fetch("/api/incomes");
+      if (!response.ok) throw new Error("Network response was not ok");
+      return response.json();
+    },
+  });
+
+  const summary = useMemo(() => {
+    const pendentes = expenses.filter(e => e.status === 'Pendente');
+    const pagos = expenses.filter(e => e.status === 'Pago');
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.valor, 0);
+    const totalIncome = incomes.reduce((sum, i) => sum + i.amount, 0);
+    
+    return {
+      totalPendentes: pendentes.reduce((sum, e) => sum + e.valor, 0),
+      totalPagos: pagos.reduce((sum, e) => sum + e.valor, 0),
+      totalGeral: totalExpenses,
+      countPendentes: pendentes.length,
+      countPagos: pagos.length,
+      totalIncome: totalIncome,
+      balance: totalIncome - totalExpenses,
+    };
+  }, [expenses, incomes]);
 
   const { data: exchangeRateData } = useQuery({
     queryKey: ["exchangeRate"],
@@ -92,6 +135,35 @@ const DashboardPage = () => {
     setSelectedCrypto(symbol);
   };
 
+  const handleAddExpense = () => {
+    setEditingExpense(undefined);
+    setIsExpenseDialogOpen(true);
+  };
+
+  const handleEditExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setIsExpenseDialogOpen(true);
+  };
+
+  const handleAddIncome = () => {
+    setEditingIncome(undefined);
+    setIsIncomeDialogOpen(true);
+  };
+
+  const handleEditIncome = (income: Income) => {
+    setEditingIncome(income);
+    setIsIncomeDialogOpen(true);
+  };
+
+  const handleSaveItem = (item: Omit<Expense, "id"> | Omit<Income, "id">, type: "expense" | "income") => {
+    // This function will be passed to PersonalFinanceDialog
+    // and will call the appropriate mutation from PersonalFinanceTable
+    // For now, we'll just close the dialogs. The actual mutation logic
+    // will be handled within PersonalFinanceTable.
+    setIsExpenseDialogOpen(false);
+    setIsIncomeDialogOpen(false);
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "painel":
@@ -104,7 +176,29 @@ const DashboardPage = () => {
           </>
         );
       case "pessoal":
-        return <PersonalFinanceTable />;
+        return (
+          <div className={styles.personalFinanceContainer}>
+            <PersonalFinanceTable
+              onAddExpense={handleAddExpense}
+              onEditExpense={handleEditExpense}
+              summary={summary}
+            />
+            <IncomeTable
+              onAddIncome={handleAddIncome}
+              onEditIncome={handleEditIncome}
+            />
+            <PersonalFinanceDialog
+              isOpen={isExpenseDialogOpen || isIncomeDialogOpen}
+              onClose={() => {
+                setIsExpenseDialogOpen(false);
+                setIsIncomeDialogOpen(false);
+              }}
+              onSave={handleSaveItem}
+              item={editingExpense || editingIncome}
+              type={isExpenseDialogOpen ? "expense" : "income"}
+            />
+          </div>
+        );
       case "analise":
         const latestKline = klines && klines.length > 0 ? klines[klines.length - 1] : null;
         const brlRate = exchangeRateData?.usdtToBrl || 1; // Default to 1 if rate not available

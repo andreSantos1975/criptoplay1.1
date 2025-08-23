@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Expense, ExpenseSummary } from "@/types/personal-finance";
+import { Expense, ExpenseSummary, Income } from "@/types/personal-finance";
 import { PersonalFinanceSummary } from "../PersonalFinanceSummary/PersonalFinanceSummary";
-import { PersonalFinanceDialog } from "../PersonalFinanceDialog/PersonalFinanceDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,34 +28,6 @@ const fetchExpenses = async (): Promise<Expense[]> => {
   return response.json();
 };
 
-const addExpense = async (newExpense: Omit<Expense, 'id'>): Promise<Expense> => {
-  const response = await fetch("/api/expenses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(newExpense),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to add expense");
-  }
-  return response.json();
-};
-
-const updateExpense = async (updatedExpense: Expense): Promise<Expense> => {
-  const response = await fetch(`/api/expenses/${updatedExpense.id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(updatedExpense),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to update expense");
-  }
-  return response.json();
-};
-
 const deleteExpense = async (id: string): Promise<void> => {
   const response = await fetch(`/api/expenses/${id}`, {
     method: "DELETE",
@@ -66,10 +37,14 @@ const deleteExpense = async (id: string): Promise<void> => {
   }
 };
 
-export const PersonalFinanceTable = () => {
+interface PersonalFinanceTableProps {
+  onAddExpense: () => void;
+  onEditExpense: (expense: Expense) => void;
+  summary: ExpenseSummary;
+}
+
+export const PersonalFinanceTable = ({ onAddExpense, onEditExpense, summary }: PersonalFinanceTableProps) => {
   const queryClient = useQueryClient();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -78,57 +53,12 @@ export const PersonalFinanceTable = () => {
     queryFn: fetchExpenses,
   });
 
-  const addMutation = useMutation({
-    mutationFn: addExpense,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: updateExpense,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: deleteExpense,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
     },
   });
-
-  const summary: ExpenseSummary = useMemo(() => {
-    const pendentes = expenses.filter(e => e.status === 'Pendente');
-    const pagos = expenses.filter(e => e.status === 'Pago');
-    
-    return {
-      totalPendentes: pendentes.reduce((sum, e) => sum + e.valor, 0),
-      totalPagos: pagos.reduce((sum, e) => sum + e.valor, 0),
-      totalGeral: expenses.reduce((sum, e) => sum + e.valor, 0),
-      countPendentes: pendentes.length,
-      countPagos: pagos.length,
-    };
-  }, [expenses]);
-
-  const handleAddExpense = () => {
-    setEditingExpense(undefined);
-    setIsDialogOpen(true);
-  };
-
-  const handleEditExpense = (expense: Expense) => {
-    setEditingExpense(expense);
-    setIsDialogOpen(true);
-  };
-
-  const handleSaveExpense = (expenseData: Omit<Expense, 'id'>) => {
-    if (editingExpense) {
-      updateMutation.mutate({ ...expenseData, id: editingExpense.id });
-    } else {
-      addMutation.mutate(expenseData);
-    }
-  };
 
   const handleDeleteExpense = (id: string) => {
     deleteMutation.mutate(id);
@@ -171,7 +101,7 @@ export const PersonalFinanceTable = () => {
         <CardHeader className={styles.cardHeader}>
           <div className={styles.headerTop}>
             <CardTitle className={styles.cardTitle}>Minhas Despesas</CardTitle>
-            <Button onClick={handleAddExpense} className={styles.addButton}>
+            <Button onClick={onAddExpense} className={styles.addButton}>
               <Plus className="w-4 h-4 mr-2" />
               Nova Despesa
             </Button>
@@ -246,7 +176,7 @@ export const PersonalFinanceTable = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleEditExpense(expense)}
+                            onClick={() => onEditExpense(expense)}
                           >
                             <Edit className={styles.actionIcon} />
                           </Button>
@@ -267,13 +197,6 @@ export const PersonalFinanceTable = () => {
           </div>
         </CardContent>
       </Card>
-
-      <PersonalFinanceDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        onSave={handleSaveExpense}
-        expense={editingExpense}
-      />
     </div>
   );
 };

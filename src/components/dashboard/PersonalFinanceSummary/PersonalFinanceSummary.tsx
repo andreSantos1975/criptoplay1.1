@@ -18,7 +18,7 @@ export function PersonalFinanceSummary({ summary }: PersonalFinanceSummaryProps)
     <div className={styles.summaryGrid}>
       <Card className={styles.summaryCard}>
         <CardHeader className={styles.cardHeader}>
-          <CardTitle className={styles.cardTitle}>Total Geral</CardTitle>
+          <CardTitle className={styles.cardTitle}>Total Geral (Despesas)</CardTitle>
           <span className={styles.icon}>💲</span>
         </CardHeader>
         <CardContent>
@@ -51,6 +51,32 @@ export function PersonalFinanceSummary({ summary }: PersonalFinanceSummaryProps)
           <div className={styles.value}>{formatCurrency(summary.totalPagos)}</div>
           <p className={styles.description}>
             {summary.countPagos} contas pagas
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className={`${styles.summaryCard} ${styles.incomeCard}`}>
+        <CardHeader className={styles.cardHeader}>
+          <CardTitle className={styles.cardTitle}>Total de Renda</CardTitle>
+          <span className={styles.icon}>💰</span>
+        </CardHeader>
+        <CardContent>
+          <div className={styles.value}>{formatCurrency(summary.totalIncome)}</div>
+          <p className={styles.description}>
+            Soma de todas as suas rendas
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className={`${styles.summaryCard} ${styles.balanceCard}`}>
+        <CardHeader className={styles.cardHeader}>
+          <CardTitle className={styles.cardTitle}>Balanço</CardTitle>
+          <span className={styles.icon}>📊</span>
+        </CardHeader>
+        <CardContent>
+          <div className={styles.value}>{formatCurrency(summary.balance)}</div>
+          <p className={styles.description}>
+            Renda total - Despesa total
           </p>
         </CardContent>
       </Card>

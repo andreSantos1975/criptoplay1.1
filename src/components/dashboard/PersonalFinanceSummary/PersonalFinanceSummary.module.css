@@ -4,7 +4,7 @@
   grid-template-columns: repeat(1, 1fr);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .summaryGrid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -12,7 +12,13 @@
 
 @media (min-width: 1024px) {
   .summaryGrid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr); /* Adjusted for 6 cards */
+  }
+}
+
+@media (min-width: 1280px) {
+  .summaryGrid {
+    grid-template-columns: repeat(6, 1fr); /* Adjusted for 6 cards */
   }
 }
 
@@ -76,6 +82,24 @@
 .paidCard .value,
 .paidCard .icon {
   color: hsl(var(--success));
+}
+
+.incomeCard {
+  background: hsl(142 76% 36% / 0.1); /* A green tone for income */
+}
+
+.incomeCard .value,
+.incomeCard .icon {
+  color: hsl(142 76% 36%);
+}
+
+.balanceCard {
+  background: hsl(210 40% 96% / 0.1); /* A neutral tone for balance */
+}
+
+.balanceCard .value,
+.balanceCard .icon {
+  color: hsl(210 40% 96%);
 }
 
 .economyCard {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Expense } from "@/types/personal-finance";
+import { Expense, Income } from "@/types/personal-finance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,73 +8,98 @@ import styles from "./PersonalFinanceDialog.module.css";
 interface PersonalFinanceDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (expense: Omit<Expense, "id">) => void;
-  expense?: Expense;
+  onSave: (item: Omit<Expense, "id"> | Omit<Income, "id">, type: "expense" | "income") => void;
+  item?: Expense | Income;
+  type: "expense" | "income";
 }
 
 export function PersonalFinanceDialog({
   isOpen,
   onClose,
   onSave,
-  expense,
+  item,
+  type,
 }: PersonalFinanceDialogProps) {
-  const [categoria, setCategoria] = useState("");
-  const [valor, setValor] = useState("");
-  const [dataVencimento, setDataVencimento] = useState<Date | undefined>();
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<"Pendente" | "Pago">("Pendente");
 
   useEffect(() => {
-    if (expense) {
-      setCategoria(expense.categoria);
-      setValor(expense.valor.toString());
-
-      // 🔹 Garantir que dataVencimento seja um Date válido
-      if (expense.dataVencimento) {
-        const parsedDate =
-          expense.dataVencimento instanceof Date
-            ? expense.dataVencimento
-            : new Date(expense.dataVencimento);
-        setDataVencimento(parsedDate);
-      } else {
-        setDataVencimento(undefined);
+    if (item) {
+      if (type === "expense") {
+        const expenseItem = item as Expense;
+        setDescription(expenseItem.categoria);
+        setAmount(expenseItem.valor.toString());
+        if (expenseItem.dataVencimento) {
+          const parsedDate =
+            expenseItem.dataVencimento instanceof Date
+              ? expenseItem.dataVencimento
+              : new Date(expenseItem.dataVencimento);
+          setDate(parsedDate);
+        } else {
+          setDate(undefined);
+        }
+        setStatus(expenseItem.status);
+      } else if (type === "income") {
+        const incomeItem = item as Income;
+        setDescription(incomeItem.description);
+        setAmount(incomeItem.amount.toString());
+        if (incomeItem.date) {
+          const parsedDate =
+            incomeItem.date instanceof Date
+              ? incomeItem.date
+              : new Date(incomeItem.date);
+          setDate(parsedDate);
+        } else {
+          setDate(undefined);
+        }
+        // Income does not have status
+        setStatus("Pendente");
       }
-
-      setStatus(expense.status);
     } else {
-      setCategoria("");
-      setValor("");
-      setDataVencimento(undefined);
+      setDescription("");
+      setAmount("");
+      setDate(undefined);
       setStatus("Pendente");
     }
-  }, [expense, isOpen]);
+  }, [item, isOpen, type]);
 
   const handleSave = () => {
-    if (!categoria || !valor || !dataVencimento) return;
+    if (!description || !amount || !date) return;
 
-    const valorNumerico = parseFloat(valor.replace(",", "."));
-    if (isNaN(valorNumerico)) return;
+    const numericAmount = parseFloat(amount.replace(",", "."));
+    if (isNaN(numericAmount)) return;
 
-    onSave({
-      categoria,
-      valor: valorNumerico,
-      dataVencimento,
-      status,
-    });
+    if (type === "expense") {
+      onSave({
+        categoria: description,
+        valor: numericAmount,
+        dataVencimento: date,
+        status,
+      }, "expense");
+    } else if (type === "income") {
+      onSave({
+        description,
+        amount: numericAmount,
+        date,
+      }, "income");
+    }
 
     onClose();
   };
 
-  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
     value = value.replace(/[^\d,.]/g, "");
-    setValor(value);
+    setAmount(value);
   };
 
   const isFormValid =
-    categoria &&
-    valor &&
-    dataVencimento &&
-    !isNaN(parseFloat(valor.replace(",", ".")));
+    description &&
+    amount &&
+    date &&
+    !isNaN(parseFloat(amount.replace(",", ".")));
 
   if (!isOpen) return null;
 
@@ -83,65 +108,84 @@ export function PersonalFinanceDialog({
       <div className={styles.dialogContent}>
         <div className={styles.dialogHeader}>
           <h3 className={styles.dialogTitle}>
-            {expense ? "Editar Despesa" : "Nova Despesa"}
+            {item
+              ? type === "expense"
+                ? "Editar Despesa"
+                : "Editar Renda"
+              : type === "expense"
+              ? "Nova Despesa"
+              : "Nova Renda"}
           </h3>
           <p className={styles.dialogDescription}>
-            {expense
-              ? "Altere os dados da despesa."
-              : "Adicione uma nova despesa ao seu controle financeiro."}
+            {item
+              ? type === "expense"
+                ? "Altere os dados da despesa."
+                : "Altere os dados da renda."
+              : type === "expense"
+              ? "Adicione uma nova despesa ao seu controle financeiro."
+              : "Adicione uma nova renda ao seu controle financeiro."}
           </p>
         </div>
 
         <div className={styles.formGrid}>
           <div className={styles.formGroup}>
-            <Label htmlFor="categoria">Categoria</Label>
+            <Label htmlFor="description">
+              {type === "expense" ? "Categoria" : "Descrição"}
+            </Label>
             <Input
-              id="categoria"
-              placeholder="Ex: Conta de Água"
-              value={categoria}
-              onChange={(e) => setCategoria(e.target.value)}
+              id="description"
+              placeholder={
+                type === "expense"
+                  ? "Ex: Conta de Água"
+                  : "Ex: Salário, Freelance"
+              }
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
           <div className={styles.formGroup}>
-            <Label htmlFor="valor">Valor (R$)</Label>
+            <Label htmlFor="amount">Valor (R$)</Label>
             <Input
-              id="valor"
+              id="amount"
               placeholder="Ex: 150,00"
-              value={valor}
-              onChange={handleValorChange}
+              value={amount}
+              onChange={handleAmountChange}
             />
           </div>
 
           <div className={styles.formGroup}>
-            <Label htmlFor="dataVencimento">Data de Vencimento</Label>
+            <Label htmlFor="date">
+              {type === "expense" ? "Data de Vencimento" : "Data"}
+            </Label>
             <Input
-              id="dataVencimento"
+              id="date"
               type="date"
               value={
-                dataVencimento instanceof Date &&
-                !isNaN(dataVencimento.getTime())
-                  ? dataVencimento.toISOString().split("T")[0]
+                date instanceof Date && !isNaN(date.getTime())
+                  ? date.toISOString().split("T")[0]
                   : ""
               }
-              onChange={(e) => setDataVencimento(new Date(e.target.value))}
+              onChange={(e) => setDate(new Date(e.target.value))}
             />
           </div>
 
-          <div className={styles.formGroup}>
-            <Label htmlFor="status">Status</Label>
-            <select
-              id="status"
-              className={styles.selectInput}
-              value={status}
-              onChange={(e) =>
-                setStatus(e.target.value as "Pendente" | "Pago")
-              }
-            >
-              <option value="Pendente">Pendente</option>
-              <option value="Pago">Pago</option>
-            </select>
-          </div>
+          {type === "expense" && (
+            <div className={styles.formGroup}>
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                className={styles.selectInput}
+                value={status}
+                onChange={(e) =>
+                  setStatus(e.target.value as "Pendente" | "Pago")
+                }
+              >
+                <option value="Pendente">Pendente</option>
+                <option value="Pago">Pago</option>
+              </select>
+            </div>
+          )}
         </div>
 
         <div className={styles.dialogFooter}>
@@ -153,7 +197,11 @@ export function PersonalFinanceDialog({
             disabled={!isFormValid}
             className={styles.saveButton}
           >
-            {expense ? "Salvar Alterações" : "Adicionar Despesa"}
+            {item
+              ? "Salvar Alterações"
+              : type === "expense"
+              ? "Adicionar Despesa"
+              : "Adicionar Renda"}
           </Button>
         </div>
       </div>

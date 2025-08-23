@@ -12,4 +12,13 @@ export interface ExpenseSummary {
   totalGeral: number;
   countPendentes: number;
   countPagos: number;
+  totalIncome: number;
+  balance: number;
+}
+
+export interface Income {
+  id: string;
+  description: string;
+  amount: number;
+  date: Date;
 }
