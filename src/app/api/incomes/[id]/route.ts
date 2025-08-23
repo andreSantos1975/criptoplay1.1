@@ -9,7 +9,7 @@ interface Params {
   };
 }
 
-export async function PUT(request: Request, { params }: Params) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   const { id } = params;
 
@@ -49,7 +49,7 @@ export async function PUT(request: Request, { params }: Params) {
   return NextResponse.json(response);
 }
 
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   const { id } = params;
 

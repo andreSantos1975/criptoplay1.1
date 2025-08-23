@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Expense, ExpenseSummary, Income } from "@/types/personal-finance";
+import { Expense, ExpenseSummary } from "@/types/personal-finance";
 import { PersonalFinanceSummary } from "../PersonalFinanceSummary/PersonalFinanceSummary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,8 @@ export const PersonalFinanceTable = ({ onAddExpense, onEditExpense, summary }: P
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const { data: expenses = [], isLoading, isError } = useQuery<Expense[]>({
     queryKey: ['expenses'],
@@ -76,6 +78,12 @@ export const PersonalFinanceTable = ({ onAddExpense, onEditExpense, summary }: P
     const matchesStatus = statusFilter === "all" || expense.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+  const paginatedExpenses = filteredExpenses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   if (isLoading) {
     return (
@@ -143,14 +151,14 @@ export const PersonalFinanceTable = ({ onAddExpense, onEditExpense, summary }: P
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredExpenses.length === 0 ? (
+                {paginatedExpenses.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className={styles.noResults}>
                       Nenhuma despesa encontrada
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredExpenses.map((expense) => (
+                  paginatedExpenses.map((expense) => (
                     <TableRow key={expense.id}>
                       <TableCell className={styles.categoryCell}>
                         {expense.categoria}
@@ -195,6 +203,23 @@ export const PersonalFinanceTable = ({ onAddExpense, onEditExpense, summary }: P
               </TableBody>
             </Table>
           </div>
+          {totalPages > 1 && (
+            <div className={styles.pagination}>
+              <Button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <span>Página {currentPage} de {totalPages}</span>
+              <Button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

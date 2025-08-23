@@ -30,7 +30,7 @@ export function PersonalFinanceDialog({
       if (type === "expense") {
         const expenseItem = item as Expense;
         setDescription(expenseItem.categoria);
-        setAmount(expenseItem.valor.toString());
+        setAmount(expenseItem.valor ? expenseItem.valor.toString() : "");
         if (expenseItem.dataVencimento) {
           const parsedDate =
             expenseItem.dataVencimento instanceof Date
@@ -44,7 +44,7 @@ export function PersonalFinanceDialog({
       } else if (type === "income") {
         const incomeItem = item as Income;
         setDescription(incomeItem.description);
-        setAmount(incomeItem.amount.toString());
+        setAmount(incomeItem.amount ? incomeItem.amount.toString() : "");
         if (incomeItem.date) {
           const parsedDate =
             incomeItem.date instanceof Date

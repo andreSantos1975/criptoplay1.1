@@ -26,34 +26,6 @@ const fetchIncomes = async (): Promise<Income[]> => {
   return response.json();
 };
 
-const addIncome = async (newIncome: Omit<Income, 'id'>): Promise<Income> => {
-  const response = await fetch("/api/incomes", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(newIncome),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to add income");
-  }
-  return response.json();
-};
-
-const updateIncome = async (updatedIncome: Income): Promise<Income> => {
-  const response = await fetch(`/api/incomes/${updatedIncome.id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(updatedIncome),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to update income");
-  }
-  return response.json();
-};
-
 const deleteIncome = async (id: string): Promise<void> => {
   const response = await fetch(`/api/incomes/${id}`, {
     method: "DELETE",
@@ -71,6 +43,8 @@ interface IncomeTableProps {
 export const IncomeTable = ({ onAddIncome, onEditIncome }: IncomeTableProps) => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const { data: incomes = [], isLoading, isError } = useQuery<Income[]>({
     queryKey: ['incomes'],
@@ -99,6 +73,12 @@ export const IncomeTable = ({ onAddIncome, onEditIncome }: IncomeTableProps) => 
     const matchesSearch = income.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
+
+  const totalPages = Math.ceil(filteredIncomes.length / itemsPerPage);
+  const paginatedIncomes = filteredIncomes.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   if (isLoading) {
     return (
@@ -152,14 +132,14 @@ export const IncomeTable = ({ onAddIncome, onEditIncome }: IncomeTableProps) => 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredIncomes.length === 0 ? (
+              {paginatedIncomes.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className={styles.noResults}>
                     Nenhuma renda encontrada
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredIncomes.map((income) => (
+                paginatedIncomes.map((income) => (
                   <TableRow key={income.id}>
                     <TableCell className={styles.descriptionCell}>
                       {income.description}
@@ -194,6 +174,23 @@ export const IncomeTable = ({ onAddIncome, onEditIncome }: IncomeTableProps) => 
             </TableBody>
           </Table>
         </div>
+        {totalPages > 1 && (
+          <div className={styles.pagination}>
+            <Button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Anterior
+            </Button>
+            <span>Página {currentPage} de {totalPages}</span>
+            <Button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Próxima
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
