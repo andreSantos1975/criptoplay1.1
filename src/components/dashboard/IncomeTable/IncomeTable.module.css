@@ -72,6 +72,13 @@
 }
 
 .searchInput {
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  height: 2.5rem; /* 40px */
+  width: 100%;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   padding-left: 2.5rem; /* Space for icon */
 }
 
