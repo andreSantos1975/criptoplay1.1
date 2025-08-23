@@ -178,14 +178,14 @@ const DashboardPage = () => {
       case "pessoal":
         return (
           <div className={styles.personalFinanceContainer}>
+            <IncomeTable
+              onAddIncome={handleAddIncome}
+              onEditIncome={handleEditIncome}
+            />
             <PersonalFinanceTable
               onAddExpense={handleAddExpense}
               onEditExpense={handleEditExpense}
               summary={summary}
-            />
-            <IncomeTable
-              onAddIncome={handleAddIncome}
-              onEditIncome={handleEditIncome}
             />
             <PersonalFinanceDialog
               isOpen={isExpenseDialogOpen || isIncomeDialogOpen}
