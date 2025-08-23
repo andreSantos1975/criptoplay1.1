@@ -268,7 +268,7 @@ const DashboardPage = () => {
         );
       case "pessoal":
         return (
-          <div className={styles.personalFinanceLayout}>
+          <>
             <Sidebar />
             <div className={styles.personalFinanceContainer}>
               <IncomeTable
@@ -291,7 +291,7 @@ const DashboardPage = () => {
                 type={isExpenseDialogOpen ? "expense" : "income"}
               />
             </div>
-          </div>
+          </>
         );
       case "analise":
         const latestKline = klines && klines.length > 0 ? klines[klines.length - 1] : null;

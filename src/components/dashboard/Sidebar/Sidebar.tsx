@@ -3,7 +3,7 @@ import styles from './Sidebar.module.css';
 
 const Sidebar = () => {
   return (
-    <aside className={styles.sidebar}>
+    <aside className={styles.topNav}>
       <h2 className={styles.title}>SeuFluxo</h2>
       <nav className={styles.nav}>
         <Link href="/dashboard" className={styles.link}>Dashboard</Link>

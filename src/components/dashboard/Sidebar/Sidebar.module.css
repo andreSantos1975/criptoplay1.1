@@ -1,22 +1,25 @@
-.sidebar {
+.topNav {
   background-color: hsl(var(--card));
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
-  height: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
 }
 
 .title {
   font-size: 1.25rem;
   font-weight: 700;
-  margin-bottom: 1.5rem;
   color: hsl(var(--foreground));
+  margin-bottom: 0;
 }
 
 .nav {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  flex-direction: row;
+  gap: 1.5rem;
 }
 
 .link {
