@@ -67,3 +67,15 @@
   flex-direction: column;
   gap: 2rem;
 }
+
+.personalFinanceLayout {
+  display: grid;
+  grid-template-columns: 240px 1fr; /* Sidebar width and main content */
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .personalFinanceLayout {
+    grid-template-columns: 1fr; /* Stack on smaller screens */
+  }
+}

@@ -12,6 +12,7 @@ import { Expense, Income } from "@/types/personal-finance";
 import dynamic from "next/dynamic";
 import TradeJournal from "@/components/dashboard/TradeJournal/TradeJournal";
 import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
+import Sidebar from "@/components/dashboard/Sidebar/Sidebar";
 
 const TechnicalAnalysisChart = dynamic(
   () =>
@@ -177,26 +178,29 @@ const DashboardPage = () => {
         );
       case "pessoal":
         return (
-          <div className={styles.personalFinanceContainer}>
-            <IncomeTable
-              onAddIncome={handleAddIncome}
-              onEditIncome={handleEditIncome}
-            />
-            <PersonalFinanceTable
-              onAddExpense={handleAddExpense}
-              onEditExpense={handleEditExpense}
-              summary={summary}
-            />
-            <PersonalFinanceDialog
-              isOpen={isExpenseDialogOpen || isIncomeDialogOpen}
-              onClose={() => {
-                setIsExpenseDialogOpen(false);
-                setIsIncomeDialogOpen(false);
-              }}
-              onSave={handleSaveItem}
-              item={editingExpense || editingIncome}
-              type={isExpenseDialogOpen ? "expense" : "income"}
-            />
+          <div className={styles.personalFinanceLayout}>
+            <Sidebar />
+            <div className={styles.personalFinanceContainer}>
+              <IncomeTable
+                onAddIncome={handleAddIncome}
+                onEditIncome={handleEditIncome}
+              />
+              <PersonalFinanceTable
+                onAddExpense={handleAddExpense}
+                onEditExpense={handleEditExpense}
+                summary={summary}
+              />
+              <PersonalFinanceDialog
+                isOpen={isExpenseDialogOpen || isIncomeDialogOpen}
+                onClose={() => {
+                  setIsExpenseDialogOpen(false);
+                  setIsIncomeDialogOpen(false);
+                }}
+                onSave={handleSaveItem}
+                item={editingExpense || editingIncome}
+                type={isExpenseDialogOpen ? "expense" : "income"}
+              />
+            </div>
           </div>
         );
       case "analise":
