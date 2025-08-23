@@ -99,6 +99,13 @@ Lembretes de metas e orçamentos.
 
 Insights automáticos (“Você gastou 20% a mais com transporte este mês”).
 
+==============================================
+
+
+ A base para a funcionalidade completa está implementada. O próximo passo seria adicionar a
+  lógica para submeter as ordens de cada tipo de painel, mas a estrutura visual e de dados está
+  pronta.
+
 
 
 

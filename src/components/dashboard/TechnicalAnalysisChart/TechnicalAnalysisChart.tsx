@@ -9,9 +9,9 @@ import {
   ISeriesApi,
   IPriceLine,
   MouseEventParams,
-  CandlestickSeries, // <<— v5: importe a definição da série
+  CandlestickSeries,
   UTCTimestamp,
-  IChartApi, // Add this import
+  IChartApi,
 } from "lightweight-charts";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./TechnicalAnalysisChart.module.css";
@@ -21,6 +21,7 @@ import { CryptoList } from "@/components/dashboard/CryptoList/CryptoList";
 import { TradePanel } from "@/components/dashboard/TradePanel/TradePanel";
 
 type PriceLineKey = "entry" | "takeProfit" | "stopLoss";
+type MarketType = "spot" | "futures";
 
 type BinanceKlineData = [
   number, // Open time
@@ -37,8 +38,6 @@ type BinanceKlineData = [
   string  // Ignore
 ];
 
-
-
 interface TechnicalAnalysisChartProps {
   tradeLevels: { entry: number; takeProfit: number; stopLoss: number };
   onLevelsChange: (newLevels: {
@@ -47,13 +46,22 @@ interface TechnicalAnalysisChartProps {
     stopLoss: number;
   }) => void;
   children: React.ReactNode;
-  selectedCrypto: string; // New prop
-  onCryptoSelect: (symbol: string) => void; // New prop
+  selectedCrypto: string;
+  onCryptoSelect: (symbol: string) => void;
+  marketType: MarketType;
+  onMarketTypeChange: (market: MarketType) => void;
 }
 
 export const TechnicalAnalysisChart = memo(
-  ({ tradeLevels, onLevelsChange, children, selectedCrypto, onCryptoSelect }: TechnicalAnalysisChartProps) => {
-    console.log('TechnicalAnalysisChart rendered with:', { tradeLevels, selectedCrypto });
+  ({
+    tradeLevels,
+    onLevelsChange,
+    children,
+    selectedCrypto,
+    onCryptoSelect,
+    marketType,
+    onMarketTypeChange,
+  }: TechnicalAnalysisChartProps) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<Record<string, ISeriesApi<"Candlestick"> | null>>({});
@@ -96,19 +104,24 @@ export const TechnicalAnalysisChart = memo(
         if (!response.ok) throw new Error("Failed to fetch exchange rate");
         return response.json();
       },
-      refetchInterval: 60000, // Refetch every minute
+      refetchInterval: 60000,
     });
 
     const { data: chartData, isLoading, error } = useQuery({
-      queryKey: ["binanceKlines", interval, selectedCrypto, exchangeRateData], // Depend on exchangeRateData
+      queryKey: ["klines", marketType, interval, selectedCrypto, exchangeRateData],
       queryFn: async () => {
+        const apiEndpoint = marketType === 'spot' ? '/api/binance/klines' : '/api/binance/futures-klines';
+        const symbol = marketType === 'futures' 
+          ? selectedCrypto.replace(/USDT$/, 'USD_PERP') 
+          : selectedCrypto;
+        
         const response = await fetch(
-          `/api/binance/klines?symbol=${selectedCrypto}&interval=${interval}`
+          `${apiEndpoint}?symbol=${symbol}&interval=${interval}`
         );
         if (!response.ok) throw new Error("Network response was not ok");
         const data: BinanceKlineData[] = await response.json();
         
-        const brlRate = exchangeRateData?.usdtToBrl || 1; // Default to 1 if rate not available
+        const brlRate = exchangeRateData?.usdtToBrl || 1;
 
         return data.map((k) => ({
           time: (k[0] / 1000) as UTCTimestamp,
@@ -118,28 +131,18 @@ export const TechnicalAnalysisChart = memo(
           close: parseFloat(k[4]) * brlRate,
         }));
       },
-      enabled: !!exchangeRateData, // Only run this query when exchange rate is available
+      enabled: !!exchangeRateData,
       refetchInterval: 60000,
     });
 
     useEffect(() => {
-      if (
-        !chartContainerRef.current ||
-        !chartData ||
-        chartData.length === 0
-      ) {
+      if (!chartContainerRef.current || !chartData || chartData.length === 0 || !exchangeRateData) {
         return;
       }
 
       const chart = createChart(chartContainerRef.current, {
-        layout: {
-          background: { type: ColorType.Solid, color: '#131722' },
-          textColor: '#D9D9D9',
-        },
-        grid: {
-          vertLines: { color: '#2A2E39' },
-          horzLines: { color: '#2A2E39' },
-        },
+        layout: { background: { type: ColorType.Solid, color: '#131722' }, textColor: '#D9D9D9' },
+        grid: { vertLines: { color: '#2A2E39' }, horzLines: { color: '#2A2E39' } },
         width: chartContainerRef.current.clientWidth,
         height: 400,
         crosshair: { mode: CrosshairMode.Normal },
@@ -155,11 +158,8 @@ export const TechnicalAnalysisChart = memo(
           const decimalPart = priceString.split('.')[1];
           let leadingZeros = 0;
           for (const char of decimalPart) {
-            if (char === '0') {
-              leadingZeros++;
-            } else {
-              break;
-            }
+            if (char === '0') leadingZeros++;
+            else break;
           }
           return leadingZeros + 4;
         }
@@ -171,9 +171,7 @@ export const TechnicalAnalysisChart = memo(
       const minMove = 1 / Math.pow(10, precision);
 
       chart.applyOptions({
-        localization: {
-          priceFormatter: (price: number) => `R$ ${price.toFixed(precision)}`,
-        },
+        localization: { priceFormatter: (price: number) => `R$ ${price.toFixed(precision)}` },
       });
 
       const candlestickSeries = chart.addSeries(CandlestickSeries, {
@@ -184,132 +182,43 @@ export const TechnicalAnalysisChart = memo(
         wickUpColor: '#26a69a',
         wickDownColor: '#ef5350',
         title: selectedCrypto,
-        priceFormat: {
-          type: 'price',
-          precision: precision,
-          minMove: minMove,
-        },
+        priceFormat: { type: 'price', precision, minMove },
       });
       candlestickSeries.setData(chartData);
       seriesRef.current[selectedCrypto] = candlestickSeries;
 
-      const onClick = (param: MouseEventParams) => {
-        const series = seriesRef.current[selectedCrypto];
-        if (!series || !param.point) return;
+      // Price lines logic is now inside the main useEffect
+      const brlRate = exchangeRateData.usdtToBrl || 1;
+      Object.values(priceLinesRef.current).forEach(line => {
+        if (line) candlestickSeries.removePriceLine(line);
+      });
+      priceLinesRef.current = {};
 
-        if (draggedLineRef.current) {
-          const { key, line } = draggedLineRef.current;
-          const brlRate = exchangeRateData?.usdtToBrl || 1;
-          const priceInUSD = line.options().price / brlRate;
-          onLevelsChange({
-            ...latestTradeLevelsRef.current,
-            [key]: priceInUSD,
-          });
-          draggedLineRef.current = null;
-          chart.applyOptions({ handleScroll: true, handleScale: true });
-          return;
-        }
-
-        const y = param.point.y;
-        const priceAtCursor = series.coordinateToPrice(y);
-        if (priceAtCursor == null) return;
-
-        const pTop = series.coordinateToPrice(y - 6);
-        const pBottom = series.coordinateToPrice(y + 6);
-        if (pTop == null || pBottom == null) return;
-        const tolerance = Math.abs(pTop - pBottom);
-
-        (Object.keys(priceLinesRef.current) as PriceLineKey[]).forEach(
-          (key) => {
-            const line = priceLinesRef.current[key];
-            if (!line) return;
-            if (
-              Math.abs(line.options().price - priceAtCursor) <= tolerance
-            ) {
-              draggedLineRef.current = { line, key };
-              chart.applyOptions({
-                handleScroll: false,
-                handleScale: false,
-              });
-            }
-          }
-        );
-      };
-
-      const onCrosshairMove = (param: MouseEventParams) => {
-        if (!draggedLineRef.current) return;
-        const series = seriesRef.current[selectedCrypto];
-        if (!series || !param.point) return;
-
-        const price = series.coordinateToPrice(param.point.y);
-        if (price != null) {
-          draggedLineRef.current.line.applyOptions({ price });
-        }
-      };
-
-      chart.subscribeClick(onClick);
-      chart.subscribeCrosshairMove(onCrosshairMove);
-
-      const handleResize = () => {
-        chart.applyOptions({
-          width: chartContainerRef.current?.clientWidth || 0,
-        });
-      };
-      window.addEventListener('resize', handleResize);
-
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        chart.unsubscribeClick(onClick);
-        chart.unsubscribeCrosshairMove(onCrosshairMove);
-        chart.remove();
-        chartRef.current = null;
-        seriesRef.current = {};
-        priceLinesRef.current = {};
-      };
-    }, [chartData, selectedCrypto, exchangeRateData, onLevelsChange]);
-
-    useEffect(() => {
-      const primarySeries = seriesRef.current[selectedCrypto];
-      const brlRate = exchangeRateData?.usdtToBrl || 1;
-
-      if (!primarySeries || !brlRate) return;
-
-      const createOrUpdatePriceLine = (
-        key: PriceLineKey,
-        price: number,
-        color: string,
-        title: string
-      ) => {
-        const line = priceLinesRef.current[key];
-        const newPrice = price * brlRate;
-        if (line) {
-          line.applyOptions({ price: newPrice });
-        } else {
-          priceLinesRef.current[key] = primarySeries.createPriceLine({
-            price: newPrice,
+      if (marketType === 'futures') {
+        const createOrUpdatePriceLine = (key: PriceLineKey, price: number, color: string, title: string) => {
+          priceLinesRef.current[key] = candlestickSeries.createPriceLine({
+            price: price * brlRate,
             color,
             lineWidth: 2,
             lineStyle: LineStyle.Dashed,
             axisLabelVisible: true,
             title,
           });
-        }
-      };
+        };
 
-      createOrUpdatePriceLine('entry', tradeLevels.entry, '#42A5F5', 'Entrada');
-      createOrUpdatePriceLine(
-        'takeProfit',
-        tradeLevels.takeProfit,
-        '#26A69A',
-        'Take Profit'
-      );
-      createOrUpdatePriceLine(
-        'stopLoss',
-        tradeLevels.stopLoss,
-        '#EF5350',
-        'Stop Loss'
-      );
-    }, [tradeLevels, exchangeRateData, chartData, selectedCrypto]);
+        createOrUpdatePriceLine('entry', tradeLevels.entry, '#42A5F5', 'Entrada');
+        createOrUpdatePriceLine('takeProfit', tradeLevels.takeProfit, '#26A69A', 'Take Profit');
+        createOrUpdatePriceLine('stopLoss', tradeLevels.stopLoss, '#EF5350', 'Stop Loss');
+      }
+
+      const handleResize = () => chart.applyOptions({ width: chartContainerRef.current?.clientWidth || 0 });
+      window.addEventListener('resize', handleResize);
+
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        chart.remove();
+      };
+    }, [chartData, selectedCrypto, exchangeRateData, onLevelsChange, marketType, tradeLevels]);
 
     if (isLoading) return <div>Loading chart...</div>;
     if (error) return <div>Error fetching chart data</div>;
@@ -320,20 +229,18 @@ export const TechnicalAnalysisChart = memo(
           <CardTitle>Análise Técnica - {selectedCrypto} (Binance)</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className={styles.marketSelector}>
+            <button onClick={() => onMarketTypeChange('spot')} className={marketType === 'spot' ? styles.active : ""}>Spot</button>
+            <button onClick={() => onMarketTypeChange('futures')} className={marketType === 'futures' ? styles.active : ""}>Futuros</button>
+          </div>
           <MarketData />
           <div className={styles.intervalSelector}>
             {["1m", "15m", "1h", "1d"].map((int) => (
-              <button
-                key={int}
-                onClick={() => setInterval(int)}
-                className={interval === int ? styles.active : ""}
-              >
-                {int}
-              </button>
+              <button key={int} onClick={() => setInterval(int)} className={interval === int ? styles.active : ""}>{int}</button>
             ))}
           </div>
           <div ref={chartContainerRef} className={styles.chartContainer} />
-          <TradePanel tradeLevels={tradeLevels} onLevelsChange={onLevelsChange} />
+          <TradePanel tradeLevels={tradeLevels} onLevelsChange={onLevelsChange} marketType={marketType} />
           {children}
           <div className={styles.addSymbolContainer}>
             <input
@@ -343,12 +250,9 @@ export const TechnicalAnalysisChart = memo(
               onChange={(e) => setNewSymbolInput(e.target.value)}
               className={styles.symbolInput}
             />
-            <button onClick={() => handleAddSymbol()} className={styles.addSymbolButton}>
-              Add Crypto
-            </button>
+            <button onClick={() => handleAddSymbol()} className={styles.addSymbolButton}>Add Crypto</button>
           </div>
-          
-          <CryptoList watchedSymbols={watchedSymbols} onCryptoSelect={onCryptoSelect} /> {/* Use onCryptoSelect prop */}
+          <CryptoList watchedSymbols={watchedSymbols} onCryptoSelect={onCryptoSelect} />
         </CardContent>
       </Card>
     );

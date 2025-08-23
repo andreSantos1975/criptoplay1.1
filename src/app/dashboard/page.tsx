@@ -95,6 +95,7 @@ const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState("painel");
   const [klines, setKlines] = useState<BinanceKline[]>([]);
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT');
+  const [marketType, setMarketType] = useState('spot'); // 'spot' or 'futures'
 
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
@@ -313,6 +314,8 @@ const DashboardPage = () => {
               onLevelsChange={setTradeLevels}
               selectedCrypto={selectedCrypto}
               onCryptoSelect={handleCryptoSelect}
+              marketType={marketType}
+              onMarketTypeChange={setMarketType}
             >
               <TradeJournal tradeLevels={tradeLevels} selectedCrypto={selectedCrypto} />
             </TechnicalAnalysisChart>

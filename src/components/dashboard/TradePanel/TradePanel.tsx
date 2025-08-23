@@ -12,9 +12,10 @@ interface TradePanelProps {
     takeProfit: number;
     stopLoss: number;
   }) => void;
+  marketType: 'spot' | 'futures'; // Add marketType prop
 }
 
-export const TradePanel = ({ tradeLevels, onLevelsChange }: TradePanelProps) => {
+export const TradePanel = ({ tradeLevels, onLevelsChange, marketType }: TradePanelProps) => {
   const { data: exchangeRateData } = useQuery({
     queryKey: ["exchangeRate"],
     queryFn: async () => {
@@ -48,15 +49,33 @@ export const TradePanel = ({ tradeLevels, onLevelsChange }: TradePanelProps) => 
     return numInBRL.toLocaleString('pt-BR', options);
   };
 
+  // Render different panels based on marketType
+  if (marketType === 'spot') {
+    return (
+      <div className={styles.panel}>
+        <h4>Operar Spot</h4>
+        <div className={styles.inputGroup}>
+          <label htmlFor="amount">Quantidade</label>
+          <input type="text" id="amount" name="amount" />
+        </div>
+        <div className={styles.buttonGroup}>
+          <button className={styles.buyButton}>Comprar</button>
+          <button className={styles.sellButton}>Vender</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.panel}>
+       <h4>Operar Futuros</h4>
       <div className={styles.inputGroup}>
         <label htmlFor="entry">Entrada</label>
         <input
           type="text"
           id="entry"
           name="entry"
-          value={formatNumber(tradeLevels.entry)}
+          value={tradeLevels.entry !== undefined ? formatNumber(tradeLevels.entry) : ''}
           onChange={handleChange}
         />
       </div>
@@ -66,7 +85,7 @@ export const TradePanel = ({ tradeLevels, onLevelsChange }: TradePanelProps) => 
           type="text"
           id="takeProfit"
           name="takeProfit"
-          value={formatNumber(tradeLevels.takeProfit)}
+          value={tradeLevels.takeProfit !== undefined ? formatNumber(tradeLevels.takeProfit) : ''}
           onChange={handleChange}
         />
       </div>
@@ -76,10 +95,14 @@ export const TradePanel = ({ tradeLevels, onLevelsChange }: TradePanelProps) => 
           type="text"
           id="stopLoss"
           name="stopLoss"
-          value={formatNumber(tradeLevels.stopLoss)}
+          value={tradeLevels.stopLoss !== undefined ? formatNumber(tradeLevels.stopLoss) : ''}
           onChange={handleChange}
         />
       </div>
+       <div className={styles.buttonGroup}>
+          <button className={styles.buyButton}>Comprar/Long</button>
+          <button className={styles.sellButton}>Vender/Short</button>
+        </div>
     </div>
   );
 };
