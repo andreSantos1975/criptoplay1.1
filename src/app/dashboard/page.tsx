@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { NavigationTabs } from "@/components/dashboard/NavigationTabs/NavigationTabs";
 import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable";
@@ -40,7 +40,58 @@ type BinanceKline = [
   string, // Ignore
 ];
 
+// API Functions
+const addIncome = async (newIncome: Omit<Income, 'id'>): Promise<Income> => {
+  const response = await fetch("/api/incomes", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(newIncome),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to add income");
+  }
+  return response.json();
+};
+
+const updateIncome = async (updatedIncome: Income): Promise<Income> => {
+  const response = await fetch(`/api/incomes/${updatedIncome.id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(updatedIncome),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to update income");
+  }
+  return response.json();
+};
+
+const addExpense = async (newExpense: Omit<Expense, 'id'>): Promise<Expense> => {
+    const response = await fetch("/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newExpense),
+    });
+    if (!response.ok) throw new Error("Failed to add expense");
+    return response.json();
+};
+
+const updateExpense = async (updatedExpense: Expense): Promise<Expense> => {
+    const response = await fetch(`/api/expenses/${updatedExpense.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedExpense),
+    });
+    if (!response.ok) throw new Error("Failed to update expense");
+    return response.json();
+};
+
+
 const DashboardPage = () => {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("painel");
   const [klines, setKlines] = useState<BinanceKline[]>([]);
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT');
@@ -65,6 +116,38 @@ const DashboardPage = () => {
       const response = await fetch("/api/incomes");
       if (!response.ok) throw new Error("Network response was not ok");
       return response.json();
+    },
+  });
+
+  const addIncomeMutation = useMutation({
+    mutationFn: addIncome,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incomes'] });
+      setIsIncomeDialogOpen(false);
+    },
+  });
+
+  const updateIncomeMutation = useMutation({
+    mutationFn: updateIncome,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incomes'] });
+      setIsIncomeDialogOpen(false);
+    },
+  });
+
+  const addExpenseMutation = useMutation({
+    mutationFn: addExpense,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      setIsExpenseDialogOpen(false);
+    },
+  });
+
+  const updateExpenseMutation = useMutation({
+    mutationFn: updateExpense,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      setIsExpenseDialogOpen(false);
     },
   });
 
@@ -157,12 +240,19 @@ const DashboardPage = () => {
   };
 
   const handleSaveItem = (item: Omit<Expense, "id"> | Omit<Income, "id">, type: "expense" | "income") => {
-    // This function will be passed to PersonalFinanceDialog
-    // and will call the appropriate mutation from PersonalFinanceTable
-    // For now, we'll just close the dialogs. The actual mutation logic
-    // will be handled within PersonalFinanceTable.
-    setIsExpenseDialogOpen(false);
-    setIsIncomeDialogOpen(false);
+    if (type === 'income') {
+      if (editingIncome) {
+        updateIncomeMutation.mutate({ ...item, id: editingIncome.id } as Income);
+      } else {
+        addIncomeMutation.mutate(item as Omit<Income, 'id'>);
+      }
+    } else if (type === 'expense') {
+      if (editingExpense) {
+        updateExpenseMutation.mutate({ ...item, id: editingExpense.id } as Expense);
+      } else {
+        addExpenseMutation.mutate(item as Omit<Expense, 'id'>);
+      }
+    }
   };
 
   const renderTabContent = () => {

@@ -74,7 +74,7 @@ export function PersonalFinanceSummary({ summary }: PersonalFinanceSummaryProps)
           <span className={styles.icon}>📊</span>
         </CardHeader>
         <CardContent>
-          <div className={styles.value}>{formatCurrency(summary.balance)}</div>
+          <div className={`${styles.value} ${summary.balance < 0 ? styles.negative : styles.positive}`}>{formatCurrency(summary.balance)}</div>
           <p className={styles.description}>
             Renda total - Despesa total
           </p>

@@ -97,9 +97,16 @@
   background: hsl(210 40% 96% / 0.1); /* A neutral tone for balance */
 }
 
-.balanceCard .value,
 .balanceCard .icon {
   color: hsl(210 40% 96%);
+}
+
+.positive {
+  color: hsl(var(--success));
+}
+
+.negative {
+  color: hsl(var(--destructive));
 }
 
 .economyCard {
