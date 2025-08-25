@@ -24,6 +24,31 @@ model User {
   capitalMovements CapitalMovement[]
   expenses      Expense[]
   incomes       Income[]
+  budgets       Budget[]
+}
+
+model Budget {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  income      Decimal   @db.Decimal(18, 2)
+  month       Int
+  year        Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  categories  BudgetCategory[]
+
+  @@unique([userId, year, month])
+}
+
+model BudgetCategory {
+  id          String  @id @default(cuid())
+  budgetId    String
+  budget      Budget  @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  name        String
+  percentage  Decimal @db.Decimal(5, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Income {

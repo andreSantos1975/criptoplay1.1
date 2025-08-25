@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+"use client";
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { IncomeInput } from '../IncomeInput/IncomeInput';
 import { CategoryAllocation, Category } from '../CategoryAllocation/CategoryAllocation';
 import { BudgetSummary } from '../BudgetSummary/BudgetSummary';
 import styles from './OrcamentoPage.module.css';
 
-// Assuming finance-hero.jpg is correctly placed in public/assets
 const financeHeroUrl = '/assets/hero-crypto.jpg';
 
 export const OrcamentoPage = () => {
@@ -16,25 +17,49 @@ export const OrcamentoPage = () => {
     { id: '4', name: 'Lazer', percentage: 10, amount: 0 },
     { id: '5', name: 'Outros', percentage: 5, amount: 0 },
   ]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch budget data from the API on component mount
+  useEffect(() => {
+    const fetchBudget = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/budget'); // Assumes current month/year
+        if (response.ok) {
+          const data = await response.json();
+          if (data) {
+            setIncome(data.income.toString());
+            setCategories(data.categories.map((cat: any, index: number) => ({
+              ...cat,
+              id: cat.id || index.toString(), // Ensure there is a unique id
+              amount: (data.income * cat.percentage) / 100,
+            })));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch budget:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchBudget();
+  }, []);
 
   const incomeValue = React.useMemo(() => {
-    // Trata o valor de entrada como um número decimal, e não como centavos.
-    // Substitui a vírgula por ponto para garantir a conversão correta.
     const sanitizedValue = income.replace(',', '.');
-    // Remove todos os caracteres que não são dígitos ou o ponto decimal.
     const numericString = sanitizedValue.replace(/[^0-9.]/g, '');
     const value = parseFloat(numericString);
     return isNaN(value) ? 0 : value;
   }, [income]);
 
   const totalPercentage = React.useMemo(() => {
-    return categories.reduce((sum, category) => sum + category.percentage, 0);
+    return categories.reduce((sum, category) => sum + (Number(category.percentage) || 0), 0);
   }, [categories]);
 
   useEffect(() => {
     const updatedCategories = categories.map(category => ({
       ...category,
-      amount: (incomeValue * category.percentage) / 100
+      amount: (incomeValue * (Number(category.percentage) || 0)) / 100
     }));
     setCategories(updatedCategories);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -46,7 +71,7 @@ export const OrcamentoPage = () => {
         if (category.id === id) {
           const updatedCategory = { ...category, [field]: value };
           if (field === 'percentage') {
-            updatedCategory.amount = (incomeValue * (value as number)) / 100;
+            updatedCategory.amount = (incomeValue * (Number(value) || 0)) / 100;
           }
           return updatedCategory;
         }
@@ -71,13 +96,39 @@ export const OrcamentoPage = () => {
     setCategories(prev => prev.filter(category => category.id !== id));
   };
 
+  const handleSaveBudget = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/budget', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          income: incomeValue,
+          categories: categories.map(({ name, percentage }) => ({ name, percentage })),
+          month: new Date().getMonth() + 1, // Use current month/year
+          year: new Date().getFullYear(),
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to save budget');
+      }
+      // Optionally show a success message
+      alert('Orçamento salvo com sucesso!');
+    } catch (error) {
+      console.error(error);
+      alert('Erro ao salvar orçamento.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [incomeValue, categories]);
+
   return (
     <div className={styles.page}>
       <div className={styles.hero}>
         <div 
           className={styles.heroOverlay}
           style={{
-            backgroundImage: `url(${financeHeroUrl})`,
+            backgroundImage: `url(${financeHeroUrl})`
           }}
         />
         <div className={styles.container}>
@@ -121,6 +172,12 @@ export const OrcamentoPage = () => {
               />
             </div>
           </div>
+          
+          <div className={styles.saveButtonContainer}>
+            <button onClick={handleSaveBudget} disabled={isLoading} className={styles.saveButton}>
+              {isLoading ? 'Salvando...' : 'Salvar Orçamento'}
+            </button>
+          </div>
 
           <div className={styles.tipsSection}>
             <h3 className={styles.tipsTitle}>
@@ -150,3 +207,4 @@ export const OrcamentoPage = () => {
     </div>
   );
 };
+
