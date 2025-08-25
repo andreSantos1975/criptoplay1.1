@@ -406,4 +406,3 @@ export const TechnicalAnalysisChart = memo(
 
 TechnicalAnalysisChart.displayName = "TechnicalAnalysisChart";
 export default TechnicalAnalysisChart;
-
