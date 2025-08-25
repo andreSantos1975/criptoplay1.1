@@ -19,13 +19,15 @@ export async function GET() {
     },
   });
 
-  // Convert Decimal 'valor' to number for each expense
-  const expensesWithNumericValue = expenses.map((expense) => ({
+  // Convert Decimal fields to number for each expense
+  const expensesWithNumericValues = expenses.map((expense) => ({
     ...expense,
     valor: Number(expense.valor),
+    originalValor: expense.originalValor ? Number(expense.originalValor) : null,
+    savedAmount: expense.savedAmount ? Number(expense.savedAmount) : null,
   }));
 
-  return NextResponse.json(expensesWithNumericValue);
+  return NextResponse.json(expensesWithNumericValues);
 }
 
 export async function POST(request: Request) {

@@ -19,14 +19,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import styles from "./PersonalFinanceTable.module.css";
 
-// Funções da API
-const fetchExpenses = async (): Promise<Expense[]> => {
-  const response = await fetch("/api/expenses");
-  if (!response.ok) {
-    throw new Error("Network response was not ok");
-  }
-  return response.json();
-};
+
 
 const deleteExpense = async (id: string): Promise<void> => {
   const response = await fetch(`/api/expenses/${id}`, {
@@ -41,19 +34,24 @@ interface PersonalFinanceTableProps {
   onAddExpense: () => void;
   onEditExpense: (expense: Expense) => void;
   summary: ExpenseSummary;
+  expenses: Expense[];
+  isLoading: boolean;
+  isError: boolean;
 }
 
-export const PersonalFinanceTable = ({ onAddExpense, onEditExpense, summary }: PersonalFinanceTableProps) => {
+export const PersonalFinanceTable = ({
+  onAddExpense,
+  onEditExpense,
+  summary,
+  expenses,
+  isLoading,
+  isError,
+}: PersonalFinanceTableProps) => {
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-
-  const { data: expenses = [], isLoading, isError } = useQuery<Expense[]>({
-    queryKey: ['expenses'],
-    queryFn: fetchExpenses,
-  });
+  const itemsPerPage = 10;
 
   const deleteMutation = useMutation({
     mutationFn: deleteExpense,

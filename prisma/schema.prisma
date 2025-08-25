@@ -114,14 +114,15 @@ model CapitalMovement {
 }
 
 model Expense {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   categoria      String
-  valor          Decimal  @db.Decimal(18, 2)
+  valor          Decimal   @db.Decimal(18, 2)
+  originalValor  Decimal?  @db.Decimal(18, 2) // New field for original value
+  savedAmount    Decimal?  @db.Decimal(18, 2) // New field for calculated economy
   dataVencimento DateTime
-  status         String   @default("Pendente") // "Pendente" or "Pago"
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status         String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }

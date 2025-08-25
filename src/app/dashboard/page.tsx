@@ -157,7 +157,8 @@ const DashboardPage = () => {
     const pagos = expenses.filter(e => e.status === 'Pago');
     const totalExpenses = expenses.reduce((sum, e) => sum + e.valor, 0);
     const totalIncome = incomes.reduce((sum, i) => sum + i.amount, 0);
-    
+    const totalSavings = expenses.reduce((sum, e) => sum + (e.savedAmount || 0), 0);
+
     return {
       totalPendentes: pendentes.reduce((sum, e) => sum + e.valor, 0),
       totalPagos: pagos.reduce((sum, e) => sum + e.valor, 0),
@@ -166,6 +167,7 @@ const DashboardPage = () => {
       countPagos: pagos.length,
       totalIncome: totalIncome,
       balance: totalIncome - totalExpenses,
+      totalSavings,
     };
   }, [expenses, incomes]);
 
@@ -280,6 +282,9 @@ const DashboardPage = () => {
                 onAddExpense={handleAddExpense}
                 onEditExpense={handleEditExpense}
                 summary={summary}
+                expenses={expenses}
+                isLoading={isLoadingExpenses}
+                isError={isErrorExpenses}
               />
               <PersonalFinanceDialog
                 isOpen={isExpenseDialogOpen || isIncomeDialogOpen}

@@ -13,8 +13,19 @@ Lightweight Charts
 COMANO PARA EXCLUI BANCO DE DADOS 
 DROP DATABASE <nome do banco de dados>
 ----------------------------------------------------------------------
+
 MUDAR DE REPOSITORIO NO GITHUB
 git remote set-url origin <URL_DO_NOVO_REPOSITORIO_NO_GITHUB>
+
+Passo a passo:
+
+Verificar em qual branch você está
+git branch
+
+git push -u origin main
+
+git push
+
 -----------------------------------------------------------------------  
   Gerar uma string segredo
   openssl rand -base64 32  
@@ -102,9 +113,19 @@ Insights automáticos (“Você gastou 20% a mais com transporte este mês”).
 ==============================================
 
 
- A base para a funcionalidade completa está implementada. O próximo passo seria adicionar a
-  lógica para submeter as ordens de cada tipo de painel, mas a estrutura visual e de dados está
-  pronta.
+A lógica incomum a que me refiro é o uso de (await params).id.
+
+
+  Normalmente, em rotas de API do Next.js, o objeto params (que contém os parâmetros da URL, como
+  o id) é acessado diretamente, sem a necessidade de um await. A sintaxe await params sugere que o
+   próprio objeto params é uma promessa que precisa ser resolvida, o que não é o comportamento
+  padrão documentado.
+
+
+  No entanto, como essa sintaxe está sendo usada em outra parte do seu projeto que funciona
+  (src/app/api/trades/[id]/route.ts), vou aplicá-la aqui para manter a consistência e resolver o
+  erro. É provável que alguma configuração específica no seu projeto ou uma versão do Next.js
+  esteja causando esse comportamento.
 
 
 

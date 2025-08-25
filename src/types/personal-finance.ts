@@ -4,6 +4,8 @@ export interface Expense {
   valor: number;
   dataVencimento: Date;
   status: "Pendente" | "Pago";
+  originalValor?: number; // Campo para armazenar o valor original da despesa
+  savedAmount?: number; // Campo para armazenar a economia calculada para esta despesa
 }
 
 export interface ExpenseSummary {
@@ -14,6 +16,7 @@ export interface ExpenseSummary {
   countPagos: number;
   totalIncome: number;
   balance: number;
+  totalSavings: number;
 }
 
 export interface Income {

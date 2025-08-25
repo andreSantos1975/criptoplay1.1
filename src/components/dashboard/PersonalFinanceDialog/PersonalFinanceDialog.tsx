@@ -24,6 +24,7 @@ export function PersonalFinanceDialog({
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<"Pendente" | "Pago">("Pendente");
+  const [applyEconomy, setApplyEconomy] = useState(false); // New state for the checkbox
 
   useEffect(() => {
     if (item) {
@@ -41,6 +42,8 @@ export function PersonalFinanceDialog({
           setDate(undefined);
         }
         setStatus(expenseItem.status);
+        // Reset applyEconomy when item changes or dialog opens for a new item
+        setApplyEconomy(false); 
       } else if (type === "income") {
         const incomeItem = item as Income;
         setDescription(incomeItem.description || '');
@@ -56,12 +59,14 @@ export function PersonalFinanceDialog({
         }
         // Income does not have status
         setStatus("Pendente");
+        setApplyEconomy(false); // Reset for income as well
       }
     } else {
       setDescription("");
       setAmount("");
       setDate(undefined);
       setStatus("Pendente");
+      setApplyEconomy(false); // Reset for new items
     }
   }, [item, isOpen, type]);
 
@@ -72,12 +77,29 @@ export function PersonalFinanceDialog({
     if (isNaN(numericAmount)) return;
 
     if (type === "expense") {
-      onSave({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const expenseData: any = {
         categoria: description,
         valor: numericAmount,
         dataVencimento: date,
         status,
-      }, "expense");
+      };
+
+      const existingExpense = item as Expense;
+
+      if (item && existingExpense.id) { // Logic for editing an existing expense
+        if (applyEconomy) {
+          // Set originalValor from the existing value if it's not already set.
+          // Otherwise, preserve the already existing originalValor.
+          expenseData.originalValor = existingExpense.originalValor ?? existingExpense.valor;
+        } else {
+          // If the user unchecks the box, reset the economy calculation fields.
+          expenseData.originalValor = null;
+        }
+      }
+      // Note: The logic for creating a new expense is not part of this fix.
+
+      onSave(expenseData, "expense");
     } else if (type === "income") {
       onSave({
         description,
@@ -153,6 +175,20 @@ export function PersonalFinanceDialog({
               onChange={handleAmountChange}
             />
           </div>
+
+          {/* New checkbox for economy calculation */}
+          {type === "expense" && item && ( // Only show for existing expenses
+            <div className={styles.formGroup}>
+              <input
+                type="checkbox"
+                id="applyEconomy"
+                checked={applyEconomy}
+                onChange={(e) => setApplyEconomy(e.target.checked)}
+                className={styles.checkbox} // You might need to define this style
+              />
+              <Label htmlFor="applyEconomy">Aplicar cálculo de economia</Label>
+            </div>
+          )}
 
           <div className={styles.formGroup}>
             <Label htmlFor="date">

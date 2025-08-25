@@ -87,14 +87,9 @@ export function PersonalFinanceSummary({ summary }: PersonalFinanceSummaryProps)
           <span className={styles.icon}>📈</span>
         </CardHeader>
         <CardContent>
-          <div className={styles.value}>
-            {summary.countPagos > 0 ? 
-              `${Math.round((summary.countPagos / (summary.countPendentes + summary.countPagos)) * 100)}%` : 
-              '0%'
-            }
-          </div>
+          <div className={styles.value}>{formatCurrency(summary.totalSavings)}</div>
           <p className={styles.description}>
-            Das contas foram pagas
+            Economia total gerada
           </p>
         </CardContent>
       </Card>

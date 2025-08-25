@@ -9,9 +9,12 @@ interface Params {
   };
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } },
+) {
   const session = await getServerSession(authOptions);
-  const { id } = params;
+  const id = params.id;
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -49,9 +52,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   return NextResponse.json(response);
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } },
+) {
   const session = await getServerSession(authOptions);
-  const { id } = params;
+  const id = params.id;
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
