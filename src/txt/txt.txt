@@ -9,6 +9,44 @@ Lightweight Charts
   o tipo de série.
 
   chart.addSeries(CandlestickSeries, {...}) ➝ chart.addCandlestickSeries({...})
+
+  O ChatGPT disse:
+
+Sim, dá para ver o motivo do erro 👍
+
+O problema está nesta linha:
+
+const candlestickSeries = chart.addSeries(CandlestickSeries, {
+
+
+O CandlestickSeries não existe no pacote lightweight-charts.
+O método correto da API é:
+
+chart.addCandlestickSeries(options?);
+
+
+ou seja, você não passa CandlestickSeries como parâmetro — você chama diretamente o método específico.
+
+Então, substitua:
+
+const candlestickSeries = chart.addSeries(CandlestickSeries, {
+  upColor: '#26a69a',
+  downColor: '#ef5350',
+  borderVisible: false,
+  wickUpColor: '#26a69a',
+  wickDownColor: '#ef5350',
+});
+
+
+por:
+
+const candlestickSeries = chart.addCandlestickSeries({
+  upColor: '#26a69a',
+  downColor: '#ef5350',
+  borderVisible: false,
+  wickUpColor: '#26a69a',
+  wickDownColor: '#ef5350',
+});
   -------------------------------------------------------------------------------------------------
 COMANO PARA EXCLUI BANCO DE DADOS 
 DROP DATABASE <nome do banco de dados>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, memo, useState } from "react";
+import React, { useEffect, useRef, memo, useState, useCallback } from "react";
 import {
   createChart,
   ColorType,
@@ -8,8 +8,7 @@ import {
   LineStyle,
   ISeriesApi,
   IPriceLine,
-  MouseEventParams,
-  CandlestickSeries,
+  CandlestickSeries, // ✅ importa o construtor de série
   UTCTimestamp,
   IChartApi,
 } from "lightweight-charts";
@@ -35,7 +34,7 @@ type BinanceKlineData = [
   number, // Number of trades
   string, // Taker buy base asset volume
   string, // Taker buy quote asset volume
-  string  // Ignore
+  string // Ignore
 ];
 
 interface TechnicalAnalysisChartProps {
@@ -64,39 +63,22 @@ export const TechnicalAnalysisChart = memo(
   }: TechnicalAnalysisChartProps) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
-    const seriesRef = useRef<Record<string, ISeriesApi<"Candlestick"> | null>>({});
+    const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
     const priceLinesRef = useRef<Partial<Record<PriceLineKey, IPriceLine>>>({});
-    const draggedLineRef = useRef<{ line: IPriceLine; key: PriceLineKey } | null>(null);
+    const [draggingLine, setDraggingLine] = useState<PriceLineKey | null>(null);
     const [interval, setInterval] = useState("1d");
-    const [newSymbolInput, setNewSymbolInput] = useState('');
-
-    const latestTradeLevelsRef = useRef(tradeLevels);
-    useEffect(() => {
-      latestTradeLevelsRef.current = tradeLevels;
-    }, [tradeLevels]);
-
-    const handleAddSymbol = (symbolToAdd?: string) => {
-      const symbol = symbolToAdd || newSymbolInput.trim();
-      if (symbol === '') return;
-      const formattedSymbol = symbol.toUpperCase();
-      if (!watchedSymbols.includes(formattedSymbol)) {
-        setWatchedSymbols(prevSymbols => [...prevSymbols, formattedSymbol]);
-        if (!symbolToAdd) {
-          setNewSymbolInput('');
-        }
-      }
-    };
-
+    const [newSymbolInput, setNewSymbolInput] = useState("");
     const [watchedSymbols, setWatchedSymbols] = useState<string[]>([
-      'BTCUSDT',
-      'ETHUSDT',
-      'SOLUSDT',
-      'XRPUSDT',
-      'ADAUSDT',
-      'BNBUSDT',
-      'DOGEUSDT',
-      'SHIBUSDT',
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "XRPUSDT",
+      "ADAUSDT",
+      "BNBUSDT",
+      "DOGEUSDT",
+      "SHIBUSDT",
     ]);
+
     const { data: exchangeRateData } = useQuery({
       queryKey: ["exchangeRate"],
       queryFn: async () => {
@@ -110,17 +92,21 @@ export const TechnicalAnalysisChart = memo(
     const { data: chartData, isLoading, error } = useQuery({
       queryKey: ["klines", marketType, interval, selectedCrypto, exchangeRateData],
       queryFn: async () => {
-        const apiEndpoint = marketType === 'spot' ? '/api/binance/klines' : '/api/binance/futures-klines';
-        const symbol = marketType === 'futures' 
-          ? selectedCrypto.replace(/USDT$/, 'USD_PERP') 
-          : selectedCrypto;
-        
+        const apiEndpoint =
+          marketType === "spot"
+            ? "/api/binance/klines"
+            : "/api/binance/futures-klines";
+        const symbol =
+          marketType === "futures"
+            ? selectedCrypto.replace(/USDT$/, "USD_PERP")
+            : selectedCrypto;
+
         const response = await fetch(
           `${apiEndpoint}?symbol=${symbol}&interval=${interval}`
         );
         if (!response.ok) throw new Error("Network response was not ok");
         const data: BinanceKlineData[] = await response.json();
-        
+
         const brlRate = exchangeRateData?.usdtToBrl || 1;
 
         return data.map((k) => ({
@@ -135,90 +121,215 @@ export const TechnicalAnalysisChart = memo(
       refetchInterval: 60000,
     });
 
+    const handleAddSymbol = (symbolToAdd?: string) => {
+      const symbol = (symbolToAdd || newSymbolInput.trim()).toUpperCase();
+      if (symbol && !watchedSymbols.includes(symbol)) {
+        setWatchedSymbols((prev) => [...prev, symbol]);
+        if (!symbolToAdd) setNewSymbolInput("");
+      }
+    };
+
+    // Encapsulate price-to-Y conversion
+    const priceToY = useCallback((price: number) => {
+      if (!chartRef.current || !seriesRef.current) return 0;
+      return seriesRef.current.priceToCoordinate(price) ?? 0; // ✅ garante number
+    }, []);
+
+    // Encapsulate Y-to-price conversion
+    const yToPrice = useCallback((y: number) => {
+      if (!chartRef.current || !seriesRef.current) return 0;
+      return seriesRef.current.coordinateToPrice(y) ?? 0;
+    }, []);
+
     useEffect(() => {
-      if (!chartContainerRef.current || !chartData || chartData.length === 0 || !exchangeRateData) {
+      if (
+        !chartContainerRef.current ||
+        !chartData ||
+        chartData.length === 0 ||
+        !exchangeRateData
+      ) {
         return;
       }
 
       const chart = createChart(chartContainerRef.current, {
-        layout: { background: { type: ColorType.Solid, color: '#131722' }, textColor: '#D9D9D9' },
-        grid: { vertLines: { color: '#2A2E39' }, horzLines: { color: '#2A2E39' } },
+        layout: {
+          background: { type: ColorType.Solid, color: "#131722" },
+          textColor: "#D9D9D9",
+        },
+        grid: { vertLines: { color: "#2A2E39" }, horzLines: { color: "#2A2E39" } },
         width: chartContainerRef.current.clientWidth,
         height: 400,
         crosshair: { mode: CrosshairMode.Normal },
-        handleScroll: true,
-        handleScale: true,
       });
       chartRef.current = chart;
 
-      const calculatePrecision = (price: number) => {
-        if (price === 0) return 2;
-        const priceString = price.toString();
-        if (priceString.includes('.')) {
-          const decimalPart = priceString.split('.')[1];
-          let leadingZeros = 0;
-          for (const char of decimalPart) {
-            if (char === '0') leadingZeros++;
-            else break;
-          }
-          return leadingZeros + 4;
-        }
-        return 2;
-      };
-
       const firstPrice = chartData[0]?.close || 0;
-      const precision = calculatePrecision(firstPrice);
-      const minMove = 1 / Math.pow(10, precision);
+      const precision = firstPrice < 1 ? 4 : 2;
 
       chart.applyOptions({
-        localization: { priceFormatter: (price: number) => `R$ ${price.toFixed(precision)}` },
+        localization: {
+          priceFormatter: (price: number) => `R$ ${price.toFixed(precision)}`,
+        },
       });
 
+      // ✅ API nova: use addSeries(CandlestickSeries, options)
       const candlestickSeries = chart.addSeries(CandlestickSeries, {
-        upColor: '#26a69a',
-        downColor: '#ef5350',
-        borderUpColor: '#26a69a',
-        borderDownColor: '#ef5350',
-        wickUpColor: '#26a69a',
-        wickDownColor: '#ef5350',
-        title: selectedCrypto,
-        priceFormat: { type: 'price', precision, minMove },
+        upColor: "#26a69a",
+        downColor: "#ef5350",
+        borderVisible: false,
+        wickUpColor: "#26a69a",
+        wickDownColor: "#ef5350",
       });
       candlestickSeries.setData(chartData);
-      seriesRef.current[selectedCrypto] = candlestickSeries;
+      seriesRef.current = candlestickSeries;
 
-      // Price lines logic is now inside the main useEffect
       const brlRate = exchangeRateData.usdtToBrl || 1;
-      Object.values(priceLinesRef.current).forEach(line => {
-        if (line) candlestickSeries.removePriceLine(line);
-      });
-      priceLinesRef.current = {};
 
-      if (marketType === 'futures') {
-        const createOrUpdatePriceLine = (key: PriceLineKey, price: number, color: string, title: string) => {
+      const createOrUpdatePriceLine = (
+        key: PriceLineKey,
+        price: number,
+        color: string,
+        title: string
+      ) => {
+        if (priceLinesRef.current[key]) {
+          priceLinesRef.current[key]?.applyOptions({ price, color, title });
+        } else {
           priceLinesRef.current[key] = candlestickSeries.createPriceLine({
-            price: price * brlRate,
+            price,
             color,
             lineWidth: 2,
             lineStyle: LineStyle.Dashed,
             axisLabelVisible: true,
             title,
           });
-        };
+        }
+      };
 
-        createOrUpdatePriceLine('entry', tradeLevels.entry, '#42A5F5', 'Entrada');
-        createOrUpdatePriceLine('takeProfit', tradeLevels.takeProfit, '#26A69A', 'Take Profit');
-        createOrUpdatePriceLine('stopLoss', tradeLevels.stopLoss, '#EF5350', 'Stop Loss');
+      if (marketType === "futures") {
+        createOrUpdatePriceLine(
+          "entry",
+          tradeLevels.entry * brlRate,
+          "#42A5F5",
+          "Entrada"
+        );
+        createOrUpdatePriceLine(
+          "takeProfit",
+          tradeLevels.takeProfit * brlRate,
+          "#26A69A",
+          "Take Profit"
+        );
+        createOrUpdatePriceLine(
+          "stopLoss",
+          tradeLevels.stopLoss * brlRate,
+          "#EF5350",
+          "Stop Loss"
+        );
       }
 
-      const handleResize = () => chart.applyOptions({ width: chartContainerRef.current?.clientWidth || 0 });
-      window.addEventListener('resize', handleResize);
+      // --- Dragging Logic ---
+      const container = chartContainerRef.current;
+
+      const handleMouseDown = (event: MouseEvent) => {
+        const rect = container.getBoundingClientRect();
+        const y = event.clientY - rect.top;
+
+        const takeProfitY = priceToY(tradeLevels.takeProfit * brlRate);
+        const stopLossY = priceToY(tradeLevels.stopLoss * brlRate);
+
+        if (Math.abs(y - takeProfitY) < 10) {
+          setDraggingLine("takeProfit");
+        } else if (Math.abs(y - stopLossY) < 10) {
+          setDraggingLine("stopLoss");
+        }
+      };
+
+      const handleMouseMove = (event: MouseEvent) => {
+        if (!draggingLine) return;
+
+        const rect = container.getBoundingClientRect();
+        const y = event.clientY - rect.top;
+        const newPrice = yToPrice(y);
+
+        if (newPrice !== null && newPrice > 0) {
+          const newPriceInUSD = newPrice / brlRate;
+          onLevelsChange({ ...tradeLevels, [draggingLine]: newPriceInUSD });
+        }
+      };
+
+      const handleMouseUp = () => {
+        setDraggingLine(null);
+      };
+
+      container.addEventListener("mousedown", handleMouseDown);
+      container.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+
+      const handleResize = () =>
+        chart.applyOptions({ width: container.clientWidth });
+      window.addEventListener("resize", handleResize);
 
       return () => {
-        window.removeEventListener('resize', handleResize);
-        chart.remove();
+        window.removeEventListener("resize", handleResize);
+        container.removeEventListener("mousedown", handleMouseDown);
+        container.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+        if (chartRef.current) {
+          chartRef.current.remove();
+          chartRef.current = null;
+        }
+        seriesRef.current = null;
+        priceLinesRef.current = {};
       };
-    }, [chartData, selectedCrypto, exchangeRateData, onLevelsChange, marketType, tradeLevels]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [chartData, selectedCrypto, exchangeRateData, marketType]);
+
+    // Atualiza linhas de preço quando tradeLevels/exchangeRateData mudam
+    useEffect(() => {
+      if (!seriesRef.current || !exchangeRateData || marketType !== "futures") {
+        return;
+      }
+
+      const brlRate = exchangeRateData.usdtToBrl || 1;
+
+      const createOrUpdatePriceLine = (
+        key: PriceLineKey,
+        price: number,
+        color: string,
+        title: string
+      ) => {
+        if (priceLinesRef.current[key]) {
+          priceLinesRef.current[key]?.applyOptions({ price, color, title });
+        } else {
+          priceLinesRef.current[key] = seriesRef.current.createPriceLine({
+            price,
+            color,
+            lineWidth: 2,
+            lineStyle: LineStyle.Dashed,
+            axisLabelVisible: true,
+            title,
+          });
+        }
+      };
+
+      createOrUpdatePriceLine(
+        "entry",
+        tradeLevels.entry * brlRate,
+        "#42A5F5",
+        "Entrada"
+      );
+      createOrUpdatePriceLine(
+        "takeProfit",
+        tradeLevels.takeProfit * brlRate,
+        "#26A69A",
+        "Take Profit"
+      );
+      createOrUpdatePriceLine(
+        "stopLoss",
+        tradeLevels.stopLoss * brlRate,
+        "#EF5350",
+        "Stop Loss"
+      );
+    }, [tradeLevels, exchangeRateData, seriesRef, marketType]);
 
     if (isLoading) return <div>Loading chart...</div>;
     if (error) return <div>Error fetching chart data</div>;
@@ -226,21 +337,47 @@ export const TechnicalAnalysisChart = memo(
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Análise Técnica - {selectedCrypto} (Binance)</CardTitle>
+          <CardTitle>
+            Análise Técnica - {selectedCrypto} (Binance)
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className={styles.marketSelector}>
-            <button onClick={() => onMarketTypeChange('spot')} className={marketType === 'spot' ? styles.active : ""}>Spot</button>
-            <button onClick={() => onMarketTypeChange('futures')} className={marketType === 'futures' ? styles.active : ""}>Futuros</button>
+            <button
+              onClick={() => onMarketTypeChange("spot")}
+              className={marketType === "spot" ? styles.active : ""}
+            >
+              Spot
+            </button>
+            <button
+              onClick={() => onMarketTypeChange("futures")}
+              className={marketType === "futures" ? styles.active : ""}
+            >
+              Futuros
+            </button>
           </div>
           <MarketData />
           <div className={styles.intervalSelector}>
             {["1m", "15m", "1h", "1d"].map((int) => (
-              <button key={int} onClick={() => setInterval(int)} className={interval === int ? styles.active : ""}>{int}</button>
+              <button
+                key={int}
+                onClick={() => setInterval(int)}
+                className={interval === int ? styles.active : ""}
+              >
+                {int}
+              </button>
             ))}
           </div>
-          <div ref={chartContainerRef} className={styles.chartContainer} />
-          <TradePanel tradeLevels={tradeLevels} onLevelsChange={onLevelsChange} marketType={marketType} />
+          <div
+            ref={chartContainerRef}
+            className={styles.chartContainer}
+            style={{ cursor: draggingLine ? "grabbing" : "default" }}
+          />
+          <TradePanel
+            tradeLevels={tradeLevels}
+            onLevelsChange={onLevelsChange}
+            marketType={marketType}
+          />
           {children}
           <div className={styles.addSymbolContainer}>
             <input
@@ -250,9 +387,17 @@ export const TechnicalAnalysisChart = memo(
               onChange={(e) => setNewSymbolInput(e.target.value)}
               className={styles.symbolInput}
             />
-            <button onClick={() => handleAddSymbol()} className={styles.addSymbolButton}>Add Crypto</button>
+            <button
+              onClick={() => handleAddSymbol()}
+              className={styles.addSymbolButton}
+            >
+              Add Crypto
+            </button>
           </div>
-          <CryptoList watchedSymbols={watchedSymbols} onCryptoSelect={onCryptoSelect} />
+          <CryptoList
+            watchedSymbols={watchedSymbols}
+            onCryptoSelect={onCryptoSelect}
+          />
         </CardContent>
       </Card>
     );
@@ -261,3 +406,4 @@ export const TechnicalAnalysisChart = memo(
 
 TechnicalAnalysisChart.displayName = "TechnicalAnalysisChart";
 export default TechnicalAnalysisChart;
+

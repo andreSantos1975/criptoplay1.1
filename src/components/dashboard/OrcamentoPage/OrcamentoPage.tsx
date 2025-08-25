@@ -29,7 +29,7 @@ export const OrcamentoPage = () => {
           const data = await response.json();
           if (data) {
             setIncome(data.income.toString());
-            setCategories(data.categories.map((cat: any, index: number) => ({
+            setCategories(data.categories.map((cat: { id?: string; name: string; percentage: number }, index: number) => ({
               ...cat,
               id: cat.id || index.toString(), // Ensure there is a unique id
               amount: (data.income * cat.percentage) / 100,

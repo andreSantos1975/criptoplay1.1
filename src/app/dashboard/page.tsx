@@ -115,7 +115,7 @@ const DashboardPage = () => {
     },
   });
 
-  const { data: incomes = [], isLoading: isLoadingIncomes, isError: isErrorIncomes } = useQuery<Income[]>({
+  const { data: incomes = [] } = useQuery<Income[]>({
     queryKey: ['incomes'],
     queryFn: async () => {
       const response = await fetch("/api/incomes");

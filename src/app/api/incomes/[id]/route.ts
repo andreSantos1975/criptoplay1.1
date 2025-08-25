@@ -3,11 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 
-interface Params {
-  params: {
-    id: string;
-  };
-}
+
 
 export async function PUT(
   request: Request,

@@ -8,18 +8,7 @@ interface IncomeInputProps {
 
 export const IncomeInput: React.FC<IncomeInputProps> = ({ income, onIncomeChange }) => {
 
-  const formatCurrency = (value: string) => {
-    const numericValue = value.replace(/[^\d]/g, '');
-    if (numericValue) {
-      const number = parseInt(numericValue) / 100;
-      return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-        minimumFractionDigits: 2
-      }).format(number);
-    }
-    return '';
-  };
+  
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
