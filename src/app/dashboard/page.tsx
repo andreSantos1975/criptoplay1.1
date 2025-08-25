@@ -13,6 +13,9 @@ import dynamic from "next/dynamic";
 import TradeJournal from "@/components/dashboard/TradeJournal/TradeJournal";
 import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
 import Sidebar from "@/components/dashboard/Sidebar/Sidebar";
+import { PersonalFinanceNav } from "@/components/dashboard/PersonalFinanceNav/PersonalFinanceNav";
+import { OrcamentoPage } from "@/components/dashboard/OrcamentoPage/OrcamentoPage";
+
 
 const TechnicalAnalysisChart = dynamic(
   () =>
@@ -93,6 +96,7 @@ const updateExpense = async (updatedExpense: Expense): Promise<Expense> => {
 const DashboardPage = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("painel");
+  const [activeFinanceTab, setActiveFinanceTab] = useState<'movimentacoes' | 'orcamento'>('movimentacoes');
   const [klines, setKlines] = useState<BinanceKline[]>([]);
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT');
   const [marketType, setMarketType] = useState('spot'); // 'spot' or 'futures'
@@ -272,31 +276,38 @@ const DashboardPage = () => {
       case "pessoal":
         return (
           <>
-            <Sidebar />
-            <div className={styles.personalFinanceContainer}>
-              <IncomeTable
-                onAddIncome={handleAddIncome}
-                onEditIncome={handleEditIncome}
-              />
-              <PersonalFinanceTable
-                onAddExpense={handleAddExpense}
-                onEditExpense={handleEditExpense}
-                summary={summary}
-                expenses={expenses}
-                isLoading={isLoadingExpenses}
-                isError={isErrorExpenses}
-              />
-              <PersonalFinanceDialog
-                isOpen={isExpenseDialogOpen || isIncomeDialogOpen}
-                onClose={() => {
-                  setIsExpenseDialogOpen(false);
-                  setIsIncomeDialogOpen(false);
-                }}
-                onSave={handleSaveItem}
-                item={editingExpense || editingIncome}
-                type={isExpenseDialogOpen ? "expense" : "income"}
-              />
-            </div>
+            <PersonalFinanceNav activeTab={activeFinanceTab} onTabChange={setActiveFinanceTab} />
+            {activeFinanceTab === 'orcamento' ? (
+              <OrcamentoPage />
+            ) : (
+              <>
+                <Sidebar />
+                <div className={styles.personalFinanceContainer}>
+                  <IncomeTable
+                    onAddIncome={handleAddIncome}
+                    onEditIncome={handleEditIncome}
+                  />
+                  <PersonalFinanceTable
+                    onAddExpense={handleAddExpense}
+                    onEditExpense={handleEditExpense}
+                    summary={summary}
+                    expenses={expenses}
+                    isLoading={isLoadingExpenses}
+                    isError={isErrorExpenses}
+                  />
+                  <PersonalFinanceDialog
+                    isOpen={isExpenseDialogOpen || isIncomeDialogOpen}
+                    onClose={() => {
+                      setIsExpenseDialogOpen(false);
+                      setIsIncomeDialogOpen(false);
+                    }}
+                    onSave={handleSaveItem}
+                    item={editingExpense || editingIncome}
+                    type={isExpenseDialogOpen ? "expense" : "income"}
+                  />
+                </div>
+              </>
+            )}
           </>
         );
       case "analise":
