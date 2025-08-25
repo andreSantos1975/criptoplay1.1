@@ -89,6 +89,17 @@ export const TechnicalAnalysisChart = memo(
       refetchInterval: 60000,
     });
 
+    const tradeLevelsRef = useRef(tradeLevels);
+    const brlRateRef = useRef(1);
+
+    useEffect(() => {
+      tradeLevelsRef.current = tradeLevels;
+    }, [tradeLevels]);
+
+    useEffect(() => {
+      brlRateRef.current = exchangeRateData?.usdtToBrl || 1;
+    }, [exchangeRateData]);
+
     const { data: chartData, isLoading, error } = useQuery({
       queryKey: ["klines", marketType, interval, selectedCrypto, exchangeRateData],
       queryFn: async () => {
@@ -233,8 +244,11 @@ export const TechnicalAnalysisChart = memo(
         const rect = container.getBoundingClientRect();
         const y = event.clientY - rect.top;
 
-        const takeProfitY = priceToY(tradeLevels.takeProfit * brlRate);
-        const stopLossY = priceToY(tradeLevels.stopLoss * brlRate);
+        const currentTradeLevels = tradeLevelsRef.current;
+        const currentBrlRate = brlRateRef.current;
+
+        const takeProfitY = priceToY(currentTradeLevels.takeProfit * currentBrlRate);
+        const stopLossY = priceToY(currentTradeLevels.stopLoss * currentBrlRate);
 
         if (Math.abs(y - takeProfitY) < 10) {
           setDraggingLine("takeProfit");
@@ -251,8 +265,8 @@ export const TechnicalAnalysisChart = memo(
         const newPrice = yToPrice(y);
 
         if (newPrice !== null && newPrice > 0) {
-          const newPriceInUSD = newPrice / brlRate;
-          onLevelsChange({ ...tradeLevels, [draggingLine]: newPriceInUSD });
+          const newPriceInUSD = newPrice / brlRateRef.current;
+          onLevelsChange({ ...tradeLevelsRef.current, [draggingLine]: newPriceInUSD });
         }
       };
 
