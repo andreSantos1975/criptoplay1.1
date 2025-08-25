@@ -300,14 +300,16 @@ export const TechnicalAnalysisChart = memo(
         if (priceLinesRef.current[key]) {
           priceLinesRef.current[key]?.applyOptions({ price, color, title });
         } else {
-          priceLinesRef.current[key] = seriesRef.current.createPriceLine({
-            price,
-            color,
-            lineWidth: 2,
-            lineStyle: LineStyle.Dashed,
-            axisLabelVisible: true,
-            title,
-          });
+          if (seriesRef.current) {
+            priceLinesRef.current[key] = seriesRef.current.createPriceLine({
+              price,
+              color,
+              lineWidth: 2,
+              lineStyle: LineStyle.Dashed,
+              axisLabelVisible: true,
+              title,
+            });
+          }
         }
       };
 
