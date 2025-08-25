@@ -49,13 +49,7 @@ export const IncomeInput: React.FC<IncomeInputProps> = ({ income, onIncomeChange
           />
         </div>
         
-        {income && (
-          <div className={styles.formattedValue}>
-            <p>
-              Valor formatado: <span>{formatCurrency(income)}</span>
-            </p>
-          </div>
-        )}
+        
       </div>
     </div>
   );
