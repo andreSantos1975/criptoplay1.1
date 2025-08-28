@@ -86,3 +86,28 @@
 .quickAddButton:hover {
   background-color: hsl(var(--secondary-hover));
 }
+
+.marketSelector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.marketSelector button {
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.marketSelector button:hover {
+  background-color: hsl(var(--secondary-hover));
+}
+
+.marketSelector button.active {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}

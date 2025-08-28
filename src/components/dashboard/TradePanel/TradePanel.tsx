@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import styles from './TradePanel.module.css';
+import { useState } from "react";
 
 interface TradePanelProps {
   tradeLevels: {
@@ -16,6 +17,8 @@ interface TradePanelProps {
 }
 
 export const TradePanel = ({ tradeLevels, onLevelsChange, marketType }: TradePanelProps) => {
+  const [spotAmount, setSpotAmount] = useState('');
+
   const { data: exchangeRateData } = useQuery({
     queryKey: ["exchangeRate"],
     queryFn: async () => {
@@ -39,6 +42,10 @@ export const TradePanel = ({ tradeLevels, onLevelsChange, marketType }: TradePan
     });
   };
 
+  const handleSpotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSpotAmount(e.target.value);
+  };
+
   const formatNumber = (num: number) => {
     const numInBRL = num * brlRate;
     const options: Intl.NumberFormatOptions = {
@@ -56,7 +63,13 @@ export const TradePanel = ({ tradeLevels, onLevelsChange, marketType }: TradePan
         <h4>Operar Spot</h4>
         <div className={styles.inputGroup}>
           <label htmlFor="amount">Quantidade</label>
-          <input type="text" id="amount" name="amount" />
+          <input
+            type="text"
+            id="amount"
+            name="amount"
+            value={spotAmount}
+            onChange={handleSpotChange}
+          />
         </div>
         <div className={styles.buttonGroup}>
           <button className={styles.buyButton}>Comprar</button>
