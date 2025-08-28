@@ -118,19 +118,15 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
     const takeProfitPrice = parseNumericValue(tradeData.takeProfit);
     const tradeType = tradeData.tipoOperacao;
 
-    if (entryPrice > 0 && quantity > 0 && stopLossPrice > 0) {
-      const loss = (tradeType === 'compra')
-        ? (stopLossPrice - entryPrice) * quantity
-        : (entryPrice - stopLossPrice) * quantity;
+    if (tradeType === 'compra' && entryPrice > 0 && quantity > 0 && stopLossPrice > 0) {
+      const loss = (stopLossPrice - entryPrice) * quantity;
       setPotentialLoss(loss);
     } else {
       setPotentialLoss(null);
     }
 
-    if (entryPrice > 0 && quantity > 0 && takeProfitPrice > 0) {
-      const profit = (tradeType === 'compra')
-        ? (takeProfitPrice - entryPrice) * quantity
-        : (entryPrice - takeProfitPrice) * quantity;
+    if (tradeType === 'compra' && entryPrice > 0 && quantity > 0 && takeProfitPrice > 0) {
+      const profit = (takeProfitPrice - entryPrice) * quantity;
       setPotentialProfit(profit);
     } else {
       setPotentialProfit(null);
@@ -251,6 +247,7 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
                                 </div>
                             </CardContent>
                         </Card>
+                        {tradeData.tipoOperacao === 'compra' && (
                         <Card>
                             <CardHeader><CardTitle className={styles.cardTitle}>Gestão de Risco</CardTitle></CardHeader>
                             <CardContent>
@@ -274,6 +271,7 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
                                 </div>
                             </CardContent>
                         </Card>
+                        )}
                     </div>
                 )}
 
