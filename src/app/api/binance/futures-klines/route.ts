@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   try {
     // A principal mudança está aqui: a URL base da API de Futuros
     const response = await fetch(
-      `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
+      `https://dapi.binance.com/dapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
     );
 
     if (!response.ok) {

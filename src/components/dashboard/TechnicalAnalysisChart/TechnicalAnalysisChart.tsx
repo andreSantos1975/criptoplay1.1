@@ -113,8 +113,15 @@ export const TechnicalAnalysisChart = memo(
       queryKey: ["binanceKlines", marketType, interval, selectedCrypto, exchangeRateData], // Depend on exchangeRateData
       queryFn: async () => {
         const apiPath = marketType === 'futures' ? 'futures-klines' : 'klines';
+
+        let symbolForApi = selectedCrypto;
+        if (marketType === 'futures') {
+          // Convert 'BTCUSDT' to 'BTCUSD_PERP' for COIN-M futures
+          symbolForApi = selectedCrypto.replace('USDT', 'USD_PERP');
+        }
+
         const response = await fetch(
-          `/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}`
+          `/api/binance/${apiPath}?symbol=${symbolForApi}&interval=${interval}`
         );
         if (!response.ok) throw new Error("Network response was not ok");
         const data: BinanceKlineData[] = await response.json();
