@@ -110,10 +110,11 @@ export const TechnicalAnalysisChart = memo(
     });
 
     const { data: chartData, isLoading, error } = useQuery({
-      queryKey: ["binanceKlines", interval, selectedCrypto, exchangeRateData], // Depend on exchangeRateData
+      queryKey: ["binanceKlines", marketType, interval, selectedCrypto, exchangeRateData], // Depend on exchangeRateData
       queryFn: async () => {
+        const apiPath = marketType === 'futures' ? 'futures-klines' : 'klines';
         const response = await fetch(
-          `/api/binance/klines?symbol=${selectedCrypto}&interval=${interval}`
+          `/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}`
         );
         if (!response.ok) throw new Error("Network response was not ok");
         const data: BinanceKlineData[] = await response.json();
