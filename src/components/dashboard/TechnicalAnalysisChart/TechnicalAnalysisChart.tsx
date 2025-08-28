@@ -307,20 +307,37 @@ export const TechnicalAnalysisChart = memo(
         }
       };
 
-      createOrUpdatePriceLine('entry', tradeLevels.entry, '#42A5F5', 'Entrada');
-      createOrUpdatePriceLine(
-        'takeProfit',
-        tradeLevels.takeProfit,
-        '#26A69A',
-        'Take Profit'
-      );
-      createOrUpdatePriceLine(
-        'stopLoss',
-        tradeLevels.stopLoss,
-        '#EF5350',
-        'Stop Loss'
-      );
-    }, [tradeLevels, exchangeRateData, chartData, selectedCrypto]);
+      const removePriceLine = (key: PriceLineKey) => {
+        const line = priceLinesRef.current[key];
+        if (line) {
+          primarySeries.removePriceLine(line);
+          delete priceLinesRef.current[key];
+        }
+      };
+
+      // Always show entry line
+      createOrUpdatePriceLine("entry", tradeLevels.entry, "#42A5F5", "Entrada");
+
+      if (marketType === "futures") {
+        // For futures, show take profit and stop loss
+        createOrUpdatePriceLine(
+          "takeProfit",
+          tradeLevels.takeProfit,
+          "#26A69A",
+          "Take Profit"
+        );
+        createOrUpdatePriceLine(
+          "stopLoss",
+          tradeLevels.stopLoss,
+          "#EF5350",
+          "Stop Loss"
+        );
+      } else {
+        // For spot, remove them if they exist
+        removePriceLine("takeProfit");
+        removePriceLine("stopLoss");
+      }
+    }, [tradeLevels, exchangeRateData, chartData, selectedCrypto, marketType]);
 
     if (isLoading) return <div>Loading chart...</div>;
     if (error) return <div>Error fetching chart data</div>;
