@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import styles from './TradeJournal.module.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -157,19 +158,19 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
       return response.json();
     },
     onSuccess: () => {
-      alert('Operação aberta com sucesso!');
+      toast.success('Operação aberta com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['trades'] }); 
       // Opcional: Limpar o formulário aqui
     },
     onError: (error: Error) => {
       console.error("Erro ao abrir operação:", error);
-      alert(`Erro: ${error.message}`);
+      toast.error(`Erro: ${error.message}`);
     },
   });
 
   const handleOpenOperation = () => {
     if (!tradeData.ativo || !tradeData.tipoOperacao || !tradeData.precoEntrada || !tradeData.quantidade) {
-        alert("Preencha os campos obrigatórios: Ativo, Tipo, Preço e Quantidade.");
+        toast.error("Preencha os campos obrigatórios: Ativo, Tipo, Preço e Quantidade.");
         return;
     }
 

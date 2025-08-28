@@ -368,7 +368,7 @@ export const TechnicalAnalysisChart = memo(
             ))}
           </div>
           <div ref={chartContainerRef} className={styles.chartContainer} />
-          <div className={styles.marketTypeSelector}>
+          <div className={styles.marketSelector}>
             <button
               onClick={() => onMarketTypeChange('spot')}
               className={marketType === 'spot' ? styles.active : ''}

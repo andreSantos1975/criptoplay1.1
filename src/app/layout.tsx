@@ -5,6 +5,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar/Navbar";
 import AuthProvider from "@/components/AuthProvider";
 import QueryProvider from "@/components/QueryProvider";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default function RootLayout({
           <QueryProvider>
             <Navbar />
             <main className={"mainContent"}>{children}</main>
+            <Toaster />
           </QueryProvider>
         </AuthProvider>
       </body>
