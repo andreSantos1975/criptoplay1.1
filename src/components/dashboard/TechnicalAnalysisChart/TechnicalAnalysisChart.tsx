@@ -51,6 +51,7 @@ interface TechnicalAnalysisChartProps {
   onCryptoSelect: (symbol: string) => void;
   marketType: 'spot' | 'futures';
   onMarketTypeChange: (marketType: 'spot' | 'futures') => void;
+  tipoOperacao: 'compra' | 'venda' | '';
 }
 
 export const TechnicalAnalysisChart = memo(
@@ -62,6 +63,7 @@ export const TechnicalAnalysisChart = memo(
     onCryptoSelect,
     marketType,
     onMarketTypeChange,
+    tipoOperacao,
   }: TechnicalAnalysisChartProps) => {
     console.log('TechnicalAnalysisChart rendered with:', { tradeLevels, selectedCrypto });
     const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -325,8 +327,8 @@ export const TechnicalAnalysisChart = memo(
       // Always show entry line
       createOrUpdatePriceLine("entry", tradeLevels.entry, "#42A5F5", "Entrada");
 
-      if (marketType === "futures") {
-        // For futures, show take profit and stop loss
+      if (tipoOperacao === "compra") {
+        // For spot buys, show take profit and stop loss
         createOrUpdatePriceLine(
           "takeProfit",
           tradeLevels.takeProfit,
@@ -340,11 +342,11 @@ export const TechnicalAnalysisChart = memo(
           "Stop Loss"
         );
       } else {
-        // For spot, remove them if they exist
+        // For spot sells or no type, remove them if they exist
         removePriceLine("takeProfit");
         removePriceLine("stopLoss");
       }
-    }, [tradeLevels, exchangeRateData, chartData, selectedCrypto, marketType]);
+    }, [tradeLevels, exchangeRateData, chartData, selectedCrypto, marketType, tipoOperacao]);
 
     if (isLoading) return <div>Loading chart...</div>;
     if (error) return <div>Error fetching chart data</div>;

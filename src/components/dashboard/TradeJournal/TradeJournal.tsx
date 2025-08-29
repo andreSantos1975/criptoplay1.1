@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 // Interface para os dados do formulário (simplificada)
 interface TradeFormData {
   ativo: string;
-  tipoOperacao: 'compra' | 'venda' | '';
   precoEntrada: string;
   quantidade: string;
   stopLoss: string;
@@ -37,14 +36,20 @@ interface TradeJournalProps {
     stopLoss: number;
   };
   selectedCrypto: string;
+  tipoOperacao: 'compra' | 'venda' | '';
+  onTipoOperacaoChange: (value: 'compra' | 'venda' | '') => void;
 }
 
-const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
+const TradeJournal = ({ 
+  tradeLevels, 
+  selectedCrypto,
+  tipoOperacao,
+  onTipoOperacaoChange,
+}: TradeJournalProps) => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('operacao');
-  const [tradeData, setTradeData] = useState<TradeFormData>({
+  const [tradeData, setTradeData] = useState<Omit<TradeFormData, 'tipoOperacao'>>({
     ativo: selectedCrypto || '',
-    tipoOperacao: '',
     precoEntrada: '',
     quantidade: '',
     stopLoss: '',
@@ -116,22 +121,21 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
     const quantity = parseNumericValue(tradeData.quantidade);
     const stopLossPrice = parseNumericValue(tradeData.stopLoss);
     const takeProfitPrice = parseNumericValue(tradeData.takeProfit);
-    const tradeType = tradeData.tipoOperacao;
 
-    if (tradeType === 'compra' && entryPrice > 0 && quantity > 0 && stopLossPrice > 0) {
+    if (tipoOperacao === 'compra' && entryPrice > 0 && quantity > 0 && stopLossPrice > 0) {
       const loss = (stopLossPrice - entryPrice) * quantity;
       setPotentialLoss(loss);
     } else {
       setPotentialLoss(null);
     }
 
-    if (tradeType === 'compra' && entryPrice > 0 && quantity > 0 && takeProfitPrice > 0) {
+    if (tipoOperacao === 'compra' && entryPrice > 0 && quantity > 0 && takeProfitPrice > 0) {
       const profit = (takeProfitPrice - entryPrice) * quantity;
       setPotentialProfit(profit);
     } else {
       setPotentialProfit(null);
     }
-  }, [tradeData.precoEntrada, tradeData.quantidade, tradeData.stopLoss, tradeData.takeProfit, tradeData.tipoOperacao]);
+  }, [tradeData.precoEntrada, tradeData.quantidade, tradeData.stopLoss, tradeData.takeProfit, tipoOperacao]);
 
   const parseNumericValue = (value: string): number => {
     if (!value) return 0;
@@ -165,7 +169,7 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
   });
 
   const handleOpenOperation = () => {
-    if (!tradeData.ativo || !tradeData.tipoOperacao || !tradeData.precoEntrada || !tradeData.quantidade) {
+    if (!tradeData.ativo || !tipoOperacao || !tradeData.precoEntrada || !tradeData.quantidade) {
         toast.error("Preencha os campos obrigatórios: Ativo, Tipo, Preço e Quantidade.");
         return;
     }
@@ -174,7 +178,7 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
 
     const payload: OpenTradePayload = {
       symbol: tradeData.ativo,
-      type: tradeData.tipoOperacao,
+      type: tipoOperacao,
       entryDate: new Date().toISOString(),
       entryPrice: parseNumericValue(tradeData.precoEntrada) / brlRate,
       quantity: parseNumericValue(tradeData.quantidade),
@@ -223,7 +227,7 @@ const TradeJournal = ({ tradeLevels, selectedCrypto }: TradeJournalProps) => {
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="tipo">Tipo da Operação</label>
-                                        <select id="tipo" className={styles.select} value={tradeData.tipoOperacao} onChange={(e) => updateTradeData('tipoOperacao', e.target.value as TradeFormData['tipoOperacao'])}>
+                                        <select id="tipo" className={styles.select} value={tipoOperacao} onChange={(e) => onTipoOperacaoChange(e.target.value as 'compra' | 'venda' | '')}>
                                             <option value="">Selecione o tipo</option>
                                             <option value="compra">Compra</option>
                                             <option value="venda">Venda</option>
