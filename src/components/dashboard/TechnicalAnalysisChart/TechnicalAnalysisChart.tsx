@@ -18,7 +18,6 @@ import styles from "./TechnicalAnalysisChart.module.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MarketData } from "@/components/dashboard/MarketData/MarketData";
 import { CryptoList } from "@/components/dashboard/CryptoList/CryptoList";
-import { TradePanel } from "@/components/dashboard/TradePanel/TradePanel";
 
 type PriceLineKey = "entry" | "takeProfit" | "stopLoss";
 
@@ -384,11 +383,6 @@ export const TechnicalAnalysisChart = memo(
               Futuros
             </button>
           </div>
-          <TradePanel
-            tradeLevels={tradeLevels}
-            onLevelsChange={onLevelsChange}
-            marketType={marketType}
-          />
           {children}
           <div className={styles.addSymbolContainer}>
             <input
