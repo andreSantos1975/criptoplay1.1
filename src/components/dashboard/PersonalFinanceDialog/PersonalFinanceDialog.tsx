@@ -27,46 +27,30 @@ export function PersonalFinanceDialog({
   const [applyEconomy, setApplyEconomy] = useState(false); // New state for the checkbox
 
   useEffect(() => {
-    if (item) {
+    if (isOpen && item) {
       if (type === "expense") {
         const expenseItem = item as Expense;
         setDescription(expenseItem.categoria || '');
         setAmount(expenseItem.valor ? expenseItem.valor.toString() : "");
-        if (expenseItem.dataVencimento) {
-          const parsedDate =
-            expenseItem.dataVencimento instanceof Date
-              ? expenseItem.dataVencimento
-              : new Date(expenseItem.dataVencimento);
-          setDate(parsedDate);
-        } else {
-          setDate(undefined);
-        }
-        setStatus(expenseItem.status);
-        // Reset applyEconomy when item changes or dialog opens for a new item
-        setApplyEconomy(false); 
+        setDate(expenseItem.dataVencimento ? new Date(expenseItem.dataVencimento) : undefined);
+        setStatus(expenseItem.status as "Pendente" | "Pago");
+        // Correctly initialize the checkbox based on the item's state
+        setApplyEconomy(expenseItem.originalValor != null);
       } else if (type === "income") {
         const incomeItem = item as Income;
         setDescription(incomeItem.description || '');
         setAmount(incomeItem.amount ? incomeItem.amount.toString() : "");
-        if (incomeItem.date) {
-          const parsedDate =
-            incomeItem.date instanceof Date
-              ? incomeItem.date
-              : new Date(incomeItem.date);
-          setDate(parsedDate);
-        } else {
-          setDate(undefined);
-        }
-        // Income does not have status
+        setDate(incomeItem.date ? new Date(incomeItem.date) : undefined);
         setStatus("Pendente");
-        setApplyEconomy(false); // Reset for income as well
+        setApplyEconomy(false);
       }
     } else {
+      // Reset fields for a new item
       setDescription("");
       setAmount("");
       setDate(undefined);
       setStatus("Pendente");
-      setApplyEconomy(false); // Reset for new items
+      setApplyEconomy(false);
     }
   }, [item, isOpen, type]);
 
@@ -77,8 +61,7 @@ export function PersonalFinanceDialog({
     if (isNaN(numericAmount)) return;
 
     if (type === "expense") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const expenseData: any = {
+      const expenseData: Partial<Expense> & { categoria: string; valor: number; dataVencimento: Date; status: string } = {
         categoria: description,
         valor: numericAmount,
         dataVencimento: date,
@@ -89,17 +72,17 @@ export function PersonalFinanceDialog({
 
       if (item && existingExpense.id) { // Logic for editing an existing expense
         if (applyEconomy) {
-          // Set originalValor from the existing value if it's not already set.
-          // Otherwise, preserve the already existing originalValor.
+          // If economy is applied, ensure originalValor is set.
+          // If it already exists, keep it. If not, this is the first time, so use the current 'valor' as the base.
           expenseData.originalValor = existingExpense.originalValor ?? existingExpense.valor;
         } else {
-          // If the user unchecks the box, reset the economy calculation fields.
+          // If the box is unchecked, the user intends to remove the economy saving.
           expenseData.originalValor = null;
+          expenseData.savedAmount = null; // Also clear the saved amount
         }
       }
-      // Note: The logic for creating a new expense is not part of this fix.
 
-      onSave(expenseData, "expense");
+      onSave(expenseData as Omit<Expense, 'id'>, "expense");
     } else if (type === "income") {
       onSave({
         description,

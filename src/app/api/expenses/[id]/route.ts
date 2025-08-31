@@ -40,12 +40,13 @@ export async function PUT(
     status,
   };
 
+  // Only update economy-related fields if originalValor is explicitly provided.
+  // This prevents accidental erasure of savedAmount when just changing the status.
   if (originalValor !== null && originalValor !== undefined) {
     updateData.originalValor = originalValor;
-    // Calculate saved amount regardless of status
     updateData.savedAmount = originalValor - valor;
-  } else {
-    // If originalValor is not provided or null, ensure savedAmount is also null
+  } else if (data.hasOwnProperty('originalValor') && originalValor === null) {
+    // If the frontend explicitly sends originalValor as null, it means the user wants to remove the economy calculation.
     updateData.originalValor = null;
     updateData.savedAmount = null;
   }
