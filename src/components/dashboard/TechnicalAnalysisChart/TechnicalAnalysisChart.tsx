@@ -147,6 +147,11 @@ export const TechnicalAnalysisChart = memo(
       }
 
       const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('WebSocket connected to', wsUrl);
+      };
+
       ws.onmessage = (event) => {
         const message = JSON.parse(event.data);
         const kline = message.k;
@@ -154,9 +159,25 @@ export const TechnicalAnalysisChart = memo(
           seriesRef.current?.update({ time: kline.t / 1000, open: parseFloat(kline.o), high: parseFloat(kline.h), low: parseFloat(kline.l), close: parseFloat(kline.c) } as BarData);
         }
       };
-      ws.onerror = (error) => console.error("WebSocket Error:", { error, wsUrl });
 
-      return () => ws.close();
+      ws.onerror = (event) => {
+        console.error("WebSocket error:", event);
+      };
+
+      ws.onclose = (event) => {
+        // Normal closure by the client will often have code 1000
+        if (event.code !== 1000) {
+          console.warn("WebSocket disconnected:", event.reason, "Code:", event.code);
+        } else {
+          console.log("WebSocket connection closed normally.");
+        }
+      };
+
+      // Cleanup function to close the WebSocket connection when the component unmounts or dependencies change
+      return () => {
+        console.log("Closing WebSocket connection for", wsUrl);
+        ws.close(1000, "Component unmounting or dependency changing");
+      };
     }, [isChartReady, selectedCrypto, interval, marketType]);
 
     // 5. Update Price Lines
