@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, memo, useState } from "react";
 import {
   createChart, ColorType, CrosshairMode, LineStyle, ISeriesApi,
-  IPriceLine, UTCTimestamp, IChartApi, CandlestickSeries, BarData
+  IPriceLine, IChartApi, CandlestickSeries, BarData
 } from "lightweight-charts";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./TechnicalAnalysisChart.module.css";
@@ -20,7 +20,6 @@ type BinanceKlineData = [
 
 interface TechnicalAnalysisChartProps {
   tradeLevels: { entry: number; takeProfit: number; stopLoss: number };
-  onLevelsChange: (newLevels: { entry: number; takeProfit: number; stopLoss: number; }) => void;
   children?: React.ReactNode;
   selectedCrypto: string;
   onCryptoSelect: (symbol: string) => void;
@@ -32,7 +31,6 @@ interface TechnicalAnalysisChartProps {
 export const TechnicalAnalysisChart = memo(
   ({
     tradeLevels,
-    onLevelsChange,
     children,
     selectedCrypto,
     onCryptoSelect,
@@ -46,6 +44,21 @@ export const TechnicalAnalysisChart = memo(
     const priceLinesRef = useRef<Partial<Record<PriceLineKey, IPriceLine>>>({});
     const [interval, setInterval] = useState("1d");
     const [isChartReady, setIsChartReady] = useState(false);
+    const [newSymbolInput, setNewSymbolInput] = useState("");
+    const [watchedSymbols, setWatchedSymbols] = useState<string[]>([
+      "BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT",
+      "ADAUSDT", "BNBUSDT", "DOGEUSDT", "SHIBUSDT",
+    ]);
+
+    const handleAddSymbol = (symbolToAdd?: string) => {
+      const symbol = symbolToAdd || newSymbolInput.trim();
+      if (symbol === "") return;
+      const formattedSymbol = symbol.toUpperCase();
+      if (!watchedSymbols.includes(formattedSymbol)) {
+        setWatchedSymbols((prev) => [...prev, formattedSymbol]);
+        if (!symbolToAdd) setNewSymbolInput("");
+      }
+    };
 
     const { data: exchangeRateData } = useQuery({
       queryKey: ["exchangeRate"],
@@ -57,7 +70,7 @@ export const TechnicalAnalysisChart = memo(
       refetchInterval: 60000,
     });
 
-    const { data: initialChartData, isLoading, error } = useQuery({
+    const { data: initialChartData } = useQuery({
       queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
       queryFn: async () => {
         const apiPath = marketType === "futures" ? "futures-klines" : "klines";
@@ -123,10 +136,15 @@ export const TechnicalAnalysisChart = memo(
     useEffect(() => {
       if (!isChartReady || !seriesRef.current) return;
 
-      const symbol = selectedCrypto.toLowerCase();
-      const wsUrl = marketType === 'spot'
-        ? `wss://stream.binance.com:9443/ws/${symbol}@kline_${interval}`
-        : `wss://fstream.binance.com/ws/${symbol}@kline_${interval}`;
+      let wsUrl;
+      if (marketType === 'spot') {
+        const symbol = selectedCrypto.toLowerCase();
+        wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@kline_${interval}`;
+      } else { // futures
+        // This logic mirrors the REST API call for futures
+        const symbol = selectedCrypto.replace("USDT", "usd_perp").toLowerCase();
+        wsUrl = `wss://dstream.binance.com/ws/${symbol}@kline_${interval}`;
+      }
 
       const ws = new WebSocket(wsUrl);
       ws.onmessage = (event) => {
@@ -136,7 +154,7 @@ export const TechnicalAnalysisChart = memo(
           seriesRef.current?.update({ time: kline.t / 1000, open: parseFloat(kline.o), high: parseFloat(kline.h), low: parseFloat(kline.l), close: parseFloat(kline.c) } as BarData);
         }
       };
-      ws.onerror = (error) => console.error("WebSocket Error:", error);
+      ws.onerror = (error) => console.error("WebSocket Error:", { error, wsUrl });
 
       return () => ws.close();
     }, [isChartReady, selectedCrypto, interval, marketType]);
@@ -144,8 +162,7 @@ export const TechnicalAnalysisChart = memo(
     // 5. Update Price Lines
     useEffect(() => {
       const series = seriesRef.current;
-      const brlRate = exchangeRateData?.usdtToBrl || 1;
-      if (!series || !brlRate || !tradeLevels) return;
+      if (!series || !tradeLevels) return;
 
       Object.values(priceLinesRef.current).forEach(line => line && series.removePriceLine(line));
       priceLinesRef.current = {};
@@ -161,7 +178,7 @@ export const TechnicalAnalysisChart = memo(
         createPriceLine("takeProfit", tradeLevels.takeProfit, "#26A69A", "Take Profit");
         createPriceLine("stopLoss", tradeLevels.stopLoss, "#EF5350", "Stop Loss");
       }
-    }, [tradeLevels, tipoOperacao, initialChartData]); // Re-draw when symbol changes
+    }, [tradeLevels, tipoOperacao, initialChartData, exchangeRateData]); // Re-draw when symbol or rate changes
 
     return (
       <Card>
@@ -177,7 +194,19 @@ export const TechnicalAnalysisChart = memo(
             <button onClick={() => onMarketTypeChange("futures")} className={marketType === "futures" ? styles.active : ""}>Futuros</button>
           </div>
           {children}
-          {/* Rest of the UI */}
+          <div className={styles.addSymbolContainer}>
+            <input
+              type="text"
+              placeholder="Add symbol (e.g., ETHUSDT)"
+              value={newSymbolInput}
+              onChange={(e) => setNewSymbolInput(e.target.value)}
+              className={styles.symbolInput}
+            />
+            <button onClick={() => handleAddSymbol()} className={styles.addSymbolButton}>
+              Add Crypto
+            </button>
+          </div>
+          <CryptoList watchedSymbols={watchedSymbols} onCryptoSelect={onCryptoSelect} />
         </CardContent>
       </Card>
     );
