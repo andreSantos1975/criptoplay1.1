@@ -138,7 +138,30 @@
 .saveButtonContainer {
   display: flex;
   justify-content: center;
+  gap: 1rem;
   padding: 1rem 0;
+}
+
+.restoreButton {
+  background-color: transparent;
+  color: var(--foreground);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.restoreButton:hover {
+  background-color: var(--muted);
+}
+
+.restoreButton:disabled {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .saveButton {

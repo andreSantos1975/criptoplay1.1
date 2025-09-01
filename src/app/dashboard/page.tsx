@@ -120,32 +120,43 @@ const DashboardPage = () => {
   const [isBudgetLoading, setIsBudgetLoading] = useState(false);
 
   // Logic lifted from OrcamentoPage
+  const fetchBudget = useCallback(async () => {
+    setIsBudgetLoading(true);
+    try {
+      const response = await fetch('/api/budget');
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          setBudgetIncome(data.income.toString());
+          setBudgetCategories(data.categories.map((cat: { id?: string; name: string; percentage: number }, index: number) => ({
+            ...cat,
+            id: cat.id || index.toString(),
+            amount: (data.income * cat.percentage) / 100,
+          })));
+        } else {
+          // If no budget is found, reset to a default state
+          setBudgetIncome('');
+          setBudgetCategories([
+            { id: '1', name: 'Investimentos', percentage: 20, amount: 0 },
+            { id: '2', name: 'Reserva Financeira', percentage: 15, amount: 0 },
+            { id: '3', name: 'Despesas Essenciais', percentage: 50, amount: 0 },
+            { id: '4', name: 'Lazer', percentage: 10, amount: 0 },
+            { id: '5', name: 'Outros', percentage: 5, amount: 0 },
+          ]);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch budget:", error);
+    } finally {
+      setIsBudgetLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeFinanceTab === 'orcamento') {
-      const fetchBudget = async () => {
-        setIsBudgetLoading(true);
-        try {
-          const response = await fetch('/api/budget');
-          if (response.ok) {
-            const data = await response.json();
-            if (data) {
-              setBudgetIncome(data.income.toString());
-              setBudgetCategories(data.categories.map((cat: { id?: string; name: string; percentage: number }, index: number) => ({
-                ...cat,
-                id: cat.id || index.toString(),
-                amount: (data.income * cat.percentage) / 100,
-              })));
-            }
-          }
-        } catch (error) {
-          console.error("Failed to fetch budget:", error);
-        } finally {
-          setIsBudgetLoading(false);
-        }
-      };
       fetchBudget();
     }
-  }, [activeFinanceTab]);
+  }, [activeFinanceTab, fetchBudget]);
 
   const budgetIncomeValue = useMemo(() => {
     const sanitizedValue = budgetIncome.replace(',', '.');
@@ -397,6 +408,7 @@ const DashboardPage = () => {
                 onAddCategory={handleAddCategory}
                 onRemoveCategory={handleRemoveCategory}
                 onSaveBudget={handleSaveBudget}
+                onRestore={fetchBudget}
                 isLoading={isBudgetLoading}
                 totalPercentage={totalPercentage}
               />
