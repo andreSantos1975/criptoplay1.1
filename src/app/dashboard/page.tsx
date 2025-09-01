@@ -118,6 +118,7 @@ const DashboardPage = () => {
     { id: '5', name: 'Outros', percentage: 5, amount: 0 },
   ]);
   const [isBudgetLoading, setIsBudgetLoading] = useState(false);
+  const [budgetFetched, setBudgetFetched] = useState(false);
 
   // Logic lifted from OrcamentoPage
   const fetchBudget = useCallback(async () => {
@@ -144,6 +145,7 @@ const DashboardPage = () => {
             { id: '5', name: 'Outros', percentage: 5, amount: 0 },
           ]);
         }
+        setBudgetFetched(true); // Mark as fetched
       }
     } catch (error) {
       console.error("Failed to fetch budget:", error);
@@ -153,10 +155,10 @@ const DashboardPage = () => {
   }, []);
 
   useEffect(() => {
-    if (activeFinanceTab === 'orcamento') {
+    if (activeFinanceTab === 'orcamento' && !budgetFetched) {
       fetchBudget();
     }
-  }, [activeFinanceTab, fetchBudget]);
+  }, [activeFinanceTab, budgetFetched, fetchBudget]);
 
   const budgetIncomeValue = useMemo(() => {
     const sanitizedValue = budgetIncome.replace(',', '.');

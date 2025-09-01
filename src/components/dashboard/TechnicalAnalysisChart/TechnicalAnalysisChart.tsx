@@ -141,9 +141,8 @@ export const TechnicalAnalysisChart = memo(
         const symbol = selectedCrypto.toLowerCase();
         wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@kline_${interval}`;
       } else { // futures
-        // This logic mirrors the REST API call for futures
-        const symbol = selectedCrypto.replace("USDT", "usd_perp").toLowerCase();
-        wsUrl = `wss://dstream.binance.com/ws/${symbol}@kline_${interval}`;
+        const symbol = selectedCrypto.toLowerCase();
+        wsUrl = `wss://fstream.binance.com/ws/${symbol}@kline_${interval}`;
       }
 
       const ws = new WebSocket(wsUrl);
