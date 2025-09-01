@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { IncomeInput } from '../IncomeInput/IncomeInput';
 import { CategoryAllocation, Category } from '../CategoryAllocation/CategoryAllocation';
 import { BudgetSummary } from '../BudgetSummary/BudgetSummary';
@@ -8,119 +8,35 @@ import styles from './OrcamentoPage.module.css';
 
 const financeHeroUrl = '/assets/hero-crypto.jpg';
 
-export const OrcamentoPage = () => {
-  const [income, setIncome] = useState<string>('');
-  const [categories, setCategories] = useState<Category[]>([
-    { id: '1', name: 'Investimentos', percentage: 20, amount: 0 },
-    { id: '2', name: 'Reserva Financeira', percentage: 15, amount: 0 },
-    { id: '3', name: 'Despesas Essenciais', percentage: 50, amount: 0 },
-    { id: '4', name: 'Lazer', percentage: 10, amount: 0 },
-    { id: '5', name: 'Outros', percentage: 5, amount: 0 },
-  ]);
-  const [isLoading, setIsLoading] = useState(false);
+interface OrcamentoPageProps {
+  income: string;
+  onIncomeChange: (value: string) => void;
+  categories: Category[];
+  onCategoryChange: (id: string, field: 'name' | 'percentage', value: string | number) => void;
+  onAddCategory: () => void;
+  onRemoveCategory: (id: string) => void;
+  onSaveBudget: () => void;
+  isLoading: boolean;
+  totalPercentage: number;
+}
 
-  // Fetch budget data from the API on component mount
-  useEffect(() => {
-    const fetchBudget = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch('/api/budget'); // Assumes current month/year
-        if (response.ok) {
-          const data = await response.json();
-          if (data) {
-            setIncome(data.income.toString());
-            setCategories(data.categories.map((cat: { id?: string; name: string; percentage: number }, index: number) => ({
-              ...cat,
-              id: cat.id || index.toString(), // Ensure there is a unique id
-              amount: (data.income * cat.percentage) / 100,
-            })));
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch budget:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchBudget();
-  }, []);
-
+export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
+  income,
+  onIncomeChange,
+  categories,
+  onCategoryChange,
+  onAddCategory,
+  onRemoveCategory,
+  onSaveBudget,
+  isLoading,
+  totalPercentage,
+}) => {
   const incomeValue = React.useMemo(() => {
     const sanitizedValue = income.replace(',', '.');
     const numericString = sanitizedValue.replace(/[^0-9.]/g, '');
     const value = parseFloat(numericString);
     return isNaN(value) ? 0 : value;
   }, [income]);
-
-  const totalPercentage = React.useMemo(() => {
-    return categories.reduce((sum, category) => sum + (Number(category.percentage) || 0), 0);
-  }, [categories]);
-
-  useEffect(() => {
-    const updatedCategories = categories.map(category => ({
-      ...category,
-      amount: (incomeValue * (Number(category.percentage) || 0)) / 100
-    }));
-    setCategories(updatedCategories);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incomeValue]);
-
-  const handleCategoryChange = (id: string, field: 'name' | 'percentage', value: string | number) => {
-    setCategories(prevCategories => {
-      const updatedCategories = prevCategories.map(category => {
-        if (category.id === id) {
-          const updatedCategory = { ...category, [field]: value };
-          if (field === 'percentage') {
-            updatedCategory.amount = (incomeValue * (Number(value) || 0)) / 100;
-          }
-          return updatedCategory;
-        }
-        return category;
-      });
-      return updatedCategories;
-    });
-  };
-
-  const handleAddCategory = () => {
-    const newId = Date.now().toString();
-    const newCategory: Category = {
-      id: newId,
-      name: 'Nova Categoria',
-      percentage: 0,
-      amount: 0
-    };
-    setCategories(prev => [...prev, newCategory]);
-  };
-
-  const handleRemoveCategory = (id: string) => {
-    setCategories(prev => prev.filter(category => category.id !== id));
-  };
-
-  const handleSaveBudget = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/budget', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          income: incomeValue,
-          categories: categories.map(({ name, percentage }) => ({ name, percentage })),
-          month: new Date().getMonth() + 1, // Use current month/year
-          year: new Date().getFullYear(),
-        }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to save budget');
-      }
-      // Optionally show a success message
-      alert('Orçamento salvo com sucesso!');
-    } catch (error) {
-      console.error(error);
-      alert('Erro ao salvar orçamento.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [incomeValue, categories]);
 
   return (
     <div className={styles.page}>
@@ -149,7 +65,7 @@ export const OrcamentoPage = () => {
         <div className={styles.contentWrapper}>
           <IncomeInput 
             income={income}
-            onIncomeChange={setIncome}
+            onIncomeChange={onIncomeChange}
           />
 
           <div className={styles.budgetLayout}>
@@ -158,9 +74,9 @@ export const OrcamentoPage = () => {
                 categories={categories}
                 income={incomeValue}
                 totalPercentage={totalPercentage}
-                onCategoryChange={handleCategoryChange}
-                onAddCategory={handleAddCategory}
-                onRemoveCategory={handleRemoveCategory}
+                onCategoryChange={onCategoryChange}
+                onAddCategory={onAddCategory}
+                onRemoveCategory={onRemoveCategory}
               />
             </div>
 
@@ -174,7 +90,7 @@ export const OrcamentoPage = () => {
           </div>
           
           <div className={styles.saveButtonContainer}>
-            <button onClick={handleSaveBudget} disabled={isLoading} className={styles.saveButton}>
+            <button onClick={onSaveBudget} disabled={isLoading} className={styles.saveButton}>
               {isLoading ? 'Salvando...' : 'Salvar Orçamento'}
             </button>
           </div>

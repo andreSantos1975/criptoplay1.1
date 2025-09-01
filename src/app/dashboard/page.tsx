@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { NavigationTabs } from "@/components/dashboard/NavigationTabs/NavigationTabs";
@@ -15,6 +15,7 @@ import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
 import Sidebar from "@/components/dashboard/Sidebar/Sidebar";
 import { PersonalFinanceNav } from "@/components/dashboard/PersonalFinanceNav/PersonalFinanceNav";
 import { OrcamentoPage } from "@/components/dashboard/OrcamentoPage/OrcamentoPage";
+import { Category } from "@/components/dashboard/CategoryAllocation/CategoryAllocation";
 
 
 const TechnicalAnalysisChart = dynamic(
@@ -106,6 +107,115 @@ const DashboardPage = () => {
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [isIncomeDialogOpen, setIsIncomeDialogOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState<Income | undefined>();
+
+  // State lifted from OrcamentoPage
+  const [budgetIncome, setBudgetIncome] = useState<string>('');
+  const [budgetCategories, setBudgetCategories] = useState<Category[]>([
+    { id: '1', name: 'Investimentos', percentage: 20, amount: 0 },
+    { id: '2', name: 'Reserva Financeira', percentage: 15, amount: 0 },
+    { id: '3', name: 'Despesas Essenciais', percentage: 50, amount: 0 },
+    { id: '4', name: 'Lazer', percentage: 10, amount: 0 },
+    { id: '5', name: 'Outros', percentage: 5, amount: 0 },
+  ]);
+  const [isBudgetLoading, setIsBudgetLoading] = useState(false);
+
+  // Logic lifted from OrcamentoPage
+  useEffect(() => {
+    if (activeFinanceTab === 'orcamento') {
+      const fetchBudget = async () => {
+        setIsBudgetLoading(true);
+        try {
+          const response = await fetch('/api/budget');
+          if (response.ok) {
+            const data = await response.json();
+            if (data) {
+              setBudgetIncome(data.income.toString());
+              setBudgetCategories(data.categories.map((cat: { id?: string; name: string; percentage: number }, index: number) => ({
+                ...cat,
+                id: cat.id || index.toString(),
+                amount: (data.income * cat.percentage) / 100,
+              })));
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch budget:", error);
+        } finally {
+          setIsBudgetLoading(false);
+        }
+      };
+      fetchBudget();
+    }
+  }, [activeFinanceTab]);
+
+  const budgetIncomeValue = useMemo(() => {
+    const sanitizedValue = budgetIncome.replace(',', '.');
+    const numericString = sanitizedValue.replace(/[^0-9.]/g, '');
+    const value = parseFloat(numericString);
+    return isNaN(value) ? 0 : value;
+  }, [budgetIncome]);
+
+  const totalPercentage = useMemo(() => {
+    return budgetCategories.reduce((sum, category) => sum + (Number(category.percentage) || 0), 0);
+  }, [budgetCategories]);
+
+  useEffect(() => {
+    const updatedCategories = budgetCategories.map(category => ({
+      ...category,
+      amount: (budgetIncomeValue * (Number(category.percentage) || 0)) / 100
+    }));
+    setBudgetCategories(updatedCategories);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [budgetIncomeValue]);
+
+  const handleCategoryChange = (id: string, field: 'name' | 'percentage', value: string | number) => {
+    setBudgetCategories(prevCategories => {
+      const updatedCategories = prevCategories.map(category => {
+        if (category.id === id) {
+          const updatedCategory = { ...category, [field]: value };
+          if (field === 'percentage') {
+            updatedCategory.amount = (budgetIncomeValue * (Number(value) || 0)) / 100;
+          }
+          return updatedCategory;
+        }
+        return category;
+      });
+      return updatedCategories;
+    });
+  };
+
+  const handleAddCategory = () => {
+    const newId = Date.now().toString();
+    const newCategory: Category = { id: newId, name: 'Nova Categoria', percentage: 0, amount: 0 };
+    setBudgetCategories(prev => [...prev, newCategory]);
+  };
+
+  const handleRemoveCategory = (id: string) => {
+    setBudgetCategories(prev => prev.filter(category => category.id !== id));
+  };
+
+  const handleSaveBudget = useCallback(async () => {
+    setIsBudgetLoading(true);
+    try {
+      const response = await fetch('/api/budget', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          income: budgetIncomeValue,
+          categories: budgetCategories.map(({ name, percentage }) => ({ name, percentage })),
+          month: new Date().getMonth() + 1,
+          year: new Date().getFullYear(),
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to save budget');
+      alert('Orçamento salvo com sucesso!');
+    } catch (error) {
+      console.error(error);
+      alert('Erro ao salvar orçamento.');
+    } finally {
+      setIsBudgetLoading(false);
+    }
+  }, [budgetIncomeValue, budgetCategories]);
+
 
   const { data: expenses = [], isLoading: isLoadingExpenses, isError: isErrorExpenses } = useQuery<Expense[]>({
     queryKey: ['expenses'],
@@ -279,7 +389,17 @@ const DashboardPage = () => {
           <>
             <PersonalFinanceNav activeTab={activeFinanceTab} onTabChange={setActiveFinanceTab} />
             {activeFinanceTab === 'orcamento' ? (
-              <OrcamentoPage />
+              <OrcamentoPage 
+                income={budgetIncome}
+                onIncomeChange={setBudgetIncome}
+                categories={budgetCategories}
+                onCategoryChange={handleCategoryChange}
+                onAddCategory={handleAddCategory}
+                onRemoveCategory={handleRemoveCategory}
+                onSaveBudget={handleSaveBudget}
+                isLoading={isBudgetLoading}
+                totalPercentage={totalPercentage}
+              />
             ) : (
               <>
                 <Sidebar />
