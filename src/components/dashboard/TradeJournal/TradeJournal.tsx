@@ -106,7 +106,7 @@ const TradeJournal = ({
 
   useEffect(() => {
     const entryPrice = parseNumericValue(tradeData.precoEntrada);
-    const quantity = parseNumericValue(tradeData.quantidade);
+    const quantity = parseQuantity(tradeData.quantidade);
 
     if (entryPrice > 0 && quantity > 0) {
       const cost = entryPrice * quantity;
@@ -118,7 +118,7 @@ const TradeJournal = ({
 
   useEffect(() => {
     const entryPrice = parseNumericValue(tradeData.precoEntrada);
-    const quantity = parseNumericValue(tradeData.quantidade);
+    const quantity = parseQuantity(tradeData.quantidade);
     const stopLossPrice = parseNumericValue(tradeData.stopLoss);
     const takeProfitPrice = parseNumericValue(tradeData.takeProfit);
 
@@ -136,6 +136,12 @@ const TradeJournal = ({
       setPotentialProfit(null);
     }
   }, [tradeData.precoEntrada, tradeData.quantidade, tradeData.stopLoss, tradeData.takeProfit, tipoOperacao]);
+
+  const parseQuantity = (value: string): number => {
+    if (!value) return 0;
+    const cleanedValue = value.replace(',', '.');
+    return parseFloat(cleanedValue) || 0;
+  };
 
   const parseNumericValue = (value: string): number => {
     if (!value) return 0;

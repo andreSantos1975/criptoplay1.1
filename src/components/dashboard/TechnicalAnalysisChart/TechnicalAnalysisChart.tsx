@@ -74,7 +74,7 @@ export const TechnicalAnalysisChart = memo(
       queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
       queryFn: async () => {
         const apiPath = marketType === "futures" ? "futures-klines" : "klines";
-        const symbolForApi = marketType === 'futures' ? selectedCrypto.replace("USDT", "USD_PERP") : selectedCrypto;
+        const symbolForApi = selectedCrypto;
         const response = await fetch(`/api/binance/${apiPath}?symbol=${symbolForApi}&interval=${interval}`);
         if (!response.ok) throw new Error("Network response was not ok");
         const data: BinanceKlineData[] = await response.json();
@@ -134,7 +134,7 @@ export const TechnicalAnalysisChart = memo(
 
     // 4. Connect WebSocket for real-time updates
     useEffect(() => {
-      if (!isChartReady || !seriesRef.current) return;
+      if (!isChartReady || !seriesRef.current || !selectedCrypto) return;
 
       let wsUrl;
       if (marketType === 'spot') {
@@ -144,6 +144,8 @@ export const TechnicalAnalysisChart = memo(
         const symbol = selectedCrypto.toLowerCase();
         wsUrl = `wss://fstream.binance.com/ws/${symbol}@kline_${interval}`;
       }
+
+      console.log(`Attempting to connect to WebSocket: ${wsUrl}`); // Debugging line
 
       const ws = new WebSocket(wsUrl);
 
@@ -174,8 +176,14 @@ export const TechnicalAnalysisChart = memo(
 
       // Cleanup function to close the WebSocket connection when the component unmounts or dependencies change
       return () => {
-        console.log("Closing WebSocket connection for", wsUrl);
-        ws.close(1000, "Component unmounting or dependency changing");
+        if (ws) {
+          console.log("Closing WebSocket connection for", wsUrl);
+          ws.onopen = null;
+          ws.onmessage = null;
+          ws.onerror = null;
+          ws.onclose = null;
+          ws.close(1000, "Component unmounting or dependency changing");
+        }
       };
     }, [isChartReady, selectedCrypto, interval, marketType]);
 
@@ -194,11 +202,11 @@ export const TechnicalAnalysisChart = memo(
       };
 
       createPriceLine("entry", tradeLevels.entry, "#42A5F5", "Entrada");
-      if (tipoOperacao === "compra") {
+      if (marketType === 'futures' || (marketType === 'spot' && tipoOperacao === 'compra')) {
         createPriceLine("takeProfit", tradeLevels.takeProfit, "#26A69A", "Take Profit");
         createPriceLine("stopLoss", tradeLevels.stopLoss, "#EF5350", "Stop Loss");
       }
-    }, [tradeLevels, tipoOperacao, initialChartData, exchangeRateData]); // Re-draw when symbol or rate changes
+    }, [tradeLevels, tipoOperacao, initialChartData, exchangeRateData, marketType]); // Re-draw when symbol or rate changes
 
     return (
       <Card>
