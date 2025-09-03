@@ -203,27 +203,19 @@ const DashboardPage = () => {
     };
   }, [expenses, incomes]);
 
-  // Recalculate budget categories amounts based on actual total income
-  useEffect(() => {
-    if (summary.totalIncome > 0) { // Ensure totalIncome is available
-      const updatedCategories = budgetCategories.map(category => ({
-        ...category,
-        amount: (summary.totalIncome * (Number(category.percentage) || 0)) / 100
-      }));
-      setBudgetCategories(updatedCategories);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [summary.totalIncome, budgetCategories.map(c => c.percentage).join(',')]); // Depend on summary.totalIncome
+  const categoriesWithAmounts = useMemo(() => {
+    return budgetCategories.map(category => ({
+      ...category,
+      amount: (summary.totalIncome * (Number(category.percentage) || 0)) / 100
+    }));
+  }, [summary.totalIncome, budgetCategories]);
 
   const handleCategoryChange = (id: string, field: 'name' | 'percentage', value: string | number) => {
     setBudgetCategories(prevCategories => {
       const updatedCategories = prevCategories.map(category => {
         if (category.id === id) {
           const updatedCategory = { ...category, [field]: value };
-          if (field === 'percentage') {
-            // Correctly use summary.totalIncome instead of undefined budgetIncomeValue
-            updatedCategory.amount = (summary.totalIncome * (Number(value) || 0)) / 100;
-          }
+          // A lógica de cálculo do amount foi removida daqui para ser centralizada no useMemo
           return updatedCategory;
         }
         return category;
@@ -389,9 +381,8 @@ const DashboardPage = () => {
             <PersonalFinanceNav activeTab={activeFinanceTab} onTabChange={setActiveFinanceTab} />
             {activeFinanceTab === 'orcamento' ? (
               <OrcamentoPage 
-                income={summary.totalIncome.toString()} // Now uses actual total income
-                onIncomeChange={() => {}} // No-op, income is not manually editable for budget calculation
-                categories={budgetCategories}
+                income={summary.totalIncome} // Now uses actual total income
+                categories={categoriesWithAmounts}
                 onCategoryChange={handleCategoryChange}
                 onAddCategory={handleAddCategory}
                 onRemoveCategory={handleRemoveCategory}
@@ -415,7 +406,7 @@ const DashboardPage = () => {
                     expenses={expenses}
                     isLoading={isLoadingExpenses}
                     isError={isErrorExpenses}
-                    budgetCategories={budgetCategories}
+                    budgetCategories={categoriesWithAmounts}
                   />
                   <PersonalFinanceDialog
                     isOpen={isExpenseDialogOpen || isIncomeDialogOpen}
