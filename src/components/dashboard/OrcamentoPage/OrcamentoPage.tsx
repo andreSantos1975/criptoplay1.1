@@ -1,7 +1,9 @@
 "use client";
 
 import React from 'react';
-import { IncomeInput } from '../IncomeInput/IncomeInput';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { Download } from 'lucide-react';
 import { CategoryAllocation, Category } from '../CategoryAllocation/CategoryAllocation';
 import { BudgetSummary } from '../BudgetSummary/BudgetSummary';
 import styles from './OrcamentoPage.module.css';
@@ -9,8 +11,7 @@ import styles from './OrcamentoPage.module.css';
 const financeHeroUrl = '/assets/hero-crypto.jpg';
 
 interface OrcamentoPageProps {
-  income: number; // Changed to number
-  // onIncomeChange removed
+  income: number;
   categories: Category[];
   onCategoryChange: (id: string, field: 'name' | 'percentage', value: string | number) => void;
   onAddCategory: () => void;
@@ -32,7 +33,24 @@ export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
   isLoading,
   totalPercentage,
 }) => {
-  // Removed incomeValue useMemo, income is now a number directly
+
+  const handleExportPDF = () => {
+    const input = document.getElementById('budget-export-content');
+    if (input) {
+      html2canvas(input, {
+        useCORS: true,
+        scale: 2,
+        backgroundColor: null, // Permite que a biblioteca detecte o fundo
+      }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`orcamento-${new Date().toLocaleDateString('pt-BR')}.pdf`);
+      });
+    }
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -64,7 +82,7 @@ export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
         </div>
       </div>
 
-      <div className={styles.mainContent}>
+      <div id="budget-export-content" className={styles.mainContent}>
         <div className={styles.contentWrapper}>
           <div className={styles.incomeDisplayCard}>
             <div className={styles.incomeDisplayLabel}>Renda Mensal Bruta</div>
@@ -78,7 +96,7 @@ export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
             <div className={styles.categoryAllocation}>
               <CategoryAllocation
                 categories={categories}
-                income={income} // Use income directly
+                income={income}
                 totalPercentage={totalPercentage}
                 onCategoryChange={onCategoryChange}
                 onAddCategory={onAddCategory}
@@ -89,7 +107,7 @@ export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
             <div className={styles.budgetSummary}>
               <BudgetSummary
                 categories={categories}
-                totalIncome={income} // Use income directly
+                totalIncome={income}
                 totalPercentage={totalPercentage}
               />
             </div>
@@ -101,6 +119,9 @@ export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
             </button>
             <button onClick={onSaveBudget} disabled={isLoading} className={styles.saveButton}>
               {isLoading ? 'Salvando...' : 'Salvar Orçamento'}
+            </button>
+            <button onClick={handleExportPDF} disabled={isLoading} className={styles.exportButton} title="Exportar para PDF">
+              <Download size={20} />
             </button>
           </div>
 

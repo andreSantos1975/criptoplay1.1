@@ -187,7 +187,7 @@ const TradeJournal = ({
       type: tipoOperacao,
       entryDate: new Date().toISOString(),
       entryPrice: parseNumericValue(tradeData.precoEntrada) / brlRate,
-      quantity: parseNumericValue(tradeData.quantidade),
+      quantity: parseQuantity(tradeData.quantidade),
       stopLoss: parseNumericValue(tradeData.stopLoss) / brlRate,
       takeProfit: parseNumericValue(tradeData.takeProfit) / brlRate,
       notes: tradeData.observacoes,

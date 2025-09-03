@@ -138,6 +138,7 @@
 .saveButtonContainer {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 1rem;
   padding: 1rem 0;
 }
@@ -184,6 +185,32 @@
   color: var(--muted-foreground);
   cursor: not-allowed;
 }
+
+.exportButton {
+  background-color: transparent;
+  color: var(--foreground);
+  padding: 0.5rem; 
+  border-radius: 0.5rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exportButton:hover {
+  background-color: hsl(var(--primary-hue), 90%, 20%);
+}
+
+.exportButton:disabled {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 
 /* New styles for income display card */
 .incomeDisplayCard {
