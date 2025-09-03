@@ -109,7 +109,6 @@ const DashboardPage = () => {
   const [editingIncome, setEditingIncome] = useState<Income | undefined>();
 
   // State lifted from OrcamentoPage
-  const [budgetIncome, setBudgetIncome] = useState<string>('');
   const [budgetCategories, setBudgetCategories] = useState<Category[]>([
     { id: '1', name: 'Investimentos', percentage: 20, amount: 0 },
     { id: '2', name: 'Reserva Financeira', percentage: 15, amount: 0 },
@@ -128,15 +127,15 @@ const DashboardPage = () => {
       if (response.ok) {
         const data = await response.json();
         if (data) {
-          setBudgetIncome(data.income.toString());
+          // No longer setting budgetIncome, as it's derived from totalIncome
           setBudgetCategories(data.categories.map((cat: { id?: string; name: string; percentage: number }, index: number) => ({
             ...cat,
             id: cat.id || index.toString(),
-            amount: (data.income * cat.percentage) / 100,
+            // Amount will be calculated based on totalIncome later
+            amount: 0, // Placeholder, will be updated by the useEffect below
           })));
         } else {
           // If no budget is found, reset to a default state
-          setBudgetIncome('');
           setBudgetCategories([
             { id: '1', name: 'Investimentos', percentage: 20, amount: 0 },
             { id: '2', name: 'Reserva Financeira', percentage: 15, amount: 0 },
@@ -155,30 +154,65 @@ const DashboardPage = () => {
   }, []);
 
   useEffect(() => {
-    if (activeFinanceTab === 'orcamento' && !budgetFetched) {
+    // Fetch budget data if it hasn't been fetched yet, regardless of the tab
+    if (!budgetFetched) {
       fetchBudget();
     }
-  }, [activeFinanceTab, budgetFetched, fetchBudget]);
+  }, [budgetFetched, fetchBudget]);
 
-  const budgetIncomeValue = useMemo(() => {
-    const sanitizedValue = budgetIncome.replace(',', '.');
-    const numericString = sanitizedValue.replace(/[^0-9.]/g, '');
-    const value = parseFloat(numericString);
-    return isNaN(value) ? 0 : value;
-  }, [budgetIncome]);
-
+  // Calculate total percentage (still useful for OrcamentoPage)
   const totalPercentage = useMemo(() => {
     return budgetCategories.reduce((sum, category) => sum + (Number(category.percentage) || 0), 0);
   }, [budgetCategories]);
 
+  const { data: expenses = [], isLoading: isLoadingExpenses, isError: isErrorExpenses } = useQuery<Expense[]>({
+    queryKey: ['expenses'],
+    queryFn: async () => {
+      const response = await fetch("/api/expenses");
+      if (!response.ok) throw new Error("Network response was not ok");
+      return response.json();
+    },
+  });
+
+  const { data: incomes = [] } = useQuery<Income[]>({
+    queryKey: ['incomes'],
+    queryFn: async () => {
+      const response = await fetch("/api/incomes");
+      if (!response.ok) throw new Error("Network response was not ok");
+      return response.json();
+    },
+  });
+
+  const summary = useMemo(() => {
+    const pendentes = expenses.filter(e => e.status === 'Pendente');
+    const pagos = expenses.filter(e => e.status === 'Pago');
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.valor, 0);
+    const totalIncome = incomes.reduce((sum, i) => sum + i.amount, 0);
+    const totalSavings = expenses.reduce((sum, e) => sum + (e.savedAmount || 0), 0);
+
+    return {
+      totalPendentes: pendentes.reduce((sum, e) => sum + e.valor, 0),
+      totalPagos: pagos.reduce((sum, e) => sum + e.valor, 0),
+      totalGeral: totalExpenses,
+      countPendentes: pendentes.length,
+      countPagos: pagos.length,
+      totalIncome: totalIncome,
+      balance: totalIncome - totalExpenses,
+      totalSavings,
+    };
+  }, [expenses, incomes]);
+
+  // Recalculate budget categories amounts based on actual total income
   useEffect(() => {
-    const updatedCategories = budgetCategories.map(category => ({
-      ...category,
-      amount: (budgetIncomeValue * (Number(category.percentage) || 0)) / 100
-    }));
-    setBudgetCategories(updatedCategories);
+    if (summary.totalIncome > 0) { // Ensure totalIncome is available
+      const updatedCategories = budgetCategories.map(category => ({
+        ...category,
+        amount: (summary.totalIncome * (Number(category.percentage) || 0)) / 100
+      }));
+      setBudgetCategories(updatedCategories);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [budgetIncomeValue]);
+  }, [summary.totalIncome, budgetCategories.map(c => c.percentage).join(',')]); // Depend on summary.totalIncome
 
   const handleCategoryChange = (id: string, field: 'name' | 'percentage', value: string | number) => {
     setBudgetCategories(prevCategories => {
@@ -186,7 +220,8 @@ const DashboardPage = () => {
         if (category.id === id) {
           const updatedCategory = { ...category, [field]: value };
           if (field === 'percentage') {
-            updatedCategory.amount = (budgetIncomeValue * (Number(value) || 0)) / 100;
+            // Correctly use summary.totalIncome instead of undefined budgetIncomeValue
+            updatedCategory.amount = (summary.totalIncome * (Number(value) || 0)) / 100;
           }
           return updatedCategory;
         }
@@ -213,7 +248,7 @@ const DashboardPage = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          income: budgetIncomeValue,
+          income: summary.totalIncome, // Now uses actual total income
           categories: budgetCategories.map(({ name, percentage }) => ({ name, percentage })),
           month: new Date().getMonth() + 1,
           year: new Date().getFullYear(),
@@ -227,42 +262,9 @@ const DashboardPage = () => {
     } finally {
       setIsBudgetLoading(false);
     }
-  }, [budgetIncomeValue, budgetCategories]);
+  }, [summary.totalIncome, budgetCategories]); // Dependency updated
 
-
-  const { data: expenses = [], isLoading: isLoadingExpenses, isError: isErrorExpenses } = useQuery<Expense[]>({
-    queryKey: ['expenses'],
-    queryFn: async () => {
-      const response = await fetch("/api/expenses");
-      if (!response.ok) throw new Error("Network response was not ok");
-      return response.json();
-    },
-  });
-
-  const { data: incomes = [] } = useQuery<Income[]>({
-    queryKey: ['incomes'],
-    queryFn: async () => {
-      const response = await fetch("/api/incomes");
-      if (!response.ok) throw new Error("Network response was not ok");
-      return response.json();
-    },
-  });
-
-  const addIncomeMutation = useMutation({
-    mutationFn: addIncome,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['incomes'] });
-      setIsIncomeDialogOpen(false);
-    },
-  });
-
-  const updateIncomeMutation = useMutation({
-    mutationFn: updateIncome,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['incomes'] });
-      setIsIncomeDialogOpen(false);
-    },
-  });
+  
 
   const addExpenseMutation = useMutation({
     mutationFn: addExpense,
@@ -280,24 +282,7 @@ const DashboardPage = () => {
     },
   });
 
-  const summary = useMemo(() => {
-    const pendentes = expenses.filter(e => e.status === 'Pendente');
-    const pagos = expenses.filter(e => e.status === 'Pago');
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.valor, 0);
-    const totalIncome = incomes.reduce((sum, i) => sum + i.amount, 0);
-    const totalSavings = expenses.reduce((sum, e) => sum + (e.savedAmount || 0), 0);
-
-    return {
-      totalPendentes: pendentes.reduce((sum, e) => sum + e.valor, 0),
-      totalPagos: pagos.reduce((sum, e) => sum + e.valor, 0),
-      totalGeral: totalExpenses,
-      countPendentes: pendentes.length,
-      countPagos: pagos.length,
-      totalIncome: totalIncome,
-      balance: totalIncome - totalExpenses,
-      totalSavings,
-    };
-  }, [expenses, incomes]);
+  
 
   const { data: exchangeRateData } = useQuery({
     queryKey: ["exchangeRate"],
@@ -403,8 +388,8 @@ const DashboardPage = () => {
             <PersonalFinanceNav activeTab={activeFinanceTab} onTabChange={setActiveFinanceTab} />
             {activeFinanceTab === 'orcamento' ? (
               <OrcamentoPage 
-                income={budgetIncome}
-                onIncomeChange={setBudgetIncome}
+                income={summary.totalIncome.toString()} // Now uses actual total income
+                onIncomeChange={() => {}} // No-op, income is not manually editable for budget calculation
                 categories={budgetCategories}
                 onCategoryChange={handleCategoryChange}
                 onAddCategory={handleAddCategory}
@@ -429,6 +414,7 @@ const DashboardPage = () => {
                     expenses={expenses}
                     isLoading={isLoadingExpenses}
                     isError={isErrorExpenses}
+                    budgetCategories={budgetCategories}
                   />
                   <PersonalFinanceDialog
                     isOpen={isExpenseDialogOpen || isIncomeDialogOpen}

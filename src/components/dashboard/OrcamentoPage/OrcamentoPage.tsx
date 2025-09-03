@@ -9,8 +9,8 @@ import styles from './OrcamentoPage.module.css';
 const financeHeroUrl = '/assets/hero-crypto.jpg';
 
 interface OrcamentoPageProps {
-  income: string;
-  onIncomeChange: (value: string) => void;
+  income: number; // Changed to number
+  // onIncomeChange removed
   categories: Category[];
   onCategoryChange: (id: string, field: 'name' | 'percentage', value: string | number) => void;
   onAddCategory: () => void;
@@ -23,7 +23,6 @@ interface OrcamentoPageProps {
 
 export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
   income,
-  onIncomeChange,
   categories,
   onCategoryChange,
   onAddCategory,
@@ -33,12 +32,14 @@ export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
   isLoading,
   totalPercentage,
 }) => {
-  const incomeValue = React.useMemo(() => {
-    const sanitizedValue = income.replace(',', '.');
-    const numericString = sanitizedValue.replace(/[^0-9.]/g, '');
-    const value = parseFloat(numericString);
-    return isNaN(value) ? 0 : value;
-  }, [income]);
+  // Removed incomeValue useMemo, income is now a number directly
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
 
   return (
     <div className={styles.page}>
@@ -65,16 +66,19 @@ export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
 
       <div className={styles.mainContent}>
         <div className={styles.contentWrapper}>
-          <IncomeInput 
-            income={income}
-            onIncomeChange={onIncomeChange}
-          />
+          <div className={styles.incomeDisplayCard}>
+            <div className={styles.incomeDisplayLabel}>Renda Mensal Bruta</div>
+            <div className={styles.incomeDisplayValue}>{formatCurrency(income)}</div>
+            <p className={styles.incomeDisplaySublabel}>
+              Este valor é a soma das suas rendas cadastradas e é usado para o cálculo do orçamento.
+            </p>
+          </div>
 
           <div className={styles.budgetLayout}>
             <div className={styles.categoryAllocation}>
               <CategoryAllocation
                 categories={categories}
-                income={incomeValue}
+                income={income} // Use income directly
                 totalPercentage={totalPercentage}
                 onCategoryChange={onCategoryChange}
                 onAddCategory={onAddCategory}
@@ -85,7 +89,7 @@ export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
             <div className={styles.budgetSummary}>
               <BudgetSummary
                 categories={categories}
-                totalIncome={incomeValue}
+                totalIncome={income} // Use income directly
                 totalPercentage={totalPercentage}
               />
             </div>

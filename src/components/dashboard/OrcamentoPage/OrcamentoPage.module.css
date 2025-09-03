@@ -184,3 +184,32 @@
   color: var(--muted-foreground);
   cursor: not-allowed;
 }
+
+/* New styles for income display card */
+.incomeDisplayCard {
+  background-color: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.incomeDisplayLabel {
+  font-size: 1rem;
+  color: var(--muted-foreground);
+  margin-bottom: 0.5rem;
+}
+
+.incomeDisplayValue {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}
+
+.incomeDisplaySublabel {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  font-style: italic;
+}

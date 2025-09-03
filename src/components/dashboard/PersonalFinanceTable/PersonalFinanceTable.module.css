@@ -172,3 +172,51 @@
   gap: 1rem;
   margin-top: 1.5rem;
 }
+
+/* Budget Summary Styles */
+.budgetSummaryContainer {
+  margin-bottom: 1.5rem;
+}
+
+.budgetSummaryTitle {
+  font-size: 1.25rem; /* 20px */
+  font-weight: 600;
+  color: var(--foreground);
+  /* No margin-bottom here, it's in the CardHeader */
+}
+
+.budgetSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.budgetCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem;
+  background-color: var(--card-muted);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.budgetCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.budgetCategoryName {
+  font-size: 0.875rem; /* 14px */
+  color: var(--muted-foreground);
+  margin-bottom: 0.5rem; /* 8px */
+  font-weight: 500;
+}
+
+.budgetCategoryAmount {
+  font-size: 1.25rem; /* 20px */
+  font-weight: 700;
+  color: var(--foreground);
+}

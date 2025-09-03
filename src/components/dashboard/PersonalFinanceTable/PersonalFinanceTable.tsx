@@ -18,6 +18,7 @@ import { Edit, Trash2, Search, Plus, Loader } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import styles from "./PersonalFinanceTable.module.css";
+import { Category } from "../CategoryAllocation/CategoryAllocation";
 
 
 
@@ -37,7 +38,41 @@ interface PersonalFinanceTableProps {
   expenses: Expense[];
   isLoading: boolean;
   isError: boolean;
+  budgetCategories: Category[];
 }
+
+const BudgetSummaryDisplay = ({ categories }: { categories: Category[] }) => {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const hasBudgetData = categories && categories.some(cat => cat.amount > 0);
+  if (!hasBudgetData) {
+    return null;
+  }
+
+  return (
+    <Card className={styles.budgetSummaryContainer}>
+      <CardHeader>
+        <CardTitle className={styles.budgetSummaryTitle}>Resumo do Orçamento Mensal</CardTitle>
+      </CardHeader>
+      <CardContent className={styles.budgetSummaryGrid}>
+        {categories.map(category => (
+          category.amount > 0 && (
+            <div key={category.id} className={styles.budgetCard}>
+              <span className={styles.budgetCategoryName}>{category.name}</span>
+              <span className={styles.budgetCategoryAmount}>{formatCurrency(category.amount)}</span>
+            </div>
+          )
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
 
 export const PersonalFinanceTable = ({
   onAddExpense,
@@ -46,6 +81,7 @@ export const PersonalFinanceTable = ({
   expenses,
   isLoading,
   isError,
+  budgetCategories,
 }: PersonalFinanceTableProps) => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -101,6 +137,7 @@ export const PersonalFinanceTable = ({
 
   return (
     <div className={styles.container}>
+      <BudgetSummaryDisplay categories={budgetCategories} />
       <PersonalFinanceSummary summary={summary} />
       
       <Card className={styles.card}>
@@ -173,9 +210,7 @@ export const PersonalFinanceTable = ({
                             expense.status === "Pago"
                               ? styles.statusPaid
                               : styles.statusPending
-                          }`}>
-                          {expense.status}
-                        </span>
+                          }`}>{expense.status}</span>
                       </TableCell>
                       <TableCell className={styles.actionsCell}>
                         <div className={styles.actionsWrapper}>
