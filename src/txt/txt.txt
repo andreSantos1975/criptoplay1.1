@@ -4,6 +4,9 @@ npm run dev
 -------------------------------
  "cryptocurrency-icons": "^0.18.1" 
 Lightweight Charts
+-------------------------------------------------------------------
+biblioteca react-hot-toast usada para feedbacks alert para usuários
+-------------------------------------------------------------------
 
   A forma correta para a versão 5.x é usar chart.addSeries(CandlestickSeries, { ... }) e importar
   o tipo de série.

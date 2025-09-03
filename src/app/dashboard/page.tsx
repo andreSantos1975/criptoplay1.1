@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from 'react-hot-toast';
 
 import { NavigationTabs } from "@/components/dashboard/NavigationTabs/NavigationTabs";
 import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable";
@@ -255,10 +256,10 @@ const DashboardPage = () => {
         }),
       });
       if (!response.ok) throw new Error('Failed to save budget');
-      alert('Orçamento salvo com sucesso!');
+      toast.success('Orçamento salvo com sucesso!');
     } catch (error) {
       console.error(error);
-      alert('Erro ao salvar orçamento.');
+      toast.error('Erro ao salvar orçamento.');
     } finally {
       setIsBudgetLoading(false);
     }
