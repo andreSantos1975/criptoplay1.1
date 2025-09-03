@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import {
   Table,
   TableBody,
@@ -96,6 +97,8 @@ export const RecentOperationsTable = () => {
   const [activeTab, setActiveTab] = useState<'open' | 'closed'>('open');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [tradeToClose, setTradeToClose] = useState<string | null>(null);
 
   const { data: exchangeRateData } = useQuery({
     queryKey: ["exchangeRate"],
@@ -134,7 +137,6 @@ export const RecentOperationsTable = () => {
 
   
 
-  // Mutação para fechar (atualizar) um trade
   const closeTradeMutation = useMutation({
     mutationFn: (tradeId: string) => {
       return fetch(`/api/trades/${tradeId}`, {
@@ -146,16 +148,23 @@ export const RecentOperationsTable = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trades'] });
+      toast.success("Operação fechada com sucesso!");
     },
     onError: (error: Error) => {
-      alert(`Erro: ${error.message}`);
+      toast.error(`Erro: ${error.message}`);
     }
   });
 
   const handleCloseTrade = (tradeId: string) => {
-    if (confirm("Tem certeza que deseja fechar esta operação pelo preço de mercado atual?")) {
-      closeTradeMutation.mutate(tradeId);
+    setTradeToClose(tradeId);
+    setIsConfirmModalOpen(true);
+  };
+
+  const confirmCloseTrade = () => {
+    if (tradeToClose) {
+      closeTradeMutation.mutate(tradeToClose);
     }
+    setIsConfirmModalOpen(false);
   };
 
   const handleRowClick = (trade: Trade) => {
@@ -239,7 +248,7 @@ export const RecentOperationsTable = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => handleCloseTrade(trade.id)}
+                  onClick={(e) => { e.stopPropagation(); handleCloseTrade(trade.id); }}
                   disabled={closeTradeMutation.isPending && closeTradeMutation.variables === trade.id}
                 >
                   {closeTradeMutation.isPending && closeTradeMutation.variables === trade.id ? 'Fechando...' : 'Fechar'}
@@ -296,6 +305,27 @@ export const RecentOperationsTable = () => {
           </TableBody>
         </Table>
       </CardContent>
+
+      <Modal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        title="Confirmar Fechamento"
+      >
+        <div className={styles.confirmModalContent}>
+          <p>Tem certeza que deseja fechar esta operação pelo preço de mercado atual?</p>
+          <div className={styles.confirmModalButtons}>
+            <Button variant="outline" onClick={() => setIsConfirmModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={confirmCloseTrade}
+              disabled={closeTradeMutation.isPending}
+            >
+              {closeTradeMutation.isPending ? 'Fechando...' : 'Confirmar'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {isModalOpen && selectedTrade && (() => {
         const potentialLoss = (selectedTrade.type === 'compra')

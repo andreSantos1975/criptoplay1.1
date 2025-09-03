@@ -60,3 +60,15 @@
   display: block;
   margin-bottom: 0.25rem;
 }
+
+.confirmModalContent p {
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  color: #c9d1d9;
+}
+
+.confirmModalButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}

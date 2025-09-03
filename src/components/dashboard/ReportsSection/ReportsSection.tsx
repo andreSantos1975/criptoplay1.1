@@ -242,10 +242,32 @@ export const ReportsSection = () => {
     () => generatePortfolioPerformanceData(trades, capitalMovements, brlRate),
     [trades, capitalMovements, brlRate]
   );
-  const distributionData = useMemo(
-    () => generatePortfolioDistributionData(openTrades, binanceTickers, brlRate),
-    [openTrades, binanceTickers, brlRate]
-  );
+  const distributionData = useMemo(() => {
+    const rawData = generatePortfolioDistributionData(openTrades, binanceTickers, brlRate);
+
+    const MIN_PERCENTAGE = 0.01; // 1% do total
+    const total = rawData.reduce((acc, d) => acc + d.value, 0);
+
+    let aggregated = 0;
+    const filtered = rawData.filter(d => {
+      const percent = d.value / total;
+      if (percent < MIN_PERCENTAGE) {
+        aggregated += d.value;
+        return false;
+      }
+      return true;
+    });
+
+    if (aggregated > 0) {
+      filtered.push({
+        name: "Outros",
+        value: aggregated,
+        color: "#cccccc", // cinza padrão
+      });
+    }
+
+    return filtered;
+  }, [openTrades, binanceTickers, brlRate]);
   const monthlyReportData = useMemo(
     () => generateMonthlyReportData(trades, capitalMovements, brlRate),
     [trades, capitalMovements, brlRate]
@@ -390,7 +412,7 @@ export const ReportsSection = () => {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) =>
-                      `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
+                      `${name} - ${((percent ?? 0) * 100).toFixed(1)}%`
                     }
                   >
                     {distributionData.map((d, i) => (
