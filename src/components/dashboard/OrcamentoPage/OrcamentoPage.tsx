@@ -114,7 +114,7 @@ export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
                 <p>50% necessidades, 30% desejos, 20% poupança/investimentos</p>
               </div>
               <div className={styles.tipItem}>
-                <p>Reserva de Emergência:</p>
+                <p>Reserva:</p>
                 <p>Mantenha de 3 a 6 meses de gastos em uma reserva</p>
               </div>
               <div className={styles.tipItem}>
