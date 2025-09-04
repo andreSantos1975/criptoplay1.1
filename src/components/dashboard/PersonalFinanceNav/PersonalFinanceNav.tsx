@@ -1,26 +1,26 @@
 import React from 'react';
+import Link from 'next/link';
 import styles from './PersonalFinanceNav.module.css';
 
 interface PersonalFinanceNavProps {
   activeTab: string;
-  onTabChange: (tab: 'movimentacoes' | 'orcamento') => void;
 }
 
-export const PersonalFinanceNav: React.FC<PersonalFinanceNavProps> = ({ activeTab, onTabChange }) => {
+export const PersonalFinanceNav: React.FC<PersonalFinanceNavProps> = ({ activeTab }) => {
   return (
     <nav className={styles.nav}>
-      <button 
+      <Link 
+        href="/dashboard?tab=pessoal&subtab=movimentacoes"
         className={`${styles.button} ${activeTab === 'movimentacoes' ? styles.active : ''}`}
-        onClick={() => onTabChange('movimentacoes')}
       >
         Movimentações
-      </button>
-      <button 
+      </Link>
+      <Link 
+        href="/dashboard?tab=pessoal&subtab=orcamento"
         className={`${styles.button} ${activeTab === 'orcamento' ? styles.active : ''}`}
-        onClick={() => onTabChange('orcamento')}
       >
         Orçamento
-      </button>
+      </Link>
     </nav>
   );
 };

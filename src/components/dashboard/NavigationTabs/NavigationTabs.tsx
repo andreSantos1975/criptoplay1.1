@@ -1,8 +1,8 @@
+import Link from "next/link";
 import styles from "./NavigationTabs.module.css";
 
 interface NavigationTabsProps {
   activeTab: string;
-  onTabChange: (tab: string) => void;
 }
 
 const TABS = [
@@ -12,21 +12,21 @@ const TABS = [
   { id: "relatorios", label: "Relatórios" },
 ];
 
-export const NavigationTabs = ({ activeTab, onTabChange }: NavigationTabsProps) => {
+export const NavigationTabs = ({ activeTab }: NavigationTabsProps) => {
   return (
     <nav className={styles.tabsContainer}>
       {TABS.map((tab) => (
-        <button
+        <Link
           key={tab.id}
+          href={`/dashboard?tab=${tab.id}`}
           className={`${styles.tabButton} ${
             activeTab === tab.id ? styles.activeTab : ""
           }`}
-          onClick={() => onTabChange(tab.id)}
           role="tab"
           aria-selected={activeTab === tab.id}
         >
           {tab.label}
-        </button>
+        </Link>
       ))}
     </nav>
   );

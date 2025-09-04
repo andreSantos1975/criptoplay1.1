@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from 'react-hot-toast';
 
@@ -97,8 +98,9 @@ const updateExpense = async (updatedExpense: Expense): Promise<Expense> => {
 
 const DashboardPage = () => {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("painel");
-  const [activeFinanceTab, setActiveFinanceTab] = useState<'movimentacoes' | 'orcamento'>('movimentacoes');
+    const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') || "painel";
+    const activeFinanceTab = searchParams.get('subtab') || 'movimentacoes';
   const [klines, setKlines] = useState<BinanceKline[]>([]);
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT');
   const [marketType, setMarketType] = useState('spot'); // 'spot' or 'futures'
@@ -378,7 +380,7 @@ const DashboardPage = () => {
       case "pessoal":
         return (
           <>
-            <PersonalFinanceNav activeTab={activeFinanceTab} onTabChange={setActiveFinanceTab} />
+            <PersonalFinanceNav activeTab={activeFinanceTab} />
             {activeFinanceTab === 'orcamento' ? (
               <OrcamentoPage 
                 income={summary.totalIncome} // Now uses actual total income
@@ -480,7 +482,7 @@ const DashboardPage = () => {
         </section>
 
         <div className={styles.tabs}>
-          <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab} />
+          <NavigationTabs activeTab={activeTab} />
         </div>
 
         <section className={styles.tabContent}>
