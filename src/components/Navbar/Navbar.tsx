@@ -32,16 +32,13 @@ const Header = () => {
             <Link href="/" className={styles.navLink}>
               Home
             </Link>
-            <Link href="/jornada-cripto" className={styles.navLink}>
-              Jornada Crypto
+                        <Link href="/play" className={styles.navLink}>
+              Play
             </Link>
             <a href="#recursos" className={styles.navLink}>
               Recursos
             </a>
             
-            <Link href="/blog" className={styles.navLink}>
-              Blog
-            </Link>
             <Link href="/contato" className={styles.navLink}>
               Contato
             </Link>
@@ -82,12 +79,12 @@ const Header = () => {
               >
                 Home
               </Link>
-              <Link
-                href="/jornada-cripto"
+                            <Link
+                href="/play"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
-                Jornada Crypto
+                Play
               </Link>
               <a
                 href="#recursos"
@@ -97,13 +94,6 @@ const Header = () => {
                 Recursos
               </a>
               
-              <Link
-                href="/blog"
-                className={styles.mobileNavLink}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Blog
-              </Link>
               <Link
                 href="/contato"
                 className={styles.mobileNavLink}
