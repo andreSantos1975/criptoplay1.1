@@ -35,9 +35,9 @@ const Header = () => {
                         <Link href="/play" className={styles.navLink}>
               Play
             </Link>
-            <a href="#recursos" className={styles.navLink}>
+                        <Link href="/#recursos" className={styles.navLink}>
               Recursos
-            </a>
+            </Link>
             
             <Link href="/contato" className={styles.navLink}>
               Contato
@@ -86,13 +86,13 @@ const Header = () => {
               >
                 Play
               </Link>
-              <a
-                href="#recursos"
+                            <Link
+                href="/#recursos"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Recursos
-              </a>
+              </Link>
               
               <Link
                 href="/contato"
