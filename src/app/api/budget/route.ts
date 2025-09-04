@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 
-// GET: Fetch the user's budget for a specific month and year
+// GET: Fetch the user's budget for a specific month and year, or the most recent one.
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -12,10 +12,11 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const month = parseInt(searchParams.get('month') || new Date().getMonth().toString());
-  const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
+    const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
 
   try {
-    const budget = await prisma.budget.findFirst({
+    // First, try to find the budget for the specified month and year.
+    let budget = await prisma.budget.findFirst({
       where: {
         userId: session.user.id,
         month,
@@ -25,6 +26,38 @@ export async function GET(request: Request) {
         categories: true,
       },
     });
+
+    // If no budget is found for that period, find the most recent one for the user.
+    if (!budget) {
+      budget = await prisma.budget.findFirst({
+        where: {
+          userId: session.user.id,
+        },
+        orderBy: [
+          {
+            year: 'desc',
+          },
+          {
+            month: 'desc',
+          },
+        ],
+        include: {
+          categories: true,
+        },
+      });
+    }
+
+    if (budget) {
+      const budgetWithNumbers = {
+        ...budget,
+        income: budget.income.toNumber(),
+        categories: budget.categories.map(cat => ({
+          ...cat,
+          percentage: cat.percentage.toNumber(),
+        })),
+      };
+      return NextResponse.json(budgetWithNumbers);
+    }
 
     return NextResponse.json(budget);
   } catch (error) {

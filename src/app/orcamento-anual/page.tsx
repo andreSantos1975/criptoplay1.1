@@ -47,8 +47,8 @@ const OrcamentoAnualPage = () => {
         <>
           <div className={styles.summary}>
             <h2>Projeção Anual Baseada na Renda Mensal</h2>
-            <p>Renda Mensal Informada: R$ {totalIncome.toFixed(2)}</p>
-            <p>Renda Anual Projetada: R$ {(totalIncome * 12).toFixed(2)}</p>
+            <p>Renda Mensal Informada: R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p>Renda Anual Projetada: R$ {(totalIncome * 12).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
 
           <table className={styles.table}>
@@ -68,8 +68,8 @@ const OrcamentoAnualPage = () => {
                   <tr key={category.id}>
                     <td>{category.name}</td>
                     <td>{category.percentage}%</td>
-                    <td>R$ {monthlyAmount.toFixed(2)}</td>
-                    <td>R$ {annualAmount.toFixed(2)}</td>
+                    <td>R$ {monthlyAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>R$ {annualAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
                 );
               })}
