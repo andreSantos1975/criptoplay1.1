@@ -261,6 +261,22 @@ const DashboardPage = () => {
 
   
 
+  const addIncomeMutation = useMutation({
+    mutationFn: addIncome,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incomes'] });
+      setIsIncomeDialogOpen(false);
+    },
+  });
+
+  const updateIncomeMutation = useMutation({
+    mutationFn: updateIncome,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incomes'] });
+      setIsIncomeDialogOpen(false);
+    },
+  });
+
   const addExpenseMutation = useMutation({
     mutationFn: addExpense,
     onSuccess: () => {
