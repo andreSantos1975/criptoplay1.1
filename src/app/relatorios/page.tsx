@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ExpenseByCategoryChart } from "@/components/reports/ExpenseByCategoryChart";
 import { BudgetVsActualChart } from "@/components/reports/BudgetVsActualChart";
 import { IncomeVsExpenseChart } from "@/components/reports/IncomeVsExpenseChart";
+import { NetWorthEvolutionChart } from "@/components/reports/NetWorthEvolutionChart";
 import styles from "./relatorios.module.css";
 
 const RelatoriosPage = () => {
@@ -21,6 +22,7 @@ const RelatoriosPage = () => {
         </header>
 
         <section className={styles.chartsGrid}>
+          <NetWorthEvolutionChart />
           <ExpenseByCategoryChart />
           <BudgetVsActualChart />
           <IncomeVsExpenseChart />
