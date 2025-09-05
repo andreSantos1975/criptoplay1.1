@@ -9,7 +9,7 @@ const TABS = [
   { id: "painel", label: "Painel Geral" },
   { id: "pessoal", label: "Finanças Pessoais" },
   { id: "analise", label: "Gráfico de Análise Técnica" },
-  { id: "relatorios", label: "Relatórios" },
+  { id: "relatorios", label: "Relatórios de Trades" },
 ];
 
 export const NavigationTabs = ({ activeTab }: NavigationTabsProps) => {

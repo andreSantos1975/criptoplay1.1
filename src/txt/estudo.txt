@@ -1,0 +1,34 @@
+A Diferença de Conceito
+
+
+  Embora o resultado final no seu balanço (Renda - Gastos) possa parecer o mesmo, o significado
+  de uma "Despesa" e de um "Saque" é fundamentalmente diferente:
+
+
+   * Despesa: É o dinheiro que você gastou em troca de um produto ou serviço (ex: aluguel, comida,
+     cinema). O dinheiro foi embora e não te pertence mais.
+   * Saque (Retirada): É o dinheiro que você transferiu. Você ainda é dono dele, ele apenas mudou
+     de lugar. Por exemplo, você sacou da sua conta de investimentos para a sua conta corrente, ou
+     para ter em mãos.
+
+  Por que é Ruim Misturar os Dois?
+
+  Imagine que você saca R$ 500 da sua conta na corretora e registra como uma "Despesa" na categoria
+   "Outros". Seus relatórios ficarão errados:
+
+
+   1. Relatório de Despesas: Vai parecer que você "gastou" R$ 500 em "Outros", inflando seus gastos
+      e distorcendo a análise de para onde seu dinheiro realmente foi.
+   2. Orçamento: Você pode estourar o orçamento de uma categoria sem ter de fato consumido nada.
+   3. Perda de Sentido: Você perde a capacidade de analisar o fluxo de capital para dentro e fora da
+      sua carteira de investimentos.
+
+
+  O correto é registrar o movimento como "Saque". Isso informa ao sistema que R$ 500 saíram da
+  sua carteira de investimentos. Depois, quando você usar esses R$ 500 para pagar um jantar, aí
+  sim você registra uma "Despesa" de "Restaurante".
+
+
+  Manter essa separação é crucial para a saúde e precisão dos seus relatórios financeiros. É
+  exatamente por isso que estou adicionando a funcionalidade de "Movimentação de Capital" que
+  estava faltando no seu painel principal.

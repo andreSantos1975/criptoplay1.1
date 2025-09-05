@@ -17,7 +17,6 @@ export async function GET() {
 
     const incomes = await prisma.income.findMany({ where: { userId } });
     const expenses = await prisma.expense.findMany({ where: { userId } });
-    const capitalMovements = await prisma.capitalMovement.findMany({ where: { userId } });
 
     const transactionsByMonth: { [key: string]: { income: number; expense: number } } = {};
 
@@ -33,18 +32,6 @@ export async function GET() {
 
     processTransactions(incomes, 'income');
     processTransactions(expenses, 'expense');
-
-    capitalMovements.forEach(movement => {
-      const month = new Date(movement.date).toISOString().slice(0, 7);
-      if (!transactionsByMonth[month]) {
-        transactionsByMonth[month] = { income: 0, expense: 0 };
-      }
-      if (movement.type === 'DEPOSIT') {
-        transactionsByMonth[month].income += parseFloat(movement.amount as any);
-      } else {
-        transactionsByMonth[month].expense += parseFloat(movement.amount as any);
-      }
-    });
 
     const sortedMonths = Object.keys(transactionsByMonth).sort();
     
