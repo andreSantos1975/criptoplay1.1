@@ -1,6 +1,8 @@
 "use client";
 
 import { ExpenseByCategoryChart } from "@/components/reports/ExpenseByCategoryChart";
+import { BudgetVsActualChart } from "@/components/reports/BudgetVsActualChart";
+import { IncomeVsExpenseChart } from "@/components/reports/IncomeVsExpenseChart";
 import styles from "./relatorios.module.css";
 
 const RelatoriosPage = () => {
@@ -16,6 +18,8 @@ const RelatoriosPage = () => {
 
         <section className={styles.chartsGrid}>
           <ExpenseByCategoryChart />
+          <BudgetVsActualChart />
+          <IncomeVsExpenseChart />
         </section>
       </div>
     </main>
