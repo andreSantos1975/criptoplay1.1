@@ -13,6 +13,11 @@ export async function GET() {
   const incomes = await prisma.income.findMany({
     where: {
       userId: session.user.id,
+      NOT: {
+        description: {
+          in: ['Investimento', 'Reserva Financeira'],
+        },
+      },
     },
     orderBy: {
       date: 'asc',

@@ -48,6 +48,34 @@ const OrcamentoAnualPage = () => {
     return incomes.reduce((sum, i) => sum + i.amount, 0);
   }, [incomes]);
 
+  const expenseCategories = useMemo(() => {
+    if (!budget) return [];
+    return budget.categories.filter(
+      (category) =>
+        category.name !== 'Investimentos' && category.name !== 'Reserva Financeira'
+    );
+  }, [budget]);
+
+  const savingsAndInvestmentsCategories = useMemo(() => {
+    if (!budget) return [];
+    return budget.categories.filter(
+      (category) =>
+        category.name === 'Investimentos' || category.name === 'Reserva Financeira'
+    );
+  }, [budget]);
+
+  const totalAnnualExpense = useMemo(() => {
+    if (!expenseCategories || !totalIncome) return 0;
+    const totalExpensePercentage = expenseCategories.reduce((sum, cat) => sum + cat.percentage, 0);
+    return totalIncome * (totalExpensePercentage / 100) * 12;
+  }, [expenseCategories, totalIncome]);
+
+  const totalAnnualSavingsAndInvestments = useMemo(() => {
+    if (!savingsAndInvestmentsCategories || !totalIncome) return 0;
+    const totalSavingsPercentage = savingsAndInvestmentsCategories.reduce((sum, cat) => sum + cat.percentage, 0);
+    return totalIncome * (totalSavingsPercentage / 100) * 12;
+  }, [savingsAndInvestmentsCategories, totalIncome]);
+
   const isLoading = isLoadingBudget || isLoadingIncomes;
   const isError = isErrorBudget || isErrorIncomes;
 
@@ -64,38 +92,70 @@ const OrcamentoAnualPage = () => {
       {!isLoading && !isError && (
         <>
           <div className={styles.summary}>
-            <h2>Projeção Anual Baseada na Renda Mensal</h2>
+            <h2>Projeção Anual</h2>
             <p>Renda Mensal Atual: R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            <p>Renda Anual Projetada: R$ {(totalIncome * 12).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p>Gasto Anual Projetado: R$ {totalAnnualExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p>Poupança e Investimento Anual Projetado: R$ {totalAnnualSavingsAndInvestments.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
 
-          {budget && budget.categories.length > 0 ? (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Categoria</th>
-                  <th>Porcentagem Mensal</th>
-                  <th>Gasto Mensal Estimado</th>
-                  <th>Gasto Anual Estimado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {budget.categories.map((category) => {
-                  const monthlyAmount = (totalIncome * category.percentage) / 100;
-                  const annualAmount = monthlyAmount * 12;
-                  return (
-                    <tr key={category.id}>
-                      <td>{category.name}</td>
-                      <td>{category.percentage}%</td>
-                      <td>R$ {monthlyAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      <td>R$ {annualAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <p>Nenhum orçamento encontrado. Por favor, configure seu orçamento na aba "Pessoal".</p>
+          {expenseCategories.length > 0 && (
+            <div style={{ marginTop: '2rem' }}>
+              <h2>Projeção Anual de Despesas</h2>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th>Porcentagem Mensal</th>
+                    <th>Gasto Mensal Estimado</th>
+                    <th>Gasto Anual Estimado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expenseCategories.map((category) => {
+                    const monthlyAmount = (totalIncome * category.percentage) / 100;
+                    const annualAmount = monthlyAmount * 12;
+                    return (
+                      <tr key={category.id}>
+                        <td>{category.name}</td>
+                        <td>{category.percentage}%</td>
+                        <td>R$ {monthlyAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>R$ {annualAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {savingsAndInvestmentsCategories.length > 0 && (
+            <div style={{ marginTop: '2rem' }}>
+              <h2>Projeção Anual de Poupança e Investimentos</h2>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th>Porcentagem Mensal</th>
+                    <th>Valor Mensal Estimado</th>
+                    <th>Valor Anual Estimado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {savingsAndInvestmentsCategories.map((category) => {
+                    const monthlyAmount = (totalIncome * category.percentage) / 100;
+                    const annualAmount = monthlyAmount * 12;
+                    return (
+                      <tr key={category.id}>
+                        <td>{category.name}</td>
+                        <td>{category.percentage}%</td>
+                        <td>R$ {monthlyAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>R$ {annualAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </>
       )}
