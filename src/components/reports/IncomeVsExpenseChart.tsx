@@ -50,17 +50,17 @@ const getMonthNumber = (month: string) => {
     jul: 6, ago: 7, set: 8, out: 9, nov: 10, dez: 11
   };
   return months[month.toLowerCase().replace('.', '')];
-}
+};
 
 export const IncomeVsExpenseChart = () => {
-  const { data: incomes = [], isLoading: isLoadingIncomes } = useQuery<Income[]>({ 
-    queryKey: ["incomes"], 
-    queryFn: fetchIncomes 
+  const { data: incomes = [], isLoading: isLoadingIncomes } = useQuery<Income[]>({
+    queryKey: ["incomes"],
+    queryFn: fetchIncomes
   });
 
-  const { data: expenses = [], isLoading: isLoadingExpenses } = useQuery<Expense[]>({ 
-    queryKey: ["expenses"], 
-    queryFn: fetchExpenses 
+  const { data: expenses = [], isLoading: isLoadingExpenses } = useQuery<Expense[]>({
+    queryKey: ["expenses"],
+    queryFn: fetchExpenses
   });
 
   const chartData = useMemo(() => {
@@ -68,14 +68,14 @@ export const IncomeVsExpenseChart = () => {
 
     incomes.forEach((income) => {
       const date = new Date(income.date);
-      const month = date.toLocaleString('pt-BR', { month: 'short', year: '2-digit' });
+      const month = date.toLocaleString("pt-BR", { month: "short", year: "2-digit" });
       if (!dataMap[month]) dataMap[month] = { Rendas: 0, Despesas: 0 };
       dataMap[month].Rendas += income.amount || 0;
     });
 
     expenses.forEach((expense) => {
       const date = new Date(expense.date);
-      const month = date.toLocaleString('pt-BR', { month: 'short', year: '2-digit' });
+      const month = date.toLocaleString("pt-BR", { month: "short", year: "2-digit" });
       if (!dataMap[month]) dataMap[month] = { Rendas: 0, Despesas: 0 };
       dataMap[month].Despesas += expense.valor || 0;
     });
@@ -86,8 +86,8 @@ export const IncomeVsExpenseChart = () => {
         ...values,
       }))
       .sort((a, b) => {
-        const [aMonthStr, aYear] = a.month.split(' de ');
-        const [bMonthStr, bYear] = b.month.split(' de ');
+        const [aMonthStr, aYear] = a.month.split(" de ");
+        const [bMonthStr, bYear] = b.month.split(" de ");
         const aDate = new Date(parseInt(aYear), getMonthNumber(aMonthStr));
         const bDate = new Date(parseInt(bYear), getMonthNumber(bMonthStr));
         return aDate.getTime() - bDate.getTime();
@@ -106,7 +106,10 @@ export const IncomeVsExpenseChart = () => {
       <CardContent>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
+            <LineChart
+              data={chartData}
+              margin={{ top: 30, right: 50, left: 50, bottom: 30 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis tickFormatter={formatCurrency} />
@@ -115,6 +118,7 @@ export const IncomeVsExpenseChart = () => {
               <Line type="monotone" dataKey="Rendas" stroke="#82ca9d" />
               <Line type="monotone" dataKey="Despesas" stroke="#ff8042" />
             </LineChart>
+
           </ResponsiveContainer>
         ) : (
           <div>Dados insuficientes para gerar o gráfico.</div>

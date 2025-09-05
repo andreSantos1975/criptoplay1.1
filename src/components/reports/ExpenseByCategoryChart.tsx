@@ -43,7 +43,11 @@ export const ExpenseByCategoryChart = () => {
       categoryMap[category] = (categoryMap[category] || 0) + expense.valor;
     });
 
-    const colors = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+    const colors = [
+      "#8884d8", "#82ca9d", "#ffc658", "#ff8042",
+      "#0088FE", "#00C49F", "#FFBB28", "#FF8042"
+    ];
+
     return Object.entries(categoryMap).map(([name, value], i) => ({
       name,
       value,
@@ -62,7 +66,7 @@ export const ExpenseByCategoryChart = () => {
       <CardContent>
         {expenseByCategoryData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
+            <PieChart margin={{ top: 20, right: 30, left: 30, bottom: 20 }}>
               <Pie
                 data={expenseByCategoryData}
                 dataKey="value"

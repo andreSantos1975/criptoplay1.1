@@ -100,7 +100,10 @@ export const BudgetVsActualChart = () => {
       <CardContent>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
+            <BarChart 
+              data={chartData}
+              margin={{ top: 20, right: 30, left: 30, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis tickFormatter={formatCurrency} />
