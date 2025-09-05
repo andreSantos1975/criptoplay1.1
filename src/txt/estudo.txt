@@ -30,3 +30,34 @@
    2. src/components/CapitalMovementForm/CapitalMovementForm.tsx: Para ver o formulário em si.
    3. src/components/ui/modal/Modal.tsx: Para entender como o componente de modal funciona.
    4. src/components/ui/select/select.tsx: Para inspecionar o componente de seleção.
+
+===============================================================================================
+
+
+  Enquanto os gráficos atuais mostram "para onde o dinheiro vai" (Despesas por Categoria) e como
+  você se compara ao seu plano (Orçamento vs. Realizado), a Evolução do Patrimônio Líquido mostra
+  o "placar geral" da sua vida financeira.
+
+  ✦ Analisando os gráficos atuais, uma métrica muito importante e que agregaria bastante valor para
+  o usuário é a Evolução do Patrimônio Líquido (ou Saldo Acumulado) ao longo do tempo.
+
+  O que é e por que é importante?
+
+
+  Enquanto os gráficos atuais mostram "para onde o dinheiro vai" (Despesas por Categoria) e como
+  você se compara ao seu plano (Orçamento vs. Realizado), a Evolução do Patrimônio Líquido mostra
+  o "placar geral" da sua vida financeira.
+
+
+  Ele responderia à pergunta: "Estou, de fato, acumulando mais dinheiro/valor ao longo dos 
+  meses?"
+
+
+  Este gráfico consolidaria:
+   * Rendas: todo o dinheiro que entra.
+   * Despesas: todo o dinheiro que sai.
+   * Movimentações de Capital: aportes e retiradas que você já registra.
+
+  O resultado seria um gráfico de linha simples mostrando se seu patrimônio está crescendo,
+  diminuindo ou estagnado, que é um dos indicadores mais claros de saúde financeira a longo
+  prazo.
