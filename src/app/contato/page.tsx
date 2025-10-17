@@ -1,4 +1,3 @@
-// /home/andre/Documentos/projeto/criptoplay1.1/criptoplay/src/app/contato/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -12,6 +11,7 @@ const ContactPage = () => {
     subject: "",
     message: "",
   });
+  const [status, setStatus] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -21,12 +21,29 @@ const ContactPage = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Here you would typically send the form data to an API endpoint
-    console.log("Formulário enviado:", formData);
-    alert("Mensagem enviada com sucesso! Em breve entraremos em contato.");
-    setFormData({ name: "", email: "", subject: "", message: "" }); // Clear form
+    setStatus("Enviando...");
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        setStatus("Mensagem enviada com sucesso! Em breve entraremos em contato.");
+        setFormData({ name: "", email: "", subject: "", message: "" }); // Clear form
+      } else {
+        setStatus("Ocorreu um erro ao enviar a mensagem. Tente novamente mais tarde.");
+      }
+    } catch (error) {
+      console.error("Form submission error:", error);
+      setStatus("Ocorreu um erro ao enviar a mensagem. Tente novamente mais tarde.");
+    }
   };
 
   return (
@@ -99,9 +116,10 @@ const ContactPage = () => {
           ></textarea>
         </div>
 
-        <Button type="submit" className={styles.submitButton}>
-          Enviar Mensagem
+        <Button type="submit" className={styles.submitButton} disabled={status === "Enviando..."}>
+          {status === "Enviando..." ? "Enviando..." : "Enviar Mensagem"}
         </Button>
+        {status && <p className={styles.statusMessage}>{status}</p>}
       </form>
     </div>
   );
