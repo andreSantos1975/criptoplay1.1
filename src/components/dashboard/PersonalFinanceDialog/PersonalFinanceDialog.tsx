@@ -76,8 +76,8 @@ export function PersonalFinanceDialog({
         if (applyEconomy) {
           expenseData.originalValor = existingExpense.originalValor ?? existingExpense.valor;
         } else {
-          expenseData.originalValor = null;
-          expenseData.savedAmount = null;
+          expenseData.originalValor = undefined;
+          expenseData.savedAmount = undefined;
         }
       }
       payload = expenseData;

@@ -47,14 +47,7 @@ const fetchTrades = async (): Promise<Trade[]> => {
   if (!response.ok) {
     throw new Error("Falha ao buscar as operações.");
   }
-  const data = await response.json();
-  return data.map((trade: Trade) => ({
-    ...trade,
-    entryPrice: parseFloat(trade.entryPrice) || 0,
-    exitPrice: trade.exitPrice != null ? parseFloat(trade.exitPrice) : null,
-    quantity: parseFloat(trade.quantity) || 0,
-    pnl: trade.pnl != null ? parseFloat(trade.pnl) : null,
-  }));
+  return response.json();
 };
 
 // Function to fetch capital movements
@@ -63,11 +56,7 @@ const fetchCapitalMovements = async (): Promise<CapitalMovement[]> => {
   if (!response.ok) {
     throw new Error("Falha ao buscar movimentos de capital.");
   }
-  const data = await response.json();
-  return data.map((movement: CapitalMovement) => ({
-    ...movement,
-    amount: parseFloat(movement.amount) || 0,
-  }));
+  return response.json();
 };
 
 // Helper to format currency
@@ -203,7 +192,7 @@ export const DashboardOverview = () => {
       return data.usdtToBrl;
     },
     staleTime: 5 * 60 * 1000, // Data is considered fresh for 5 minutes
-    cacheTime: 10 * 60 * 1000, // Data stays in cache for 10 minutes
+    gcTime: 10 * 60 * 1000, // Data stays in cache for 10 minutes
     refetchOnWindowFocus: false, // Do not refetch on window focus
   });
 

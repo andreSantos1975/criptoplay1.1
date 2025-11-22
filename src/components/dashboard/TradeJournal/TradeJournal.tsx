@@ -87,7 +87,7 @@ const TradeJournal = ({
       return data.usdtToBrl;
     },
     staleTime: 5 * 60 * 1000, // Data is considered fresh for 5 minutes
-    cacheTime: 10 * 60 * 1000, // Data stays in cache for 10 minutes
+    gcTime: 10 * 60 * 1000, // Data stays in cache for 10 minutes
     refetchOnWindowFocus: false, // Do not refetch on window focus
   });
 
@@ -257,7 +257,7 @@ const TradeJournal = ({
                                 </div>
                             </CardContent>
                         </Card>
-                        {tradeData.tipoOperacao === 'compra' && (
+                        {tipoOperacao === 'compra' && (
                         <Card>
                             <CardHeader><CardTitle className={styles.cardTitle}>Gestão de Risco</CardTitle></CardHeader>
                             <CardContent>

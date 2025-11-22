@@ -38,15 +38,7 @@ const fetchTrades = async (): Promise<Trade[]> => {
   const response = await fetch("/api/trades");
   if (!response.ok) throw new Error("Falha ao buscar as operações.");
   const data = await response.json();
-  return data.map((trade: Trade) => ({
-    ...trade,
-    entryPrice: parseFloat(trade.entryPrice) || 0,
-    exitPrice: trade.exitPrice != null ? parseFloat(trade.exitPrice) : null,
-    quantity: parseFloat(trade.quantity) || 0,
-    pnl: trade.pnl != null ? parseFloat(trade.pnl) : null,
-    stopLoss: parseFloat(trade.stopLoss) || 0,
-    takeProfit: parseFloat(trade.takeProfit) || 0,
-  }));
+  return data;
 };
 
 // Helper para formatar moeda
@@ -217,7 +209,7 @@ export const RecentOperationsTable = () => {
         pnl = (trade.type === 'compra' ? (currentPrice - trade.entryPrice) : (trade.entryPrice - currentPrice)) * trade.quantity;
       }
 
-      const isProfit = pnl !== null && pnl >= 0;
+      const isProfit = pnl != null && pnl >= 0;
 
       return (
         <TableRow key={trade.id} onClick={() => handleRowClick(trade)} className={styles.clickableRow}>
