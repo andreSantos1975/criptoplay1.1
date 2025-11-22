@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState } from "react";
 import styles from './MonthSelector.module.css';
 
 interface MonthSelectorProps {

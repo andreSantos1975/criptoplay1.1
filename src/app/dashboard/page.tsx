@@ -145,7 +145,7 @@ const DashboardPage = () => {
 
   useEffect(() => {
     if (budgetData) {
-      setBudgetCategories(budgetData.categories.map((cat: any, index: number) => ({
+      setBudgetCategories(budgetData.categories.map((cat: { id?: string; name: string; percentage: number }, index: number) => ({
         ...cat,
         id: cat.id || index.toString(),
       })));
