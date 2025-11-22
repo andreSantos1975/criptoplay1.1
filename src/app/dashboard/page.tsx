@@ -18,6 +18,7 @@ import Sidebar from "@/components/dashboard/Sidebar/Sidebar";
 import { PersonalFinanceNav } from "@/components/dashboard/PersonalFinanceNav/PersonalFinanceNav";
 import { OrcamentoPage } from "@/components/dashboard/OrcamentoPage/OrcamentoPage";
 import { Category } from "@/components/dashboard/CategoryAllocation/CategoryAllocation";
+import MonthSelector from "@/components/dashboard/MonthSelector/MonthSelector";
 
 
 const TechnicalAnalysisChart = dynamic(
@@ -75,6 +76,15 @@ const updateIncome = async (updatedIncome: Income): Promise<Income> => {
   return response.json();
 };
 
+const deleteIncome = async (id: string): Promise<void> => {
+  const response = await fetch(`/api/incomes/${id}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to delete income");
+  }
+};
+
 const addExpense = async (newExpense: Omit<Expense, 'id'>): Promise<Expense> => {
     const response = await fetch("/api/expenses", {
         method: "POST",
@@ -98,89 +108,76 @@ const updateExpense = async (updatedExpense: Expense): Promise<Expense> => {
 
 const DashboardPage = () => {
   const queryClient = useQueryClient();
-    const searchParams = useSearchParams();
+  const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab') || "painel";
-    const activeFinanceTab = searchParams.get('subtab') || 'movimentacoes';
+  const activeFinanceTab = searchParams.get('subtab') || 'movimentacoes';
+  
+  // Date state for filtering
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
   const [klines, setKlines] = useState<BinanceKline[]>([]);
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT');
-  const [marketType, setMarketType] = useState('spot'); // 'spot' or 'futures'
-  const [tipoOperacao, setTipoOperacao] = useState('compra');
+  const [marketType, setMarketType] = useState<'spot' | 'futures'>('spot');
+  const [tipoOperacao, setTipoOperacao] = useState<'compra' | 'venda' | ''>('compra');
 
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [isIncomeDialogOpen, setIsIncomeDialogOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState<Income | undefined>();
 
-  // State lifted from OrcamentoPage
-  const [budgetCategories, setBudgetCategories] = useState<Category[]>([
-    { id: '1', name: 'Investimentos', percentage: 20, amount: 0 },
-    { id: '2', name: 'Reserva Financeira', percentage: 15, amount: 0 },
-    { id: '3', name: 'Despesas Essenciais', percentage: 50, amount: 0 },
-    { id: '4', name: 'Lazer', percentage: 10, amount: 0 },
-    { id: '5', name: 'Outros', percentage: 5, amount: 0 },
-  ]);
+  const [budgetCategories, setBudgetCategories] = useState<Category[]>([]);
   const [isBudgetLoading, setIsBudgetLoading] = useState(false);
-  const [budgetFetched, setBudgetFetched] = useState(false);
+  
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth() + 1;
 
-  // Logic lifted from OrcamentoPage
-  const fetchBudget = useCallback(async () => {
-    setIsBudgetLoading(true);
-    try {
-      const response = await fetch('/api/budget');
-      if (response.ok) {
-        const data = await response.json();
-        if (data) {
-          // No longer setting budgetIncome, as it's derived from totalIncome
-          setBudgetCategories(data.categories.map((cat: { id?: string; name: string; percentage: number }, index: number) => ({
-            ...cat,
-            id: cat.id || index.toString(),
-            // Amount will be calculated based on totalIncome later
-            amount: 0, // Placeholder, will be updated by the useEffect below
-          })));
-        } else {
-          // If no budget is found, reset to a default state
-          setBudgetCategories([
-            { id: '1', name: 'Investimentos', percentage: 20, amount: 0 },
-            { id: '2', name: 'Reserva Financeira', percentage: 15, amount: 0 },
-            { id: '3', name: 'Despesas Essenciais', percentage: 50, amount: 0 },
-            { id: '4', name: 'Lazer', percentage: 10, amount: 0 },
-            { id: '5', name: 'Outros', percentage: 5, amount: 0 },
-          ]);
-        }
-        setBudgetFetched(true); // Mark as fetched
+  const { data: budgetData, isLoading: isBudgetLoadingQuery } = useQuery({
+    queryKey: ['budget', year, month],
+    queryFn: async () => {
+      const response = await fetch(`/api/budget?year=${year}&month=${month}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch budget');
       }
-    } catch (error) {
-      console.error("Failed to fetch budget:", error);
-    } finally {
-      setIsBudgetLoading(false);
-    }
-  }, []);
+      const text = await response.text();
+      return text ? JSON.parse(text) : null;
+    },
+  });
 
   useEffect(() => {
-    // Fetch budget data if it hasn't been fetched yet, regardless of the tab
-    if (!budgetFetched) {
-      fetchBudget();
+    if (budgetData) {
+      setBudgetCategories(budgetData.categories.map((cat: any, index: number) => ({
+        ...cat,
+        id: cat.id || index.toString(),
+      })));
+    } else {
+      setBudgetCategories([
+        { id: '1', name: 'Investimentos', percentage: 20, amount: 0, actualSpending: 0 },
+        { id: '2', name: 'Reserva Financeira', percentage: 15, amount: 0, actualSpending: 0 },
+        { id: '3', name: 'Despesas Essenciais', percentage: 50, amount: 0, actualSpending: 0 },
+        { id: '4', name: 'Lazer', percentage: 10, amount: 0, actualSpending: 0 },
+        { id: '5', name: 'Outros', percentage: 5, amount: 0, actualSpending: 0 },
+      ]);
     }
-  }, [budgetFetched, fetchBudget]);
+  }, [budgetData]);
 
-  // Calculate total percentage (still useful for OrcamentoPage)
+
   const totalPercentage = useMemo(() => {
     return budgetCategories.reduce((sum, category) => sum + (Number(category.percentage) || 0), 0);
   }, [budgetCategories]);
 
   const { data: expenses = [], isLoading: isLoadingExpenses, isError: isErrorExpenses } = useQuery<Expense[]>({
-    queryKey: ['expenses'],
+    queryKey: ['expenses', year, month],
     queryFn: async () => {
-      const response = await fetch("/api/expenses");
+      const response = await fetch(`/api/expenses?year=${year}&month=${month}`);
       if (!response.ok) throw new Error("Network response was not ok");
       return response.json();
     },
   });
 
-  const { data: incomes = [] } = useQuery<Income[]>({
-    queryKey: ['incomes'],
+  const { data: incomes = [], isLoading: isLoadingIncomes } = useQuery<Income[]>({
+    queryKey: ['incomes', year, month],
     queryFn: async () => {
-      const response = await fetch("/api/incomes");
+      const response = await fetch(`/api/incomes?year=${year}&month=${month}`);
       if (!response.ok) throw new Error("Network response was not ok");
       return response.json();
     },
@@ -206,9 +203,10 @@ const DashboardPage = () => {
   }, [expenses, incomes]);
 
   const categoriesWithAmounts = useMemo(() => {
+    const totalIncome = summary.totalIncome || 0;
     return budgetCategories.map(category => ({
       ...category,
-      amount: (summary.totalIncome * (Number(category.percentage) || 0)) / 100
+      amount: (totalIncome * (Number(category.percentage) || 0)) / 100,
     }));
   }, [summary.totalIncome, budgetCategories]);
 
@@ -216,9 +214,7 @@ const DashboardPage = () => {
     setBudgetCategories(prevCategories => {
       const updatedCategories = prevCategories.map(category => {
         if (category.id === id) {
-          const updatedCategory = { ...category, [field]: value };
-          // A lógica de cálculo do amount foi removida daqui para ser centralizada no useMemo
-          return updatedCategory;
+          return { ...category, [field]: value };
         }
         return category;
       });
@@ -228,7 +224,7 @@ const DashboardPage = () => {
 
   const handleAddCategory = () => {
     const newId = Date.now().toString();
-    const newCategory: Category = { id: newId, name: 'Nova Categoria', percentage: 0, amount: 0 };
+    const newCategory: Category = { id: newId, name: 'Nova Categoria', percentage: 0, amount: 0, actualSpending: 0 };
     setBudgetCategories(prev => [...prev, newCategory]);
   };
 
@@ -243,28 +239,28 @@ const DashboardPage = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          income: summary.totalIncome, // Now uses actual total income
+          income: summary.totalIncome,
           categories: budgetCategories.map(({ name, percentage }) => ({ name, percentage })),
-          month: new Date().getMonth() + 1,
-          year: new Date().getFullYear(),
+          month: selectedDate.getMonth() + 1,
+          year: selectedDate.getFullYear(),
         }),
       });
       if (!response.ok) throw new Error('Failed to save budget');
       toast.success('Orçamento salvo com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
     } catch (error) {
       console.error(error);
       toast.error('Erro ao salvar orçamento.');
     } finally {
       setIsBudgetLoading(false);
     }
-  }, [summary.totalIncome, budgetCategories]); // Dependency updated
-
-  
+  }, [summary.totalIncome, budgetCategories, selectedDate, queryClient, year, month]);
 
   const addIncomeMutation = useMutation({
     mutationFn: addIncome,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['incomes'] });
+      queryClient.invalidateQueries({ queryKey: ['incomes', year, month] });
+      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
       setIsIncomeDialogOpen(false);
     },
   });
@@ -272,15 +268,29 @@ const DashboardPage = () => {
   const updateIncomeMutation = useMutation({
     mutationFn: updateIncome,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['incomes'] });
+      queryClient.invalidateQueries({ queryKey: ['incomes', year, month] });
+      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
       setIsIncomeDialogOpen(false);
     },
+  });
+
+  const deleteIncomeMutation = useMutation({
+    mutationFn: deleteIncome,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incomes', year, month] });
+      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
+      toast.success('Renda deletada com sucesso!');
+    },
+    onError: () => {
+      toast.error('Erro ao deletar renda.');
+    }
   });
 
   const addExpenseMutation = useMutation({
     mutationFn: addExpense,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses', year, month] });
+      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
       setIsExpenseDialogOpen(false);
     },
   });
@@ -288,12 +298,11 @@ const DashboardPage = () => {
   const updateExpenseMutation = useMutation({
     mutationFn: updateExpense,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses', year, month] });
+      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
       setIsExpenseDialogOpen(false);
     },
   });
-
-  
 
   const { data: exchangeRateData } = useQuery({
     queryKey: ["exchangeRate"],
@@ -302,7 +311,7 @@ const DashboardPage = () => {
       if (!response.ok) throw new Error("Failed to fetch exchange rate");
       return response.json();
     },
-    refetchInterval: 60000, // Refetch every minute
+    refetchInterval: 60000,
   });
 
   const [tradeLevels, setTradeLevels] = useState(() => {
@@ -334,7 +343,6 @@ const DashboardPage = () => {
         console.error("Failed to fetch initial crypto price:", error);
       }
     };
-
     fetchAndSetInitialLevels();
   }, [selectedCrypto]);
 
@@ -366,18 +374,32 @@ const DashboardPage = () => {
     setIsIncomeDialogOpen(true);
   };
 
+  const handleDeleteIncome = (id: string) => {
+    deleteIncomeMutation.mutate(id);
+  };
+
   const handleSaveItem = (item: Omit<Expense, "id"> | Omit<Income, "id">, type: "expense" | "income") => {
+    console.log("DashboardPage: Recebido para salvar.", { item, type });
+
     if (type === 'income') {
+      const payload = { ...item as Omit<Income, "id"> };
+      payload.date = new Date(payload.date || selectedDate);
+      console.log("DashboardPage: Enviando payload de Renda para mutation.", payload);
+
       if (editingIncome) {
-        updateIncomeMutation.mutate({ ...item, id: editingIncome.id } as Income);
+        updateIncomeMutation.mutate({ ...payload, id: editingIncome.id });
       } else {
-        addIncomeMutation.mutate(item as Omit<Income, 'id'>);
+        addIncomeMutation.mutate(payload);
       }
     } else if (type === 'expense') {
+      const payload = { ...item as Omit<Expense, "id"> };
+      payload.dataVencimento = new Date(payload.dataVencimento || selectedDate);
+      console.log("DashboardPage: Enviando payload de Despesa para mutation.", payload);
+      
       if (editingExpense) {
-        updateExpenseMutation.mutate({ ...item, id: editingExpense.id } as Expense);
+        updateExpenseMutation.mutate({ ...payload, id: editingExpense.id });
       } else {
-        addExpenseMutation.mutate(item as Omit<Expense, 'id'>);
+        addExpenseMutation.mutate(payload);
       }
     }
   };
@@ -396,17 +418,18 @@ const DashboardPage = () => {
       case "pessoal":
         return (
           <>
+            <MonthSelector initialDate={selectedDate} onChange={setSelectedDate} />
             <PersonalFinanceNav activeTab={activeFinanceTab} />
             {activeFinanceTab === 'orcamento' ? (
               <OrcamentoPage 
-                income={summary.totalIncome} // Now uses actual total income
+                income={summary.totalIncome}
                 categories={categoriesWithAmounts}
                 onCategoryChange={handleCategoryChange}
                 onAddCategory={handleAddCategory}
                 onRemoveCategory={handleRemoveCategory}
                 onSaveBudget={handleSaveBudget}
-                onRestore={fetchBudget}
-                isLoading={isBudgetLoading}
+                onRestore={() => queryClient.invalidateQueries({ queryKey: ['budget', year, month] })}
+                isLoading={isBudgetLoading || isBudgetLoadingQuery}
                 totalPercentage={totalPercentage}
               />
             ) : (
@@ -414,8 +437,11 @@ const DashboardPage = () => {
                 <Sidebar />
                 <div className={styles.personalFinanceContainer}>
                   <IncomeTable
+                    incomes={incomes}
+                    isLoading={isLoadingIncomes}
                     onAddIncome={handleAddIncome}
                     onEditIncome={handleEditIncome}
+                    onDeleteIncome={handleDeleteIncome}
                   />
                   <PersonalFinanceTable
                     onAddExpense={handleAddExpense}
@@ -443,7 +469,7 @@ const DashboardPage = () => {
         );
       case "analise":
         const latestKline = klines && klines.length > 0 ? klines[klines.length - 1] : null;
-        const brlRate = exchangeRateData?.usdtToBrl || 1; // Default to 1 if rate not available
+        const brlRate = exchangeRateData?.usdtToBrl || 1;
         return (
           <>
             {latestKline && (
@@ -463,13 +489,13 @@ const DashboardPage = () => {
               onCryptoSelect={handleCryptoSelect}
               marketType={marketType}
               onMarketTypeChange={setMarketType}
-              tipoOperacao={tipoOperacao} // Pass new prop
+              tipoOperacao={tipoOperacao}
             >
               <TradeJournal 
                 tradeLevels={tradeLevels} 
                 selectedCrypto={selectedCrypto}
-                tipoOperacao={tipoOperacao} // Pass new prop
-                onTipoOperacaoChange={setTipoOperacao} // Pass new prop
+                tipoOperacao={tipoOperacao}
+                onTipoOperacaoChange={setTipoOperacao}
               />
             </TechnicalAnalysisChart>
           </>

@@ -20,6 +20,7 @@ type BinanceKlineData = [
 
 interface TechnicalAnalysisChartProps {
   tradeLevels: { entry: number; takeProfit: number; stopLoss: number };
+  onLevelsChange: (levels: { entry: number; takeProfit: number; stopLoss: number; }) => void;
   children?: React.ReactNode;
   selectedCrypto: string;
   onCryptoSelect: (symbol: string) => void;

@@ -1,0 +1,35 @@
+.selectorContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 1rem 0;
+}
+
+.arrowButton {
+  background-color: transparent;
+  border: none;
+  color: #007bff;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50%;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.arrowButton:hover {
+  background-color: #e9ecef;
+}
+
+.dateDisplay {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #495057;
+  min-width: 150px;
+  text-align: center;
+}

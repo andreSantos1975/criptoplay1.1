@@ -60,6 +60,8 @@ export function PersonalFinanceDialog({
     const numericAmount = parseFloat(amount.replace(",", "."));
     if (isNaN(numericAmount)) return;
 
+    let payload;
+
     if (type === "expense") {
       const expenseData: Partial<Expense> & { categoria: string; valor: number; dataVencimento: Date; status: string } = {
         categoria: description,
@@ -70,27 +72,25 @@ export function PersonalFinanceDialog({
 
       const existingExpense = item as Expense;
 
-      if (item && existingExpense.id) { // Logic for editing an existing expense
+      if (item && existingExpense.id) {
         if (applyEconomy) {
-          // If economy is applied, ensure originalValor is set.
-          // If it already exists, keep it. If not, this is the first time, so use the current 'valor' as the base.
           expenseData.originalValor = existingExpense.originalValor ?? existingExpense.valor;
         } else {
-          // If the box is unchecked, the user intends to remove the economy saving.
           expenseData.originalValor = null;
-          expenseData.savedAmount = null; // Also clear the saved amount
+          expenseData.savedAmount = null;
         }
       }
-
-      onSave(expenseData as Omit<Expense, 'id'>, "expense");
+      payload = expenseData;
     } else if (type === "income") {
-      onSave({
+      payload = {
         description,
         amount: numericAmount,
         date,
-      }, "income");
+      };
     }
-
+    
+    console.log("Dialog: Salvando item...", { type, payload });
+    onSave(payload as Omit<Expense, 'id'> | Omit<Income, 'id'>, type);
     onClose();
   };
 
@@ -185,7 +185,11 @@ export function PersonalFinanceDialog({
                   ? date.toISOString().split("T")[0]
                   : ""
               }
-              onChange={(e) => setDate(new Date(e.target.value))}
+              onChange={(e) => {
+                const date = new Date(e.target.value);
+                const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+                setDate(new Date(date.getTime() + userTimezoneOffset));
+              }}
             />
           </div>
 

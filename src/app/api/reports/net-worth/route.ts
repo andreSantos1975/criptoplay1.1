@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { Income, Expense } from "@prisma/client";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -20,13 +21,17 @@ export async function GET() {
 
     const transactionsByMonth: { [key: string]: { income: number; expense: number } } = {};
 
-    const processTransactions = (items: any[], type: 'income' | 'expense') => {
-      items.forEach(item => {
-        const month = new Date(item.date || item.dataVencimento).toISOString().slice(0, 7);
+    const processTransactions = (items: (Income | Expense)[], type: "income" | "expense") => {
+      items.forEach((item) => {
+        const isIncome = "date" in item;
+        const date = isIncome ? item.date : item.dataVencimento;
+        const value = isIncome ? item.amount : item.valor;
+
+        const month = new Date(date).toISOString().slice(0, 7);
         if (!transactionsByMonth[month]) {
           transactionsByMonth[month] = { income: 0, expense: 0 };
         }
-        transactionsByMonth[month][type] += parseFloat(item.amount || item.valor);
+        transactionsByMonth[month][type] += parseFloat(value.toString());
       });
     };
 

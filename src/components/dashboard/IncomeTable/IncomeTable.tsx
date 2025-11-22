@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Income } from "@/types/personal-finance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,50 +16,24 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import styles from "./IncomeTable.module.css";
 
-// Funções da API
-const fetchIncomes = async (): Promise<Income[]> => {
-  const response = await fetch("/api/incomes");
-  if (!response.ok) {
-    throw new Error("Network response was not ok");
-  }
-  return response.json();
-};
-
-const deleteIncome = async (id: string): Promise<void> => {
-  const response = await fetch(`/api/incomes/${id}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) {
-    throw new Error("Failed to delete income");
-  }
-};
-
 interface IncomeTableProps {
+  incomes: Income[];
+  isLoading: boolean;
   onAddIncome: () => void;
   onEditIncome: (income: Income) => void;
+  onDeleteIncome: (id: string) => void;
 }
 
-export const IncomeTable = ({ onAddIncome, onEditIncome }: IncomeTableProps) => {
-  const queryClient = useQueryClient();
+export const IncomeTable = ({ 
+  incomes = [], 
+  isLoading, 
+  onAddIncome, 
+  onEditIncome,
+  onDeleteIncome
+}: IncomeTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-
-  const { data: incomes = [], isLoading, isError } = useQuery<Income[]>({
-    queryKey: ['incomes'],
-    queryFn: fetchIncomes,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteIncome,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['incomes'] });
-    },
-  });
-
-  const handleDeleteIncome = (id: string) => {
-    deleteMutation.mutate(id);
-  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -84,14 +57,6 @@ export const IncomeTable = ({ onAddIncome, onEditIncome }: IncomeTableProps) => 
     return (
       <div className="flex justify-center items-center h-64">
         <Loader className="w-8 h-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="text-center text-red-500">
-        Ocorreu um erro ao buscar as rendas.
       </div>
     );
   }
@@ -162,7 +127,7 @@ export const IncomeTable = ({ onAddIncome, onEditIncome }: IncomeTableProps) => 
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteIncome(income.id)}
+                          onClick={() => onDeleteIncome(income.id)}
                         >
                           <Trash2 className={styles.actionIcon} />
                         </Button>

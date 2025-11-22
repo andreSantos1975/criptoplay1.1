@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 
@@ -13,7 +13,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const tradeId = (await params).id;
+  const tradeId = params.id;
 
   try {
     // 1. Find the trade and verify ownership and status

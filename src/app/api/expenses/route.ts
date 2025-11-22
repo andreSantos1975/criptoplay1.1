@@ -1,18 +1,36 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const year = searchParams.get('year');
+  const month = searchParams.get('month');
+
+  const targetDate = new Date();
+  const currentYear = targetDate.getFullYear();
+  const currentMonth = targetDate.getMonth() + 1;
+
+  const queryYear = year ? parseInt(year) : currentYear;
+  const queryMonth = month ? parseInt(month) : currentMonth;
+
+  const startDate = new Date(queryYear, queryMonth - 1, 1);
+  const endDate = new Date(queryYear, queryMonth, 1);
+
   const expenses = await prisma.expense.findMany({
     where: {
       userId: session.user.id,
+      dataVencimento: {
+        gte: startDate,
+        lt: endDate,
+      },
     },
     orderBy: {
       dataVencimento: 'asc',

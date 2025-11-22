@@ -7,6 +7,7 @@ export interface Category {
   name: string;
   percentage: number;
   amount: number;
+  actualSpending?: number;
 }
 
 interface CategoryAllocationProps {

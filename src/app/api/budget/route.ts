@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { Decimal } from '@prisma/client/runtime/library';
 
-// GET: Fetch the user's budget for a specific month and year, or the most recent one.
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -11,12 +11,16 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const month = parseInt(searchParams.get('month') || new Date().getMonth().toString());
-    const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
+  const targetDate = new Date();
+  const year = parseInt(searchParams.get('year') || targetDate.getFullYear().toString());
+  const month = parseInt(searchParams.get('month') || (targetDate.getMonth() + 1).toString());
 
   try {
-    // First, try to find the budget for the specified month and year.
-    let budget = await prisma.budget.findFirst({
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 1);
+
+    // 1. Find the budget for the specified month and year.
+    const budget = await prisma.budget.findFirst({
       where: {
         userId: session.user.id,
         month,
@@ -27,39 +31,51 @@ export async function GET(request: Request) {
       },
     });
 
-    // If no budget is found for that period, find the most recent one for the user.
+    // If no budget is set for the selected period, return null.
     if (!budget) {
-      budget = await prisma.budget.findFirst({
-        where: {
-          userId: session.user.id,
-        },
-        orderBy: [
-          {
-            year: 'desc',
-          },
-          {
-            month: 'desc',
-          },
-        ],
-        include: {
-          categories: true,
-        },
-      });
+      return NextResponse.json(null);
     }
 
-    if (budget) {
-      const budgetWithNumbers = {
-        ...budget,
-        income: budget.income.toNumber(),
-        categories: budget.categories.map(cat => ({
-          ...cat,
-          percentage: cat.percentage.toNumber(),
-        })),
+    // 2. Find all expenses for the same period.
+    const expenses = await prisma.expense.findMany({
+      where: {
+        userId: session.user.id,
+        dataVencimento: {
+          gte: startDate,
+          lt: endDate,
+        },
+      },
+    });
+
+    // 3. Calculate actual spending per category.
+    const actualSpendingByCategory = expenses.reduce((acc, expense) => {
+      const category = expense.categoria;
+      const amount = expense.valor;
+      if (!acc[category]) {
+        acc[category] = new Decimal(0);
+      }
+      acc[category] = acc[category].add(amount);
+      return acc;
+    }, {} as Record<string, Decimal>);
+
+    // 4. Combine budget data with actual spending.
+    const categoriesWithActual = budget.categories.map(cat => {
+      const actual = actualSpendingByCategory[cat.name] || new Decimal(0);
+      return {
+        ...cat,
+        percentage: cat.percentage.toNumber(),
+        plannedAmount: (budget.income.toNumber() * cat.percentage.toNumber()) / 100,
+        actualSpending: actual.toNumber(),
       };
-      return NextResponse.json(budgetWithNumbers);
-    }
+    });
 
-    return NextResponse.json(budget);
+    const response = {
+      ...budget,
+      income: budget.income.toNumber(),
+      categories: categoriesWithActual,
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Erro ao buscar orçamento:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
