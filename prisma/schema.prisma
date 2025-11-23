@@ -11,45 +11,53 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  isAdmin       Boolean   @default(false)
-  accounts      Account[]
-  sessions      Session[]
-  trades        Trade[]
+  id               String           @id @default(cuid())
+  name             String?
+  email            String?          @unique
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  isAdmin          Boolean          @default(false)
+  accounts         Account[]
+  sessions         Session[]
+  trades           Trade[]
   capitalMovements CapitalMovement[]
-  expenses      Expense[]
-  incomes       Income[]
-  budgets       Budget[]
-  contacts      Contact[]
+  expenses         Expense[]
+  incomes          Income[]
+  budgets          Budget[]
+  budgetCategories BudgetCategory[]
+  contacts         Contact[]
 }
 
 model Budget {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  income      Decimal   @db.Decimal(18, 2)
-  month       Int
-  year        Int
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  categories  BudgetCategory[]
+  id     String       @id @default(cuid())
+  year   Int
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  items  BudgetItem[]
 
-  @@unique([userId, year, month])
+  @@unique([userId, year])
 }
 
 model BudgetCategory {
-  id          String  @id @default(cuid())
-  budgetId    String
-  budget      Budget  @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  name        String
-  percentage  Decimal @db.Decimal(5, 2)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id     String       @id @default(cuid())
+  name   String
+  type   String // "INCOME" ou "EXPENSE"
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  items  BudgetItem[]
+}
+
+model BudgetItem {
+  id         String         @id @default(cuid())
+  budget     Budget         @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  budgetId   String
+  category   BudgetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+  month      Int // 1 para Janeiro, 12 para Dezembro
+  amount     Float          // Valor orçado
+
+  @@unique([budgetId, categoryId, month])
 }
 
 model Income {

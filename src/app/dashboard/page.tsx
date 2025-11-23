@@ -131,34 +131,16 @@ const DashboardPage = () => {
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth() + 1;
 
-  const { data: budgetData, isLoading: isBudgetLoadingQuery } = useQuery({
-    queryKey: ['budget', year, month],
-    queryFn: async () => {
-      const response = await fetch(`/api/budget?year=${year}&month=${month}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch budget');
-      }
-      const text = await response.text();
-      return text ? JSON.parse(text) : null;
-    },
-  });
-
   useEffect(() => {
-    if (budgetData) {
-      setBudgetCategories(budgetData.categories.map((cat: { id?: string; name: string; percentage: number }, index: number) => ({
-        ...cat,
-        id: cat.id || index.toString(),
-      })));
-    } else {
-      setBudgetCategories([
-        { id: '1', name: 'Investimentos', percentage: 20, amount: 0, actualSpending: 0 },
-        { id: '2', name: 'Reserva Financeira', percentage: 15, amount: 0, actualSpending: 0 },
-        { id: '3', name: 'Despesas Essenciais', percentage: 50, amount: 0, actualSpending: 0 },
-        { id: '4', name: 'Lazer', percentage: 10, amount: 0, actualSpending: 0 },
-        { id: '5', name: 'Outros', percentage: 5, amount: 0, actualSpending: 0 },
-      ]);
-    }
-  }, [budgetData]);
+    // Mantém os dados de exemplo enquanto a nova lógica não é implementada
+    setBudgetCategories([
+      { id: '1', name: 'Investimentos', percentage: 20, amount: 0, actualSpending: 0 },
+      { id: '2', name: 'Reserva Financeira', percentage: 15, amount: 0, actualSpending: 0 },
+      { id: '3', name: 'Despesas Essenciais', percentage: 50, amount: 0, actualSpending: 0 },
+      { id: '4', name: 'Lazer', percentage: 10, amount: 0, actualSpending: 0 },
+      { id: '5', name: 'Outros', percentage: 5, amount: 0, actualSpending: 0 },
+    ]);
+  }, []);
 
 
   const totalPercentage = useMemo(() => {
@@ -232,35 +214,13 @@ const DashboardPage = () => {
     setBudgetCategories(prev => prev.filter(category => category.id !== id));
   };
 
-  const handleSaveBudget = useCallback(async () => {
-    setIsBudgetLoading(true);
-    try {
-      const response = await fetch('/api/budget', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          income: summary.totalIncome,
-          categories: budgetCategories.map(({ name, percentage }) => ({ name, percentage })),
-          month: selectedDate.getMonth() + 1,
-          year: selectedDate.getFullYear(),
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to save budget');
-      toast.success('Orçamento salvo com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
-    } catch (error) {
-      console.error(error);
-      toast.error('Erro ao salvar orçamento.');
-    } finally {
-      setIsBudgetLoading(false);
-    }
-  }, [summary.totalIncome, budgetCategories, selectedDate, queryClient, year, month]);
+  
 
   const addIncomeMutation = useMutation({
     mutationFn: addIncome,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incomes', year, month] });
-      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
+
       setIsIncomeDialogOpen(false);
     },
   });
@@ -269,7 +229,7 @@ const DashboardPage = () => {
     mutationFn: updateIncome,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incomes', year, month] });
-      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
+
       setIsIncomeDialogOpen(false);
     },
   });
@@ -278,7 +238,7 @@ const DashboardPage = () => {
     mutationFn: deleteIncome,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incomes', year, month] });
-      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
+
       toast.success('Renda deletada com sucesso!');
     },
     onError: () => {
@@ -290,7 +250,7 @@ const DashboardPage = () => {
     mutationFn: addExpense,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses', year, month] });
-      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
+
       setIsExpenseDialogOpen(false);
     },
   });
@@ -299,7 +259,7 @@ const DashboardPage = () => {
     mutationFn: updateExpense,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses', year, month] });
-      queryClient.invalidateQueries({ queryKey: ['budget', year, month] });
+
       setIsExpenseDialogOpen(false);
     },
   });
@@ -427,9 +387,8 @@ const DashboardPage = () => {
                 onCategoryChange={handleCategoryChange}
                 onAddCategory={handleAddCategory}
                 onRemoveCategory={handleRemoveCategory}
-                onSaveBudget={handleSaveBudget}
-                onRestore={() => queryClient.invalidateQueries({ queryKey: ['budget', year, month] })}
-                isLoading={isBudgetLoading || isBudgetLoadingQuery}
+                onRestore={() => { /* Lógica de restauração pode ser implementada aqui se necessário */ }}
+                isLoading={isBudgetLoading}
                 totalPercentage={totalPercentage}
               />
             ) : (

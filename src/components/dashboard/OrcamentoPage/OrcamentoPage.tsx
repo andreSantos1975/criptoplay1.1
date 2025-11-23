@@ -16,7 +16,6 @@ interface OrcamentoPageProps {
   onCategoryChange: (id: string, field: 'name' | 'percentage', value: string | number) => void;
   onAddCategory: () => void;
   onRemoveCategory: (id: string) => void;
-  onSaveBudget: () => void;
   onRestore: () => void;
   isLoading: boolean;
   totalPercentage: number;
@@ -28,7 +27,6 @@ export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
   onCategoryChange,
   onAddCategory,
   onRemoveCategory,
-  onSaveBudget,
   onRestore,
   isLoading,
   totalPercentage,
@@ -116,9 +114,6 @@ export const OrcamentoPage: React.FC<OrcamentoPageProps> = ({
           <div className={styles.saveButtonContainer}>
             <button onClick={onRestore} disabled={isLoading} className={styles.restoreButton}>
               Restaurar
-            </button>
-            <button onClick={onSaveBudget} disabled={isLoading} className={styles.saveButton}>
-              {isLoading ? 'Salvando...' : 'Salvar Orçamento'}
             </button>
             <button onClick={handleExportPDF} disabled={isLoading} className={styles.exportButton} title="Exportar para PDF">
               <Download size={20} />

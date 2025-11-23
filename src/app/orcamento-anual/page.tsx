@@ -1,166 +1,255 @@
 "use client";
 
-import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import styles from './orcamento-anual.module.css';
-import { useMemo } from 'react';
-import { Income } from '@/types/personal-finance';
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import styles from "./orcamento-anual.module.css";
+import { CategoryModal } from "@/components/budget/CategoryModal";
 
-interface Category {
+// Tipos correspondentes ao nosso schema Prisma
+interface BudgetCategory {
   id: string;
   name: string;
-  percentage: number;
+  type: "INCOME" | "EXPENSE";
 }
 
-interface BudgetData {
-  categories: Category[];
+interface BudgetItem {
+  id: string;
+  categoryId: string;
+  month: number;
+  amount: number;
 }
 
-const fetchBudget = async (): Promise<BudgetData> => {
-  const response = await fetch('/api/budget');
-  if (!response.ok) {
-    throw new Error('Failed to fetch budget');
+// --- Funções de API ---
+const fetchBudgetCategories = async (): Promise<BudgetCategory[]> => {
+  const res = await fetch("/api/budget/categories");
+  if (!res.ok) throw new Error("Failed to fetch categories");
+  return res.json();
+};
+
+const fetchBudgetItems = async (year: number): Promise<BudgetItem[]> => {
+  const res = await fetch(`/api/budget/items?year=${year}`);
+  if (!res.ok) throw new Error("Failed to fetch budget items");
+  return res.json();
+};
+
+const upsertBudgetItem = async (item: {
+  year: number;
+  month: number;
+  categoryId: string;
+  amount: number;
+}) => {
+  const res = await fetch("/api/budget/items", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
+  });
+  if (!res.ok) throw new Error("Failed to save item");
+  return res.json();
+};
+
+// --- Componente Principal ---
+export default function OrcamentoAnualPage() {
+  const queryClient = useQueryClient();
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // --- Queries ---
+  const { data: categories = [], isLoading: isLoadingCategories } = useQuery<BudgetCategory[]>({
+    queryKey: ["budgetCategories"],
+    queryFn: fetchBudgetCategories,
+  });
+
+  const { data: items = [], isLoading: isLoadingItems } = useQuery<BudgetItem[]>({
+    queryKey: ["budgetItems", year],
+    queryFn: () => fetchBudgetItems(year),
+  });
+
+  // --- Mutações ---
+  const mutation = useMutation({
+    mutationFn: upsertBudgetItem,
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData<BudgetItem[]>(["budgetItems", year], (oldData) => {
+        const oldItems = oldData || [];
+        const existingItemIndex = oldItems.findIndex(
+          (item) =>
+            item.categoryId === variables.categoryId && item.month === variables.month
+        );
+        if (existingItemIndex !== -1) {
+          const updatedItems = [...oldItems];
+          updatedItems[existingItemIndex] = { ...updatedItems[existingItemIndex], amount: variables.amount };
+          return updatedItems;
+        }
+        return [...oldItems, data];
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to save budget item:", error);
+    },
+  });
+
+  // --- Processamento de Dados ---
+  const gridData = useMemo(() => {
+    const data: { [categoryId: string]: { [month: number]: number } } = {};
+    items.forEach((item) => {
+      if (!data[item.categoryId]) {
+        data[item.categoryId] = {};
+      }
+      data[item.categoryId][item.month] = item.amount;
+    });
+    return data;
+  }, [items]);
+
+  const monthlyTotals = useMemo(() => {
+    const totals = Array(12).fill(null).map(() => ({
+        income: 0,
+        expense: 0,
+        balance: 0,
+    }));
+
+    items.forEach(item => {
+        const category = categories.find(c => c.id === item.categoryId);
+        if (category) {
+            const monthIndex = item.month - 1;
+            if (category.type === 'INCOME') {
+                totals[monthIndex].income += item.amount;
+            } else {
+                totals[monthIndex].expense += item.amount;
+            }
+        }
+    });
+
+    totals.forEach(monthTotal => {
+        monthTotal.balance = monthTotal.income - monthTotal.expense;
+    });
+
+    return totals;
+  }, [items, categories]);
+
+  const handleInputChange = (
+    categoryId: string,
+    month: number,
+    value: string
+  ) => {
+    const amount = parseFloat(value) || 0;
+    mutation.mutate({ year, month, categoryId, amount });
+  };
+
+  // --- Renderização ---
+  const monthLabels = [
+    "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+    "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+  ];
+
+  const renderCategoryRows = (type: "INCOME" | "EXPENSE") => {
+    const filteredCategories = categories.filter((c) => c.type === type);
+    
+    if (filteredCategories.length === 0) {
+        return (
+            <tr>
+                <td colSpan={14} className={styles.emptyRow}>
+                    Nenhuma categoria de {type === "INCOME" ? "receita" : "despesa"} encontrada. Adicione uma nova para começar.
+                </td>
+            </tr>
+        )
+    }
+
+    return filteredCategories.map((category) => {
+      const monthlyValues = gridData[category.id] || {};
+      const total = Object.values(monthlyValues).reduce((sum, val) => sum + val, 0);
+
+      return (
+        <tr key={category.id}>
+          <td className={styles.categoryName}>{category.name}</td>
+          {monthLabels.map((_, index) => {
+            const month = index + 1;
+            return (
+              <td key={month}>
+                <input
+                  type="number"
+                  className={styles.inputCell}
+                  defaultValue={monthlyValues[month] || ""}
+                  onBlur={(e) => handleInputChange(category.id, month, e.target.value)}
+                  placeholder="0"
+                />
+              </td>
+            );
+          })}
+          <td className={styles.totalCell}>{total.toFixed(2)}</td>
+        </tr>
+      );
+    });
+  };
+
+  if (isLoadingCategories || isLoadingItems) {
+    return <div>Carregando orçamento...</div>;
   }
-  const data = await response.json();
-  // The API might return null if no budget is saved
-  return data || { categories: [] };
-};
-
-const fetchIncomes = async (): Promise<Income[]> => {
-  const response = await fetch("/api/incomes");
-  if (!response.ok) throw new Error("Network response was not ok");
-  return response.json();
-};
-
-const OrcamentoAnualPage = () => {
-  const { data: budget, isLoading: isLoadingBudget, isError: isErrorBudget } = useQuery<BudgetData>({
-    queryKey: ['budget'],
-    queryFn: fetchBudget,
-  });
-
-  const { data: incomes = [], isLoading: isLoadingIncomes, isError: isErrorIncomes } = useQuery<Income[]>({
-    queryKey: ['incomes'],
-    queryFn: fetchIncomes,
-  });
-
-  const totalIncome = useMemo(() => {
-    if (!incomes) return 0;
-    return incomes.reduce((sum, i) => sum + i.amount, 0);
-  }, [incomes]);
-
-  const expenseCategories = useMemo(() => {
-    if (!budget) return [];
-    return budget.categories.filter(
-      (category) =>
-        category.name !== 'Investimentos' && category.name !== 'Reserva Financeira'
-    );
-  }, [budget]);
-
-  const savingsAndInvestmentsCategories = useMemo(() => {
-    if (!budget) return [];
-    return budget.categories.filter(
-      (category) =>
-        category.name === 'Investimentos' || category.name === 'Reserva Financeira'
-    );
-  }, [budget]);
-
-  const totalAnnualExpense = useMemo(() => {
-    if (!expenseCategories || !totalIncome) return 0;
-    const totalExpensePercentage = expenseCategories.reduce((sum, cat) => sum + cat.percentage, 0);
-    return totalIncome * (totalExpensePercentage / 100) * 12;
-  }, [expenseCategories, totalIncome]);
-
-  const totalAnnualSavingsAndInvestments = useMemo(() => {
-    if (!savingsAndInvestmentsCategories || !totalIncome) return 0;
-    const totalSavingsPercentage = savingsAndInvestmentsCategories.reduce((sum, cat) => sum + cat.percentage, 0);
-    return totalIncome * (totalSavingsPercentage / 100) * 12;
-  }, [savingsAndInvestmentsCategories, totalIncome]);
-
-  const isLoading = isLoadingBudget || isLoadingIncomes;
-  const isError = isErrorBudget || isErrorIncomes;
 
   return (
-    <div className={styles.container}>
-      <Link href="/dashboard?tab=pessoal&subtab=movimentacoes" className={styles.backLink}>
-        &larr; Voltar para Movimentações
-      </Link>
-      <h1 className={styles.title}>Orçamento Anual</h1>
-
-      {isLoading && <p>Carregando dados...</p>}
-      {isError && <p>Erro ao carregar dados.</p>}
-
-      {!isLoading && !isError && (
-        <>
-          <div className={styles.summary}>
-            <h2>Projeção Anual</h2>
-            <p>Renda Mensal Atual: R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            <p>Gasto Anual Projetado: R$ {totalAnnualExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            <p>Poupança e Investimento Anual Projetado: R$ {totalAnnualSavingsAndInvestments.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+    <>
+      <CategoryModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["budgetCategories"] });
+        }}
+      />
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <h1>Orçamento Anual</h1>
+          <div className={styles.yearSelector}>
+            <button onClick={() => setYear(year - 1)}>{"<"}</button>
+            <span>{year}</span>
+            <button onClick={() => setYear(year + 1)}>{">"}</button>
           </div>
+        </header>
 
-          {expenseCategories.length > 0 && (
-            <div style={{ marginTop: '2rem' }}>
-              <h2>Projeção Anual de Despesas</h2>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Categoria</th>
-                    <th>Porcentagem Mensal</th>
-                    <th>Gasto Mensal Estimado</th>
-                    <th>Gasto Anual Estimado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {expenseCategories.map((category) => {
-                    const monthlyAmount = (totalIncome * category.percentage) / 100;
-                    const annualAmount = monthlyAmount * 12;
-                    return (
-                      <tr key={category.id}>
-                        <td>{category.name}</td>
-                        <td>{category.percentage}%</td>
-                        <td>R$ {monthlyAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td>R$ {annualAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+        <button className={styles.addButton} onClick={() => setIsModalOpen(true)}>
+          + Nova Categoria
+        </button>
 
-          {savingsAndInvestmentsCategories.length > 0 && (
-            <div style={{ marginTop: '2rem' }}>
-              <h2>Projeção Anual de Poupança e Investimentos</h2>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Categoria</th>
-                    <th>Porcentagem Mensal</th>
-                    <th>Valor Mensal Estimado</th>
-                    <th>Valor Anual Estimado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {savingsAndInvestmentsCategories.map((category) => {
-                    const monthlyAmount = (totalIncome * category.percentage) / 100;
-                    const annualAmount = monthlyAmount * 12;
-                    return (
-                      <tr key={category.id}>
-                        <td>{category.name}</td>
-                        <td>{category.percentage}%</td>
-                        <td>R$ {monthlyAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td>R$ {annualAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+        <div className={styles.tableContainer}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Categoria</th>
+                {monthLabels.map((label) => (
+                  <th key={label}>{label}</th>
+                ))}
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className={styles.sectionHeader}><td colSpan={14}>Receitas</td></tr>
+              {renderCategoryRows("INCOME")}
+              <tr className={styles.sectionHeader}><td colSpan={14}>Despesas</td></tr>
+              {renderCategoryRows("EXPENSE")}
+            </tbody>
+            <tfoot>
+                <tr className={styles.footerRow}>
+                    <td className={styles.footerHeader}>Total Receitas</td>
+                    {monthlyTotals.map((total, i) => <td key={i}>{total.income.toFixed(2)}</td>)}
+                    <td>{monthlyTotals.reduce((acc, t) => acc + t.income, 0).toFixed(2)}</td>
+                </tr>
+                <tr className={styles.footerRow}>
+                    <td className={styles.footerHeader}>Total Despesas</td>
+                    {monthlyTotals.map((total, i) => <td key={i}>{total.expense.toFixed(2)}</td>)}
+                    <td>{monthlyTotals.reduce((acc, t) => acc + t.expense, 0).toFixed(2)}</td>
+                </tr>
+                <tr className={styles.balanceRow}>
+                    <td className={styles.footerHeader}>Saldo Mensal</td>
+                    {monthlyTotals.map((total, i) => (
+                        <td key={i} className={total.balance < 0 ? styles.negative : styles.positive}>
+                            {total.balance.toFixed(2)}
+                        </td>
+                    ))}
+                    <td className={monthlyTotals.reduce((acc, t) => acc + t.balance, 0) < 0 ? styles.negative : styles.positive}>
+                        {monthlyTotals.reduce((acc, t) => acc + t.balance, 0).toFixed(2)}
+                    </td>
+                </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </>
   );
-};
-
-export default OrcamentoAnualPage;
+}
