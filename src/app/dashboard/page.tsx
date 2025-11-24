@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from 'react-hot-toast';
@@ -126,7 +126,7 @@ const DashboardPage = () => {
   const [editingIncome, setEditingIncome] = useState<Income | undefined>();
 
   const [budgetCategories, setBudgetCategories] = useState<Category[]>([]);
-  const [isBudgetLoading, setIsBudgetLoading] = useState(false);
+  const isBudgetLoading = false;
   
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth() + 1;

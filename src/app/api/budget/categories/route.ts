@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 // GET: Fetch all budget categories for the logged-in user
 export async function GET() {
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Erro ao criar categoria do orçamento:", error);
     // Handle potential unique constraint violation
-    if (error instanceof Error && 'code' in error && (error as any).code === 'P2002') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         return NextResponse.json({ error: "Uma categoria com este nome já existe." }, { status: 409 });
     }
     return NextResponse.json(
