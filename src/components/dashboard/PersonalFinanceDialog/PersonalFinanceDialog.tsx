@@ -3,14 +3,26 @@ import { Expense, Income } from "@/types/personal-finance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import styles from "./PersonalFinanceDialog.module.css";
+import { Category } from "../CategoryAllocation/CategoryAllocation";
 
 interface PersonalFinanceDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (item: Omit<Expense, "id"> | Omit<Income, "id">, type: "expense" | "income") => void;
+  onSave: (
+    item: Omit<Expense, "id"> | Omit<Income, "id">,
+    type: "expense" | "income"
+  ) => void;
   item?: Expense | Income;
   type: "expense" | "income";
+  budgetCategories: Category[];
 }
 
 export function PersonalFinanceDialog({
@@ -19,6 +31,7 @@ export function PersonalFinanceDialog({
   onSave,
   item,
   type,
+  budgetCategories,
 }: PersonalFinanceDialogProps) {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -30,15 +43,19 @@ export function PersonalFinanceDialog({
     if (isOpen && item) {
       if (type === "expense") {
         const expenseItem = item as Expense;
-        setDescription(expenseItem.categoria || '');
+        setDescription(expenseItem.categoria || "");
         setAmount(expenseItem.valor ? expenseItem.valor.toString() : "");
-        setDate(expenseItem.dataVencimento ? new Date(expenseItem.dataVencimento) : undefined);
+        setDate(
+          expenseItem.dataVencimento
+            ? new Date(expenseItem.dataVencimento)
+            : undefined
+        );
         setStatus(expenseItem.status as "Pendente" | "Pago");
         // Correctly initialize the checkbox based on the item's state
         setApplyEconomy(expenseItem.originalValor != null);
       } else if (type === "income") {
         const incomeItem = item as Income;
-        setDescription(incomeItem.description || '');
+        setDescription(incomeItem.description || "");
         setAmount(incomeItem.amount ? incomeItem.amount.toString() : "");
         setDate(incomeItem.date ? new Date(incomeItem.date) : undefined);
         setStatus("Pendente");
@@ -63,7 +80,12 @@ export function PersonalFinanceDialog({
     let payload;
 
     if (type === "expense") {
-      const expenseData: Partial<Expense> & { categoria: string; valor: number; dataVencimento: Date; status: string } = {
+      const expenseData: Partial<Expense> & {
+        categoria: string;
+        valor: number;
+        dataVencimento: Date;
+        status: string;
+      } = {
         categoria: description,
         valor: numericAmount,
         dataVencimento: date,
@@ -74,7 +96,8 @@ export function PersonalFinanceDialog({
 
       if (item && existingExpense.id) {
         if (applyEconomy) {
-          expenseData.originalValor = existingExpense.originalValor ?? existingExpense.valor;
+          expenseData.originalValor =
+            existingExpense.originalValor ?? existingExpense.valor;
         } else {
           expenseData.originalValor = undefined;
           expenseData.savedAmount = undefined;
@@ -88,9 +111,9 @@ export function PersonalFinanceDialog({
         date,
       };
     }
-    
+
     console.log("Dialog: Salvando item...", { type, payload });
-    onSave(payload as Omit<Expense, 'id'> | Omit<Income, 'id'>, type);
+    onSave(payload as Omit<Expense, "id"> | Omit<Income, "id">, type);
     onClose();
   };
 
@@ -137,16 +160,21 @@ export function PersonalFinanceDialog({
             <Label htmlFor="description">
               {type === "expense" ? "Categoria" : "Descrição"}
             </Label>
-            <Input
-              id="description"
-              placeholder={
-                type === "expense"
-                  ? "Ex: Conta de Água"
-                  : "Ex: Salário, Freelance"
-              }
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            {type === "expense" ? (
+              <Input
+                id="description"
+                placeholder="Digite o nome da categoria"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            ) : (
+              <Input
+                id="description"
+                placeholder="Ex: Salário, Freelance"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -160,18 +188,21 @@ export function PersonalFinanceDialog({
           </div>
 
           {/* New checkbox for economy calculation */}
-          {type === "expense" && item && ( // Only show for existing expenses
-            <div className={styles.formGroup}>
-              <input
-                type="checkbox"
-                id="applyEconomy"
-                checked={applyEconomy}
-                onChange={(e) => setApplyEconomy(e.target.checked)}
-                className={styles.checkbox} // You might need to define this style
-              />
-              <Label htmlFor="applyEconomy">Aplicar cálculo de economia</Label>
-            </div>
-          )}
+          {type === "expense" &&
+            item && ( // Only show for existing expenses
+              <div className={styles.formGroup}>
+                <input
+                  type="checkbox"
+                  id="applyEconomy"
+                  checked={applyEconomy}
+                  onChange={(e) => setApplyEconomy(e.target.checked)}
+                  className={styles.checkbox} // You might need to define this style
+                />
+                <Label htmlFor="applyEconomy">
+                  Aplicar cálculo de economia
+                </Label>
+              </div>
+            )}
 
           <div className={styles.formGroup}>
             <Label htmlFor="date">

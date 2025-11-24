@@ -33,6 +33,17 @@ export const BudgetSummary: React.FC<BudgetSummaryProps> = ({
 
   const status = getStatus();
 
+  const essentialCategoryName = 'Despesas Essenciais';
+  const essentialCategory = categories.find(c => c.name === essentialCategoryName);
+  const plannedEssentialAmount = essentialCategory ? essentialCategory.amount : 0;
+  
+  // Corrigido: Obter o gasto real apenas para a categoria de despesas essenciais
+  const actualEssentialSpending = essentialCategory ? (essentialCategory.actualSpending || 0) : 0;
+
+  // A lógica de "excedido" agora compara o gasto real da categoria com o planejado para ela
+  const essentialSpendingExceeded = actualEssentialSpending > plannedEssentialAmount && plannedEssentialAmount > 0;
+  const exceededAmount = actualEssentialSpending - plannedEssentialAmount;
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.summaryGrid}>
@@ -90,6 +101,22 @@ export const BudgetSummary: React.FC<BudgetSummaryProps> = ({
           </div>
         </div>
       </div>
+
+      {essentialSpendingExceeded && (
+        <div className={`${styles.statusCard} ${styles.destructive}`}>
+          <div className={styles.cardContent}>
+            <div className={styles.statusFlex}>
+              <AlertTriangle className={`${styles.statusIcon} ${styles.destructive}`} />
+              <div className={styles.statusTextWrapper}>
+                <p className={styles.statusTitle}>Gastos Essenciais Excedidos</p>
+                <p className={styles.statusDescription}>
+                  Você ultrapassou o valor planejado para despesas essenciais em {formatCurrency(exceededAmount)}.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {categories.length > 0 && totalIncome > 0 && (
         <div className={styles.breakdownCard}>

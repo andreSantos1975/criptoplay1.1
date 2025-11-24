@@ -165,12 +165,41 @@ const DashboardPage = () => {
     },
   });
 
+  const totalIncome = useMemo(() => {
+    return incomes.reduce((sum, i) => sum + i.amount, 0);
+  }, [incomes]);
+
+  const categoriesWithAmounts = useMemo(() => {
+    return budgetCategories.map(category => ({
+      ...category,
+      amount: (totalIncome * (Number(category.percentage) || 0)) / 100,
+    }));
+  }, [totalIncome, budgetCategories]);
+
+  const categoriesWithSpending = useMemo(() => {
+    return categoriesWithAmounts.map(category => {
+      const categoryExpenses = expenses.filter(expense => expense.categoria === category.name);
+      const actualSpending = categoryExpenses.reduce((sum, expense) => sum + expense.valor, 0);
+      return {
+        ...category,
+        actualSpending,
+      };
+    });
+  }, [categoriesWithAmounts, expenses]);
+
   const summary = useMemo(() => {
     const pendentes = expenses.filter(e => e.status === 'Pendente');
     const pagos = expenses.filter(e => e.status === 'Pago');
     const totalExpenses = expenses.reduce((sum, e) => sum + e.valor, 0);
-    const totalIncome = incomes.reduce((sum, i) => sum + i.amount, 0);
     const totalSavings = expenses.reduce((sum, e) => sum + (e.savedAmount || 0), 0);
+
+    const totalBudgeted = categoriesWithAmounts.reduce((sum, c) => sum + c.amount, 0);
+
+    // New logic here
+    const essentialCategory = categoriesWithSpending.find(c => c.name === 'Despesas Essenciais');
+    const budgetedEssential = essentialCategory ? essentialCategory.amount : 0;
+    const actualEssential = essentialCategory ? essentialCategory.actualSpending || 0 : 0;
+    const essentialDifference = actualEssential - budgetedEssential;
 
     return {
       totalPendentes: pendentes.reduce((sum, e) => sum + e.valor, 0),
@@ -181,16 +210,13 @@ const DashboardPage = () => {
       totalIncome: totalIncome,
       balance: totalIncome - totalExpenses,
       totalSavings,
+      budgetedEssential,
+      actualEssential,
+      essentialDifference,
+      expenses,
+      totalBudgeted,
     };
-  }, [expenses, incomes]);
-
-  const categoriesWithAmounts = useMemo(() => {
-    const totalIncome = summary.totalIncome || 0;
-    return budgetCategories.map(category => ({
-      ...category,
-      amount: (totalIncome * (Number(category.percentage) || 0)) / 100,
-    }));
-  }, [summary.totalIncome, budgetCategories]);
+  }, [expenses, totalIncome, categoriesWithSpending, categoriesWithAmounts]);
 
   const handleCategoryChange = (id: string, field: 'name' | 'percentage', value: string | number) => {
     setBudgetCategories(prevCategories => {
@@ -383,7 +409,7 @@ const DashboardPage = () => {
             {activeFinanceTab === 'orcamento' ? (
               <OrcamentoPage 
                 income={summary.totalIncome}
-                categories={categoriesWithAmounts}
+                categories={categoriesWithSpending}
                 onCategoryChange={handleCategoryChange}
                 onAddCategory={handleAddCategory}
                 onRemoveCategory={handleRemoveCategory}
@@ -409,7 +435,7 @@ const DashboardPage = () => {
                     expenses={expenses}
                     isLoading={isLoadingExpenses}
                     isError={isErrorExpenses}
-                    budgetCategories={categoriesWithAmounts}
+                    budgetCategories={categoriesWithSpending}
                   />
                   <PersonalFinanceDialog
                     isOpen={isExpenseDialogOpen || isIncomeDialogOpen}
@@ -420,6 +446,7 @@ const DashboardPage = () => {
                     onSave={handleSaveItem}
                     item={editingExpense || editingIncome}
                     type={isExpenseDialogOpen ? "expense" : "income"}
+                    budgetCategories={budgetCategories}
                   />
                 </div>
               </>

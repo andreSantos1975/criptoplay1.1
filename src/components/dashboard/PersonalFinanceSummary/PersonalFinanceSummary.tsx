@@ -24,7 +24,7 @@ export function PersonalFinanceSummary({ summary }: PersonalFinanceSummaryProps)
         <CardContent>
           <div className={styles.value}>{formatCurrency(summary.totalGeral)}</div>
           <p className={styles.description}>
-            {summary.countPendentes + summary.countPagos} despesas no total
+            {summary.countPagos + summary.countPendentes} despesas no total
           </p>
         </CardContent>
       </Card>
@@ -93,6 +93,25 @@ export function PersonalFinanceSummary({ summary }: PersonalFinanceSummaryProps)
           </p>
         </CardContent>
       </Card>
+
+      {summary.budgetedEssential > 0 && (
+        <Card className={`${styles.summaryCard} ${summary.totalGeral > summary.budgetedEssential ? styles.pendingCard : styles.paidCard}`}>
+          <CardHeader className={styles.cardHeader}>
+            <CardTitle className={styles.cardTitle}>Despesas Essenciais</CardTitle>
+            <span className={styles.icon}>🏠</span>
+          </CardHeader>
+          <CardContent>
+            <div className={styles.value}>
+              {formatCurrency(summary.totalGeral)}
+            </div>
+            <p className={`${styles.description} ${summary.totalGeral > summary.budgetedEssential ? styles.negative : styles.positive}`}>
+              {summary.totalGeral > summary.budgetedEssential
+                ? `${formatCurrency(summary.totalGeral - summary.budgetedEssential)} acima do orçado de ${formatCurrency(summary.budgetedEssential)}`
+                : `${formatCurrency(summary.budgetedEssential - summary.totalGeral)} abaixo do orçado de ${formatCurrency(summary.budgetedEssential)}`}
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

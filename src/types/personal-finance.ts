@@ -17,6 +17,11 @@ export interface ExpenseSummary {
   totalIncome: number;
   balance: number;
   totalSavings: number;
+  budgetedEssential: number;
+  actualEssential: number;
+  essentialDifference: number;
+  expenses: Expense[];
+  totalBudgeted: number;
 }
 
 export interface Income {
