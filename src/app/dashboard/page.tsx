@@ -446,7 +446,6 @@ const DashboardPage = () => {
                     onSave={handleSaveItem}
                     item={editingExpense || editingIncome}
                     type={isExpenseDialogOpen ? "expense" : "income"}
-                    budgetCategories={budgetCategories}
                   />
                 </div>
               </>

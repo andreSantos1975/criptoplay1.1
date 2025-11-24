@@ -3,15 +3,7 @@ import { Expense, Income } from "@/types/personal-finance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import styles from "./PersonalFinanceDialog.module.css";
-import { Category } from "../CategoryAllocation/CategoryAllocation";
 
 interface PersonalFinanceDialogProps {
   isOpen: boolean;
@@ -22,7 +14,6 @@ interface PersonalFinanceDialogProps {
   ) => void;
   item?: Expense | Income;
   type: "expense" | "income";
-  budgetCategories: Category[];
 }
 
 export function PersonalFinanceDialog({
@@ -31,7 +22,6 @@ export function PersonalFinanceDialog({
   onSave,
   item,
   type,
-  budgetCategories,
 }: PersonalFinanceDialogProps) {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");

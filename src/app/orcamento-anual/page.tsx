@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import styles from "./orcamento-anual.module.css";
@@ -47,11 +48,24 @@ const upsertBudgetItem = async (item: {
   return res.json();
 };
 
+const deleteCategory = async (categoryId: string) => {
+    const res = await fetch(`/api/budget/categories/${categoryId}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to delete category");
+    }
+    return res.json();
+  };
+
 // --- Componente Principal ---
 export default function OrcamentoAnualPage() {
   const queryClient = useQueryClient();
   const [year, setYear] = useState(new Date().getFullYear());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [categoryToEdit, setCategoryToEdit] = useState<BudgetCategory | null>(null);
+
 
   // --- Queries ---
   const { data: categories = [], isLoading: isLoadingCategories } = useQuery<BudgetCategory[]>({
@@ -65,7 +79,7 @@ export default function OrcamentoAnualPage() {
   });
 
   // --- Mutações ---
-  const mutation = useMutation({
+  const upsertItemMutation = useMutation({
     mutationFn: upsertBudgetItem,
     onSuccess: (data, variables) => {
       queryClient.setQueryData<BudgetItem[]>(["budgetItems", year], (oldData) => {
@@ -84,6 +98,17 @@ export default function OrcamentoAnualPage() {
     },
     onError: (error) => {
       console.error("Failed to save budget item:", error);
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: deleteCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["budgetCategories"] });
+      queryClient.invalidateQueries({ queryKey: ["budgetItems", year] });
+    },
+    onError: (error: Error) => {
+      alert(`Falha ao excluir categoria: ${error.message}`);
     },
   });
 
@@ -125,13 +150,35 @@ export default function OrcamentoAnualPage() {
     return totals;
   }, [items, categories]);
 
+  // --- Handlers ---
   const handleInputChange = (
     categoryId: string,
     month: number,
     value: string
   ) => {
     const amount = parseFloat(value) || 0;
-    mutation.mutate({ year, month, categoryId, amount });
+    upsertItemMutation.mutate({ year, month, categoryId, amount });
+  };
+
+  const handleOpenCreateModal = () => {
+    setCategoryToEdit(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (category: BudgetCategory) => {
+    setCategoryToEdit(category);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setCategoryToEdit(null); // Always reset after closing
+  };
+
+  const handleDeleteCategory = (categoryId: string) => {
+    if (window.confirm("Tem certeza que deseja excluir esta categoria? Todos os dados orçamentários associados a ela serão perdidos permanentemente.")) {
+        deleteCategoryMutation.mutate(categoryId);
+    }
   };
 
   // --- Renderização ---
@@ -159,7 +206,13 @@ export default function OrcamentoAnualPage() {
 
       return (
         <tr key={category.id}>
-          <td className={styles.categoryName}>{category.name}</td>
+          <td className={styles.categoryNameCell}>
+            <span>{category.name}</span>
+            <div className={styles.categoryActions}>
+                <button onClick={() => handleOpenEditModal(category)} className={styles.actionButton}>Editar</button>
+                <button onClick={() => handleDeleteCategory(category.id)} className={styles.actionButton}>Excluir</button>
+            </div>
+          </td>
           {monthLabels.map((_, index) => {
             const month = index + 1;
             return (
@@ -188,12 +241,16 @@ export default function OrcamentoAnualPage() {
     <>
       <CategoryModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ["budgetCategories"] });
         }}
+        categoryToEdit={categoryToEdit}
       />
       <div className={styles.container}>
+        <Link href="/dashboard?tab=pessoal" className={styles.backLink}>
+          ‹ Voltar para Finanças Pessoais
+        </Link>
         <header className={styles.header}>
           <h1>Orçamento Anual</h1>
           <div className={styles.yearSelector}>
@@ -203,7 +260,7 @@ export default function OrcamentoAnualPage() {
           </div>
         </header>
 
-        <button className={styles.addButton} onClick={() => setIsModalOpen(true)}>
+        <button className={styles.addButton} onClick={handleOpenCreateModal}>
           + Nova Categoria
         </button>
 

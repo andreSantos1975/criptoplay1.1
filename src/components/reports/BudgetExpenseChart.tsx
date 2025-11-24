@@ -12,6 +12,7 @@ import {
 interface ChartDataItem {
   name: string;
   value: number;
+  [key: string]: unknown;
 }
 
 interface BudgetExpenseChartProps {
