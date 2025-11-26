@@ -89,6 +89,8 @@ npx prisma studio
   (Remove o diretório node_modules e o arquivo… 
   rm -rf node_modules package-lock.json 
    rm -rf node_modules
+
+    rm -rf .next && rm -rf node_modules && rm -f package-lock.json (Remove as pa…  │
   --------------------------------------------------------------------------------
 (Executa o linter do projeto para verificar a qualidade do código.
 npm run lint 
