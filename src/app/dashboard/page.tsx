@@ -312,7 +312,8 @@ const DashboardPage = () => {
   useEffect(() => {
     const fetchAndSetInitialLevels = async () => {
       try {
-        const response = await fetch(`/api/binance/klines?symbol=${selectedCrypto}&interval=1d`);
+        const apiPath = marketType === "futures" ? "futures-klines" : "klines";
+        const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=1d`);
         if (!response.ok) throw new Error("Network response was not ok");
         const data = await response.json();
         setKlines(data);
@@ -330,7 +331,7 @@ const DashboardPage = () => {
       }
     };
     fetchAndSetInitialLevels();
-  }, [selectedCrypto]);
+  }, [selectedCrypto, marketType]);
 
   useEffect(() => {
     localStorage.setItem('tradeLevels', JSON.stringify(tradeLevels));
@@ -478,6 +479,7 @@ const DashboardPage = () => {
             >
               <TradeJournal 
                 tradeLevels={tradeLevels} 
+                onLevelsChange={setTradeLevels}
                 selectedCrypto={selectedCrypto}
                 tipoOperacao={tipoOperacao}
                 onTipoOperacaoChange={setTipoOperacao}

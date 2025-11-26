@@ -32,6 +32,7 @@ interface TechnicalAnalysisChartProps {
 export const TechnicalAnalysisChart = memo(
   ({
     tradeLevels,
+    onLevelsChange,
     children,
     selectedCrypto,
     onCryptoSelect,
@@ -43,6 +44,7 @@ export const TechnicalAnalysisChart = memo(
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
     const priceLinesRef = useRef<Partial<Record<PriceLineKey, IPriceLine>>>({});
+    
     const [interval, setInterval] = useState("1d");
     const [isChartReady, setIsChartReady] = useState(false);
     const [newSymbolInput, setNewSymbolInput] = useState("");
@@ -50,6 +52,13 @@ export const TechnicalAnalysisChart = memo(
       "BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT",
       "ADAUSDT", "BNBUSDT", "DOGEUSDT", "SHIBUSDT",
     ]);
+    const [draggingLine, setDraggingLine] = useState<PriceLineKey | null>(null);
+
+    // Refs to hold the latest props for use in callbacks without causing re-renders
+    const onLevelsChangeRef = useRef(onLevelsChange);
+    onLevelsChangeRef.current = onLevelsChange;
+    const tradeLevelsRef = useRef(tradeLevels);
+    tradeLevelsRef.current = tradeLevels;
 
     const handleAddSymbol = (symbolToAdd?: string) => {
       const symbol = symbolToAdd || newSymbolInput.trim();
@@ -85,75 +94,135 @@ export const TechnicalAnalysisChart = memo(
       refetchOnWindowFocus: false,
     });
 
-    // 1. Create chart and series instance
+    // 1. Effect to create and cleanup the chart (runs only once)
     useEffect(() => {
-      if (!chartContainerRef.current) return;
+      const chartElement = chartContainerRef.current;
+      if (!chartElement) return;
 
-      const chart = createChart(chartContainerRef.current, {
+      const chart = createChart(chartElement, {
         layout: { background: { type: ColorType.Solid, color: "#131722" }, textColor: "#D9D9D9" },
         grid: { vertLines: { color: "#2A2E39" }, horzLines: { color: "#2A2E39" } },
-        width: chartContainerRef.current.clientWidth, height: 400, crosshair: { mode: CrosshairMode.Normal },
+        width: chartElement.clientWidth, height: 400, crosshair: { mode: CrosshairMode.Normal },
       });
       chartRef.current = chart;
-      seriesRef.current = chart.addSeries(CandlestickSeries, {
-        upColor: "#26a69a", downColor: "#ef5350", borderUpColor: "#26a69a",
-        borderDownColor: "#ef5350", wickUpColor: "#26a69a", wickDownColor: "#ef5350",
+      
+      const series = chart.addSeries(CandlestickSeries, {
+        upColor: "#26a69a",
+        downColor: "#ef5350",
+        borderUpColor: "#26a69a",
+        borderDownColor: "#ef5350",
+        wickUpColor: "#26a69a",
+        wickDownColor: "#ef5350",
       });
+      seriesRef.current = series;
 
-      const handleResize = () => chart.applyOptions({ width: chartContainerRef.current?.clientWidth });
+      const handleResize = () => chart.applyOptions({ width: chartElement.clientWidth });
       window.addEventListener("resize", handleResize);
       setIsChartReady(true);
 
       return () => {
         window.removeEventListener("resize", handleResize);
         chart.remove();
+        chartRef.current = null;
+        seriesRef.current = null;
         setIsChartReady(false);
       };
     }, []);
 
-    // 2. Load initial data (in USD)
+    // 2. Effect to setup drag-and-drop listeners (runs when chart is ready)
+    useEffect(() => {
+      const chartElement = chartContainerRef.current;
+      const chart = chartRef.current;
+      const series = seriesRef.current;
+
+      if (!isChartReady || !chartElement || !chart || !series) return;
+
+      const isNearPriceLine = (price: number, y: number) => {
+        const priceY = series.priceToCoordinate(price);
+        return priceY !== null && Math.abs(priceY - y) < 10; // 10px tolerance
+      };
+
+      const handleMouseDown = (e: MouseEvent) => {
+        const rect = chartElement.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+
+        for (const key in priceLinesRef.current) {
+          const priceLine = priceLinesRef.current[key as PriceLineKey];
+          if (priceLine && isNearPriceLine(priceLine.options().price, y)) {
+            setDraggingLine(key as PriceLineKey);
+            chart.applyOptions({ handleScroll: false, handleScale: false });
+            chartElement.style.cursor = 'ns-resize';
+            return;
+          }
+        }
+      };
+
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!draggingLine) return;
+        
+        const rect = chartElement.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        const newPrice = series.coordinateToPrice(y);
+
+        if (newPrice !== null) {
+          // Use refs to get the latest props without causing re-renders
+          onLevelsChangeRef.current({
+            ...tradeLevelsRef.current,
+            [draggingLine]: newPrice,
+          });
+        }
+      };
+
+      const handleMouseUp = () => {
+        setDraggingLine(null);
+        chart.applyOptions({ handleScroll: true, handleScale: true });
+        chartElement.style.cursor = 'default';
+      };
+
+      chartElement.addEventListener('mousedown', handleMouseDown);
+      chartElement.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+
+      return () => {
+        chartElement.removeEventListener('mousedown', handleMouseDown);
+        chartElement.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }, [isChartReady, draggingLine]); // Rerun only when chart is ready or dragging state changes
+
+    // 3. Load initial data
     useEffect(() => {
       if (!isChartReady || !seriesRef.current || !initialChartData) return;
       seriesRef.current.setData(initialChartData);
     }, [isChartReady, initialChartData]);
 
-    // 3. Apply BRL formatting and update it when rate changes
+    // 4. Apply BRL formatting
     useEffect(() => {
       const chart = chartRef.current;
-      const brlRate = exchangeRateData?.usdtToBrl || 1;
-      if (!chart || !brlRate || !initialChartData) return;
+      if (!chart || !exchangeRateData || !initialChartData) return;
 
       const firstPrice = initialChartData[0]?.close || 0;
-      const precision = firstPrice < 1 ? 4 : 2; // USD precision
+      const precision = firstPrice < 1 ? 4 : 2;
 
       chart.applyOptions({
         localization: {
-          priceFormatter: (price: number) => `R$ ${(price * brlRate).toFixed(precision)}`,
+          priceFormatter: (price: number) => `R$ ${(price * (exchangeRateData?.usdtToBrl || 1)).toFixed(precision)}`,
         },
       });
-    }, [exchangeRateData, initialChartData]);
+    }, [isChartReady, exchangeRateData, initialChartData]);
 
-    // 4. Connect WebSocket for real-time updates
+    // 5. Connect WebSocket
     useEffect(() => {
       if (!isChartReady || !seriesRef.current || !selectedCrypto) return;
 
       let wsUrl;
       if (marketType === 'spot') {
-        const symbol = selectedCrypto.toLowerCase();
-        wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@kline_${interval}`;
-      } else { // futures
-        const symbol = selectedCrypto.toLowerCase();
-        wsUrl = `wss://fstream.binance.com/ws/${symbol}@kline_${interval}`;
+        wsUrl = `wss://stream.binance.com:9443/ws/${selectedCrypto.toLowerCase()}@kline_${interval}`;
+      } else {
+        wsUrl = `wss://fstream.binance.com/ws/${selectedCrypto.toLowerCase()}@kline_${interval}`;
       }
 
-      console.log(`Attempting to connect to WebSocket: ${wsUrl}`); // Debugging line
-
       const ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        console.log('WebSocket connected to', wsUrl);
-      };
-
       ws.onmessage = (event) => {
         const message = JSON.parse(event.data);
         const kline = message.k;
@@ -162,36 +231,15 @@ export const TechnicalAnalysisChart = memo(
         }
       };
 
-      ws.onerror = (event) => {
-        console.error("WebSocket error:", event);
-      };
-
-      ws.onclose = (event) => {
-        // Normal closure by the client will often have code 1000
-        if (event.code !== 1000) {
-          console.warn("WebSocket disconnected:", event.reason, "Code:", event.code);
-        } else {
-          console.log("WebSocket connection closed normally.");
-        }
-      };
-
-      // Cleanup function to close the WebSocket connection when the component unmounts or dependencies change
       return () => {
-        if (ws) {
-          console.log("Closing WebSocket connection for", wsUrl);
-          ws.onopen = null;
-          ws.onmessage = null;
-          ws.onerror = null;
-          ws.onclose = null;
-          ws.close(1000, "Component unmounting or dependency changing");
-        }
+        ws.close();
       };
     }, [isChartReady, selectedCrypto, interval, marketType]);
 
-    // 5. Update Price Lines
+    // 6. Update Price Lines
     useEffect(() => {
       const series = seriesRef.current;
-      if (!series || !tradeLevels) return;
+      if (!isChartReady || !series || !tradeLevels) return;
 
       Object.values(priceLinesRef.current).forEach(line => line && series.removePriceLine(line));
       priceLinesRef.current = {};
@@ -207,8 +255,8 @@ export const TechnicalAnalysisChart = memo(
         createPriceLine("takeProfit", tradeLevels.takeProfit, "#26A69A", "Take Profit");
         createPriceLine("stopLoss", tradeLevels.stopLoss, "#EF5350", "Stop Loss");
       }
-    }, [tradeLevels, tipoOperacao, initialChartData, exchangeRateData, marketType]); // Re-draw when symbol or rate changes
-
+    }, [isChartReady, tradeLevels, tipoOperacao, marketType]);
+    
     return (
       <Card>
         <CardHeader><CardTitle>Análise Técnica - {selectedCrypto} (Binance)</CardTitle></CardHeader>
@@ -244,4 +292,3 @@ export const TechnicalAnalysisChart = memo(
 
 TechnicalAnalysisChart.displayName = "TechnicalAnalysisChart";
 export default TechnicalAnalysisChart;
-

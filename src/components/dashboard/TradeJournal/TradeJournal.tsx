@@ -10,10 +10,7 @@ import { Button } from '@/components/ui/button';
 // Interface para os dados do formulário (simplificada)
 interface TradeFormData {
   ativo: string;
-  precoEntrada: string;
   quantidade: string;
-  stopLoss: string;
-  takeProfit: string;
   observacoes: string;
 }
 
@@ -35,6 +32,7 @@ interface TradeJournalProps {
     takeProfit: number;
     stopLoss: number;
   };
+  onLevelsChange: (levels: { entry: number; takeProfit: number; stopLoss: number; }) => void;
   selectedCrypto: string;
   tipoOperacao: 'compra' | 'venda' | '';
   onTipoOperacaoChange: (value: 'compra' | 'venda' | '') => void;
@@ -42,18 +40,16 @@ interface TradeJournalProps {
 
 const TradeJournal = ({ 
   tradeLevels, 
+  onLevelsChange,
   selectedCrypto,
   tipoOperacao,
   onTipoOperacaoChange,
 }: TradeJournalProps) => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('operacao');
-  const [tradeData, setTradeData] = useState<Omit<TradeFormData, 'tipoOperacao'>>({
+  const [tradeData, setTradeData] = useState<TradeFormData>({
     ativo: selectedCrypto || '',
-    precoEntrada: '',
     quantidade: '',
-    stopLoss: '',
-    takeProfit: '',
     observacoes: '',
   });
 
@@ -92,50 +88,8 @@ const TradeJournal = ({
   });
 
   useEffect(() => {
-    if (tradeLevels && usdtToBrlData) {
-      const brlRate = usdtToBrlData || 1;
-      setTradeData(prev => ({
-        ...prev,
-        ativo: selectedCrypto,
-        precoEntrada: tradeLevels.entry > 0 ? formatNumber(tradeLevels.entry * brlRate) : '',
-        takeProfit: tradeLevels.takeProfit > 0 ? formatNumber(tradeLevels.takeProfit * brlRate) : '',
-        stopLoss: tradeLevels.stopLoss > 0 ? formatNumber(tradeLevels.stopLoss * brlRate) : '',
-      }));
-    }
-  }, [tradeLevels, selectedCrypto, usdtToBrlData]);
-
-  useEffect(() => {
-    const entryPrice = parseNumericValue(tradeData.precoEntrada);
-    const quantity = parseQuantity(tradeData.quantidade);
-
-    if (entryPrice > 0 && quantity > 0) {
-      const cost = entryPrice * quantity;
-      setTradeCostInBRL(cost);
-    } else {
-      setTradeCostInBRL(null);
-    }
-  }, [tradeData.precoEntrada, tradeData.quantidade]);
-
-  useEffect(() => {
-    const entryPrice = parseNumericValue(tradeData.precoEntrada);
-    const quantity = parseQuantity(tradeData.quantidade);
-    const stopLossPrice = parseNumericValue(tradeData.stopLoss);
-    const takeProfitPrice = parseNumericValue(tradeData.takeProfit);
-
-    if (tipoOperacao === 'compra' && entryPrice > 0 && quantity > 0 && stopLossPrice > 0) {
-      const loss = (stopLossPrice - entryPrice) * quantity;
-      setPotentialLoss(loss);
-    } else {
-      setPotentialLoss(null);
-    }
-
-    if (tipoOperacao === 'compra' && entryPrice > 0 && quantity > 0 && takeProfitPrice > 0) {
-      const profit = (takeProfitPrice - entryPrice) * quantity;
-      setPotentialProfit(profit);
-    } else {
-      setPotentialProfit(null);
-    }
-  }, [tradeData.precoEntrada, tradeData.quantidade, tradeData.stopLoss, tradeData.takeProfit, tipoOperacao]);
+    setTradeData(prev => ({ ...prev, ativo: selectedCrypto }));
+  }, [selectedCrypto]);
 
   const parseQuantity = (value: string): number => {
     if (!value) return 0;
@@ -149,6 +103,41 @@ const TradeJournal = ({
     const cleanedValue = value.replace(/\./g, '').replace(',', '.');
     return parseFloat(cleanedValue) || 0;
   };
+
+  useEffect(() => {
+    const brlRate = usdtToBrlData || 1;
+    const entryPrice = tradeLevels.entry;
+    const quantity = parseQuantity(tradeData.quantidade);
+
+    if (entryPrice > 0 && quantity > 0) {
+      const cost = entryPrice * quantity * brlRate;
+      setTradeCostInBRL(cost);
+    } else {
+      setTradeCostInBRL(null);
+    }
+  }, [tradeLevels.entry, tradeData.quantidade, usdtToBrlData]);
+
+  useEffect(() => {
+    const brlRate = usdtToBrlData || 1;
+    const entryPrice = tradeLevels.entry;
+    const quantity = parseQuantity(tradeData.quantidade);
+    const stopLossPrice = tradeLevels.stopLoss;
+    const takeProfitPrice = tradeLevels.takeProfit;
+
+    if (tipoOperacao === 'compra' && entryPrice > 0 && quantity > 0 && stopLossPrice > 0) {
+      const loss = (stopLossPrice - entryPrice) * quantity * brlRate;
+      setPotentialLoss(loss);
+    } else {
+      setPotentialLoss(null);
+    }
+
+    if (tipoOperacao === 'compra' && entryPrice > 0 && quantity > 0 && takeProfitPrice > 0) {
+      const profit = (takeProfitPrice - entryPrice) * quantity * brlRate;
+      setPotentialProfit(profit);
+    } else {
+      setPotentialProfit(null);
+    }
+  }, [tradeLevels, tradeData.quantidade, tipoOperacao, usdtToBrlData]);
 
   const createTradeMutation = useMutation({
     mutationFn: async (newTrade: OpenTradePayload) => {
@@ -166,7 +155,6 @@ const TradeJournal = ({
     onSuccess: () => {
       toast.success('Operação aberta com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['trades'] }); 
-      // Opcional: Limpar o formulário aqui
     },
     onError: (error: Error) => {
       console.error("Erro ao abrir operação:", error);
@@ -175,21 +163,19 @@ const TradeJournal = ({
   });
 
   const handleOpenOperation = () => {
-    if (!tradeData.ativo || !tipoOperacao || !tradeData.precoEntrada || !tradeData.quantidade) {
+    if (!tradeData.ativo || !tipoOperacao || tradeLevels.entry <= 0 || !tradeData.quantidade) {
         toast.error("Preencha os campos obrigatórios: Ativo, Tipo, Preço e Quantidade.");
         return;
     }
-
-    const brlRate = usdtToBrlData || 1;
 
     const payload: OpenTradePayload = {
       symbol: tradeData.ativo,
       type: tipoOperacao,
       entryDate: new Date().toISOString(),
-      entryPrice: parseNumericValue(tradeData.precoEntrada) / brlRate,
+      entryPrice: tradeLevels.entry,
       quantity: parseQuantity(tradeData.quantidade),
-      stopLoss: parseNumericValue(tradeData.stopLoss) / brlRate,
-      takeProfit: parseNumericValue(tradeData.takeProfit) / brlRate,
+      stopLoss: tradeLevels.stopLoss,
+      takeProfit: tradeLevels.takeProfit,
       notes: tradeData.observacoes,
     };
     
@@ -198,6 +184,15 @@ const TradeJournal = ({
 
   const updateTradeData = (field: keyof TradeFormData, value: string) => {
     setTradeData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLevelChange = (field: 'entry' | 'takeProfit' | 'stopLoss', value: string) => {
+    const brlRate = usdtToBrlData || 1;
+    const numericValue = parseNumericValue(value) / brlRate;
+    onLevelsChange({
+      ...tradeLevels,
+      [field]: numericValue,
+    });
   };
 
   return (
@@ -244,7 +239,9 @@ const TradeJournal = ({
                                 <div className={styles.gridThreeCols}>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="precoEntrada">Preço de Entrada</label>
-                                        <input id="precoEntrada" type="text" className={styles.input} placeholder="0,00" value={tradeData.precoEntrada} onChange={(e) => updateTradeData('precoEntrada', e.target.value)} />
+                                        <input id="precoEntrada" type="text" className={styles.input} placeholder="0,00" 
+                                               value={tradeLevels.entry > 0 && usdtToBrlData ? formatNumber(tradeLevels.entry * usdtToBrlData) : ''}
+                                               onChange={(e) => handleLevelChange('entry', e.target.value)} />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="quantidade">Quantidade</label>
@@ -264,11 +261,15 @@ const TradeJournal = ({
                                 <div className={styles.gridTwoCols}>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="stopLoss">Stop Loss (Preço)</label>
-                                        <input id="stopLoss" type="text" className={styles.input} placeholder="0,00" value={tradeData.stopLoss} onChange={(e) => updateTradeData('stopLoss', e.target.value)} />
+                                        <input id="stopLoss" type="text" className={styles.input} placeholder="0,00" 
+                                               value={tradeLevels.stopLoss > 0 && usdtToBrlData ? formatNumber(tradeLevels.stopLoss * usdtToBrlData) : ''}
+                                               onChange={(e) => handleLevelChange('stopLoss', e.target.value)} />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label} htmlFor="takeProfit">Take Profit (Preço)</label>
-                                        <input id="takeProfit" type="text" className={styles.input} placeholder="0,00" value={tradeData.takeProfit} onChange={(e) => updateTradeData('takeProfit', e.target.value)} />
+                                        <input id="takeProfit" type="text" className={styles.input} placeholder="0,00" 
+                                               value={tradeLevels.takeProfit > 0 && usdtToBrlData ? formatNumber(tradeLevels.takeProfit * usdtToBrlData) : ''}
+                                               onChange={(e) => handleLevelChange('takeProfit', e.target.value)} />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.label}>Perda Potencial (BRL)</label>

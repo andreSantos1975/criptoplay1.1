@@ -394,7 +394,12 @@ Essa é uma pergunta excelente e muito importante, que toca no coração da evol
    planejar a implementação dessa funcionalidade, começando pela arquitetura de segurança 
   para o armazenamento das chaves de API?
 
+=========================================================================
 
+✦ O problema está ocorrendo no arquivo do componente de gráfico:
+
+
+  src/components/dashboard/TechnicalAnalysisChart/TechnicalAnalysisChart.tsx
 
 
 
