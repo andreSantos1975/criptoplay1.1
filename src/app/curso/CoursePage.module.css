@@ -1,21 +1,74 @@
-.welcomeContainer {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  text-align: center;
+.container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-.welcomeTitle {
+.title {
   font-size: 2.8rem;
   font-weight: bold;
   margin-bottom: 1rem;
   color: #1a1a1a;
+  text-align: center;
 }
 
-.welcomeText {
-  font-size: 1.25rem;
+.subtitle {
+  font-size: 1.2rem;
   color: #555;
-  max-width: 450px;
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.courseListContainer {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 2rem;
+  border: 1px solid #eaeaea;
+}
+
+.courseList {
+  list-style: none;
+  padding: 0;
+  counter-reset: course-counter;
+}
+
+.courseListItem {
+  counter-increment: course-counter;
+  margin-bottom: 1.5rem;
+  position: relative;
+  padding-left: 45px;
+  font-size: 1.1rem;
+}
+
+.courseListItem::before {
+  content: counter(course-counter);
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #0070f3;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.courseListItem:last-child {
+  margin-bottom: 0;
+}
+
+.courseLink {
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.courseLink:hover {
+  color: #0070f3;
 }
