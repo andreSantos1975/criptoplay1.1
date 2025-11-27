@@ -3,22 +3,22 @@
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // Import useRouter
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react"; // Add signOut to this import
+import { useSession, signOut } from "next-auth/react";
 import styles from "./Navbar.module.css";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
-  const { status } = useSession(); // Get session data and status
+  const { status } = useSession();
 
   return (
     <header className={styles.header}>
       <div className={styles.container}>
         <div className={styles.flexBetween}>
           {/* Logo */}
-          <Link href="/" className={styles.logoLink}> {/* Added a tag and class */}
+          <Link href="/" className={styles.logoLink}>
             <div className={styles.logoContainer}>
               <div className={styles.logoIconWrapper}>
                 <TrendingUp className={styles.logoIcon} />
@@ -32,16 +32,20 @@ const Header = () => {
             <Link href="/" className={styles.navLink}>
               Home
             </Link>
-                        <Link href="/play" className={styles.navLink}>
+            <Link href="/play" className={styles.navLink}>
               Play
             </Link>
-                        <Link href="/#recursos" className={styles.navLink}>
+            <Link href="/#recursos" className={styles.navLink}>
               Recursos
             </Link>
-            
             <Link href="/contato" className={styles.navLink}>
               Contato
             </Link>
+            {status === "authenticated" && (
+              <Link href="/curso" className={styles.navLink}>
+                Jornada Cripto
+              </Link>
+            )}
           </nav>
 
           {/* Desktop CTA */}
@@ -79,21 +83,20 @@ const Header = () => {
               >
                 Home
               </Link>
-                            <Link
+              <Link
                 href="/play"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Play
               </Link>
-                            <Link
+              <Link
                 href="/#recursos"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Recursos
               </Link>
-              
               <Link
                 href="/contato"
                 className={styles.mobileNavLink}
@@ -101,6 +104,15 @@ const Header = () => {
               >
                 Contato
               </Link>
+              {status === "authenticated" && (
+                <Link
+                  href="/curso"
+                  className={styles.mobileNavLink}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Jornada Cripto
+                </Link>
+              )}
               <div className={styles.mobileCtaContainer}>
                 {status === "authenticated" ? (
                   <>
