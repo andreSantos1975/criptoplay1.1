@@ -28,11 +28,11 @@
     "lucide-react": "^0.539.0",
     "next": "^14.2.33",
     "next-auth": "^4.24.7",
-    "next-themes": "^0.4.6",
+    "next-themes": "^0.4.0",
     "react": "^18",
     "react-dom": "^18",
     "react-hot-toast": "^2.4.1",
-    "react-is": "^19.2.0",
+    "react-is": "^18.3.1",
     "recharts": "^3.1.2",
     "remark": "^15.0.1",
     "remark-html": "^16.0.1",
@@ -42,17 +42,10 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-<<<<<<< HEAD
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "eslint": "^9.0.0",
-    "eslint-config-next": "^16.0.5",
-=======
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8",
-    "eslint-config-next": "14.2.33",
->>>>>>> 76e47993eb212fcff563803b6a3afb68ef029abf
+    "eslint-config-next": "^16.0.5",
     "prisma": "^6.17.1",
     "typescript": "^5"
   }
