@@ -55,9 +55,28 @@ COMANO PARA EXCLUI BANCO DE DADOS
 DROP DATABASE <nome do banco de dados>
 ----------------------------------------------------------------------
 
+Reverter o git add .
+git reset
+
+------------------
+PARA REMOVER A ORIGIN DEPOIS DO GIT CLONE
+git remote remove origin
+PARA ADICIONAR A ORIGIN
+git remote add origin 
+git push --set-upstream origin main
 
 
+Reverter o git add .
+git reset
 
+LIGAR A BRANCH AO REPOSITORIO REMOTO
+git remote add origin https://github.com/andreSantos1975/ferramentas.git
+git branch -M main
+git push -u origin main
+
+------------------------------------------
+
+------------------------------------------
 
 Verificar em qual branch você está
 git branch
