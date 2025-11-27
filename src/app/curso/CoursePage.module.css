@@ -56,6 +56,7 @@
   justify-content: center;
   font-weight: bold;
   font-size: 0.9rem;
+  transition: background-color 0.3s ease;
 }
 
 .courseListItem:last-child {
@@ -71,4 +72,17 @@
 
 .courseLink:hover {
   color: #0070f3;
+}
+
+.courseListItem.completed::before {
+  background-color: #28a745; /* Green for completed */
+}
+
+.checkmark {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #28a745;
+  font-size: 1.5rem;
 }

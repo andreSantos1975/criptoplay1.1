@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { getSortedCourseData } from '@/lib/course';
 import styles from './CoursePage.module.css';
+import CourseList from '@/components/course/CourseList';
 
 export default function CoursePage() {
   const allPostsData = getSortedCourseData();
@@ -11,17 +11,7 @@ export default function CoursePage() {
       <p className={styles.subtitle}>
         Sua trilha de conhecimento para dominar o universo das criptomoedas. Comece pelo primeiro capítulo e avance no seu ritmo.
       </p>
-      <div className={styles.courseListContainer}>
-        <ol className={styles.courseList}>
-          {allPostsData.map(({ slug, title }) => (
-            <li key={slug} className={styles.courseListItem}>
-              <Link href={`/curso/${slug}`} className={styles.courseLink}>
-                {title}
-              </Link>
-            </li>
-          ))}
-        </ol>
-      </div>
+      <CourseList allPostsData={allPostsData} />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar/Navbar";
 import AuthProvider from "@/components/AuthProvider";
 import QueryProvider from "@/components/QueryProvider";
 import { Toaster } from "react-hot-toast";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,15 +20,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
-        <AuthProvider>
-          <QueryProvider>
-            <Navbar />
-            <main className={"mainContent"}>{children}</main>
-            <Toaster />
-          </QueryProvider>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <QueryProvider>
+              <Navbar />
+              <main className={"mainContent"}>{children}</main>
+              <Toaster />
+            </QueryProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

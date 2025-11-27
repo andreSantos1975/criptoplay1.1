@@ -93,6 +93,7 @@ git push
 INICIAR A INTERFACE DO PRISMA CLIENTE 
 npx prisma studio
 ----------------------------------------------------------------------
+npx prisma migrate reset
   ------------------------------------------------------------------------------
 (Gerando o cliente Prisma para refletir as novas configurações no banco de dados
   npx prisma generate 
