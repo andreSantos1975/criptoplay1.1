@@ -30,17 +30,11 @@ export async function GET() {
 
 // POST /api/trades - Create a new trade for the logged-in user
 export async function POST(request: Request) {
-  console.log("--- TRADE API: INÍCIO DA REQUISIÇÃO POST ---");
   const session = await getServerSession(authOptions);
 
-  console.log("TRADE API: Objeto de sessão recebido:", JSON.stringify(session, null, 2));
-
   if (!session?.user?.id) {
-    console.error("TRADE API: FALHA NA AUTORIZAÇÃO. ID do usuário ou sessão não encontrado.");
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
-  console.log(`TRADE API: ID do usuário da sessão: ${session.user.id}`);
 
   try {
     const body = await request.json();
@@ -57,7 +51,6 @@ export async function POST(request: Request) {
 
     // Basic validation
     if (!symbol || !type || !entryDate || !entryPrice || !quantity || !stopLoss || !takeProfit) {
-        console.error("TRADE API: Erro de validação - campos obrigatórios ausentes.", body);
         return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -74,17 +67,13 @@ export async function POST(request: Request) {
       userId: session.user.id,
     };
 
-    console.log("TRADE API: Dados para criar no Prisma:", JSON.stringify(tradeData, null, 2));
-
     const newTrade = await prisma.trade.create({
       data: tradeData,
     });
 
-    console.log("--- TRADE API: FIM DA REQUISIÇÃO POST (SUCESSO) ---");
     return NextResponse.json(newTrade, { status: 201 });
   } catch (error) {
     console.error('Error creating trade:', error);
-    console.log("--- TRADE API: FIM DA REQUISIÇÃO POST (ERRO) ---");
     return NextResponse.json({ error: 'Failed to create trade' }, { status: 500 });
   }
 }

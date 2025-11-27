@@ -48,23 +48,40 @@ export const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, token }: { session: Session; token: JWT }) {
+    async jwt({ token, user }) {
+      // No login inicial, o objeto `user` está disponível e seu ID é adicionado ao token.
+      if (user) {
+        token.id = user.id;
+      }
+
+      // Em requisições subsequentes, usamos o email do token (que é mais confiável)
+      // para buscar o usuário no banco de dados.
+      if (token.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email },
+        });
+
+        // Se o usuário não for encontrado (ex: foi deletado), retornamos o token como está.
+        // Isso evita que a sessão seja invalidada com um erro, corrigindo o build.
+        // A sessão continuará válida até expirar, mas sem dados atualizados do usuário.
+        if (!dbUser) {
+          return token;
+        }
+
+        // Se o usuário for encontrado, garantimos que o ID no token está correto.
+        token.id = dbUser.id;
+      }
+
+      // Retorna o token (potencialmente modificado).
+      return token;
+    },
+    async session({ session, token }) {
+      // O callback `session` é chamado após o callback `jwt`.
+      // O objeto `token` aqui é o que foi retornado do callback `jwt`.
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.name = token.name;
-        session.user.email = token.email;
-        session.user.image = token.picture;
       }
       return session;
-    },
-    async jwt({ token, user }) {
-      if (user) {
-        return {
-          ...token,
-          id: user.id,
-        };
-      }
-      return token;
     },
   },
   pages: {
