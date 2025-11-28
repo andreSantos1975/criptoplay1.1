@@ -2,7 +2,7 @@
 title: 'Hot Wallets (Carteiras Quentes)'
 order: 3
 ---
-  CAPÍTULO 3 – HOT WALLETS (CARTEIRAS QUENTES) (Versão Revisada e Atualizada em 26 de novembro de 2025)
+  CAPÍTULO 3 – HOT WALLETS (CARTEIRAS QUENTES)
 
 No capítulo anterior, discutimos as Hardware Wallets, o padrão ouro em segurança. Agora, vamos explorar sua contraparte: as Hot Wallets, ou "Carteiras Quentes". Elas são a porta de entrada para a maioria dos usuários no mundo cripto devido à sua conveniência e facilidade de uso.
 
