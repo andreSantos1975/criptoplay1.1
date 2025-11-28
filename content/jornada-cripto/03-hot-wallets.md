@@ -15,7 +15,7 @@ Principais Tipos de Hot Wallets
 São aplicativos que você baixa em seu smartphone. Permitem enviar, receber e, muitas vezes, comprar/trocar criptomoedas diretamente no app.
   Prós: Extremamente convenientes para transações do dia a dia. Muitas possuem recursos de segurança como biometria e PIN.
   Contras: Vulneráveis a malwares de celular e ao roubo do próprio aparelho.
-Exemplos Populares: Trust Wallet, Exodus, BlueWallet (focada em Bitcoin).
+Exemplos Populares: Trust Wallet, Exodus, MetaMask, BlueWallet (focada em Bitcoin).
 
 2.  Desktop Wallets (Carteiras para Computador)
 São softwares instalados no seu computador (Windows, macOS, Linux). Oferecem um bom equilíbrio entre segurança e funcionalidade, muitas vezes com recursos mais avançados que as mobile wallets.
