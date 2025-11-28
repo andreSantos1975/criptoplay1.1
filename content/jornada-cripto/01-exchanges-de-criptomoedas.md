@@ -2,7 +2,7 @@
 title: 'Exchanges de Criptomoedas'
 order: 1
 ---
-✅ CAPÍTULO 1 – EXCHANGES DE CRIPTOMOEDAS (Versão Revisada e Atualizada 26 de novembro de 2025)
+ CAPÍTULO 1 – EXCHANGES DE CRIPTOMOEDAS (Versão Revisada e Atualizada 26 de novembro de 2025)
 O que são exchanges de criptomoedas e como escolher uma?
 As exchanges de criptomoedas são plataformas que realizam a intermediação de compra, venda, troca e custódia de criptomoedas, também chamadas de criptoativos. Por prestarem esse serviço, essas empresas cobram taxas sobre transações, saques ou conversões.
 Este guia — Negociando Criptomoedas — apresenta o que é necessário para começar a investir em ativos digitais, explicando o que são criptomoedas, como funcionam, quais são as vantagens e desvantagens das exchanges e se elas podem ser consideradas seguras.
@@ -16,14 +16,14 @@ A blockchain do Bitcoin nunca foi comprometida desde sua criação em 3 de janei
 
 Exchanges: o papel das corretoras de criptomoedas
 As exchanges, como mencionado, são plataformas que realizam a intermediação para compra e venda de ativos digitais. Diferem das corretoras tradicionais porque:
-✅ Corretoras de valores no Brasil:
+ Corretoras de valores no Brasil:
 são regulamentadas pelo Banco Central e pela CVM
 
 
 possuem cobertura do Fundo Garantidor de Créditos (FGC) até R$ 250 mil
 
 
-❌ Exchanges de criptomoedas no Brasil:
+ Exchanges de criptomoedas no Brasil:
 ainda não possuem regulamentação completa
 
 
@@ -41,10 +41,10 @@ Embora criptomoedas ainda não sejam consideradas moeda corrente no Brasil, o go
 Riscos, oportunidades e perfil do investidor
 O mercado de criptomoedas é altamente volátil. Em um único dia, alguns ativos podem se valorizar 4%, 8%, 20% ou mais — mas também podem desvalorizar 20%, 50% ou perder todo o capital investido.
 Por isso:
-✅ estude o mercado antes de começar
- ✅ nunca invista dinheiro que você não pode perder
- ✅ entenda que se trata de renda variável
- ✅ opere com estratégias e limites claros
+ estude o mercado antes de começar
+  nunca invista dinheiro que você não pode perder
+  entenda que se trata de renda variável
+  opere com estratégias e limites claros
 Grandes empresas e investidores destinam recursos ao setor, o que demonstra relevância tecnológica. Porém, riscos continuam existindo, incluindo:
 falhas de sistemas
 
@@ -77,10 +77,10 @@ Esses instrumentos permitem exposição ao Bitcoin de forma regulada, sem necess
 
 Segurança: onde guardar criptomoedas
 Para quem escolhe investir diretamente, é fundamental adotar medidas de segurança:
-✅ autenticação de dois fatores
- ✅ antivírus atualizado
- ✅ senhas fortes
- ✅ preferencialmente hardware wallet
+ autenticação de dois fatores
+  antivírus atualizado
+  senhas fortes
+  preferencialmente hardware wallet
 A hardware wallet é uma “carteira física’’ que armazena as chaves privadas fora da internet, impedindo invasões e permitindo que o investidor mantenha posse dos ativos mesmo se uma exchange encerrar suas atividades. É possível adquirir esse dispositivo no Brasil através de varejistas confiáveis.
 
 Como começar a comprar criptomoedas
