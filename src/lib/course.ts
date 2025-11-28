@@ -23,7 +23,7 @@ export function getSortedCourseData() {
     // Combine the data with the slug
     return {
       slug,
-      ...(matterResult.data as { title: string; order: number }),
+      ...(matterResult.data as { title: string; order: number; videoId?: string }),
     };
   });
 
@@ -64,6 +64,6 @@ export async function getCourseData(slug: string) {
   return {
     slug,
     contentHtml,
-    ...(matterResult.data as { title: string; order: number }),
+    ...(matterResult.data as { title: string; order: number; videoId?: string }),
   };
 }
