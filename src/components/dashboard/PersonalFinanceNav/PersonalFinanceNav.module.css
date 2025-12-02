@@ -27,3 +27,7 @@
   color: var(--primary);
   border-bottom-color: var(--primary);
 }
+
+.downloadButton {
+  margin-left: auto;
+}

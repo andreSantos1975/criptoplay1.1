@@ -406,7 +406,7 @@ const DashboardPage = () => {
         return (
           <>
             <MonthSelector initialDate={selectedDate} onChange={setSelectedDate} />
-            <PersonalFinanceNav activeTab={activeFinanceTab} />
+            <PersonalFinanceNav activeTab={activeFinanceTab} incomes={incomes} expenses={expenses} />
             {activeFinanceTab === 'orcamento' ? (
               <OrcamentoPage 
                 income={summary.totalIncome}
