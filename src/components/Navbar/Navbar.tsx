@@ -23,7 +23,7 @@ const Header = () => {
               <div className={styles.logoIconWrapper}>
                 <TrendingUp className={styles.logoIcon} />
               </div>
-              <span className={styles.logoText}>CriptoPlay</span>
+              <span className={styles.logoText}>CriptoGame</span>
             </div>
           </Link>
 
@@ -33,7 +33,7 @@ const Header = () => {
               Home
             </Link>
             <Link href="/play" className={styles.navLink}>
-              Play
+              Play Game
             </Link>
             <Link href="/#recursos" className={styles.navLink}>
               Recursos

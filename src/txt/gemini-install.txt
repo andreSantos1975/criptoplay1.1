@@ -1,0 +1,27 @@
+✅ OPÇÃO 1 — Instalar via Node.js (npm)
+
+Mais simples, funciona em qualquer distro, e instala a versão oficial do Gemini CLI.
+
+Passo 1 — Instalar Node.js + npm
+
+Recomendo instalar via repositório oficial NodeSource:
+
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+
+Teste:
+
+node -v
+npm -v
+
+Passo 2 — Instalar o Gemini CLI via npm
+
+Agora rode:
+
+npm install -g @google/gemini-cli
+
+
+Teste:
+
+gemini --help

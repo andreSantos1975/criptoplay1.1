@@ -418,10 +418,25 @@ Essa é uma pergunta excelente e muito importante, que toca no coração da evol
 
 =========================================================================
 
-✦ O problema está ocorrendo no arquivo do componente de gráfico:
+5️⃣ Ofereça seu SaaS como upsell
 
+Isso é a cereja do bolo.
 
-  src/components/dashboard/TechnicalAnalysisChart/TechnicalAnalysisChart.tsx
+Imediatamente após a compra do ebook:
+
+🔼 Upsell: Plataforma de Finanças SaaS
+
+Exemplo:
+
+Plano anual com desconto
+
+7 dias grátis
+
+Acesso premium mais barato para compradores
+
+Bônus exclusivo se assinar agora
+
+O comprador já está quente — conversão alta.
 
 
 

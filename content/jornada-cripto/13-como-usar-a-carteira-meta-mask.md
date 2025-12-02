@@ -6,7 +6,7 @@ title: 'Como Usar a Carteira MetaMask'
 order: 13
 
 # O ID do vídeo tutorial do YouTube.
-videoId: '8scRXU09RiE' 
+videoId: 'zIgI-PZIWxU' 
 ---
 
 ## Guia Prático: Primeiros Passos com a MetaMask
