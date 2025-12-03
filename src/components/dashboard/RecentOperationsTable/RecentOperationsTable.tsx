@@ -21,6 +21,7 @@ interface Trade {
   id: string;
   symbol: string;
   type: string;
+  marketType: string;
   status: 'OPEN' | 'CLOSED';
   entryDate: string;
   exitDate?: string;
@@ -214,7 +215,7 @@ export const RecentOperationsTable = () => {
       return (
         <TableRow key={trade.id} onClick={() => handleRowClick(trade)} className={styles.clickableRow}>
           <TableCell>{trade.symbol.replace("USDT", "")}</TableCell>
-          <TableCell>{trade.type}</TableCell>
+          <TableCell>{`${trade.type} (${trade.marketType})`}</TableCell>
           <TableCell>{trade.quantity}</TableCell>
           <TableCell>{formatCurrency(trade.entryPrice * trade.quantity)}</TableCell>
           <TableCell>{formatCurrency(trade.exitPrice ? trade.exitPrice * trade.quantity : null)}</TableCell>
@@ -334,7 +335,7 @@ export const RecentOperationsTable = () => {
               <h4>Dados da Operação</h4>
               <div className={styles.modalGrid}>
                 <div><strong>Ativo / Par:</strong> {selectedTrade.symbol}</div>
-                <div><strong>Tipo:</strong> {selectedTrade.type}</div>
+                <div><strong>Tipo:</strong> {selectedTrade.type} ({selectedTrade.marketType})</div>
                 <div><strong>Preço de Entrada:</strong> {formatCurrency(selectedTrade.entryPrice)}</div>
                 <div><strong>Quantidade:</strong> {selectedTrade.quantity}</div>
                 <div><strong>Custo Total (BRL):</strong> {formatCurrency(selectedTrade.entryPrice * selectedTrade.quantity)}</div>

@@ -8,44 +8,80 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import styles from "./Navbar.module.css";
 
-const Header = () => {
+const Navbar = () => {
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const router = useRouter();
+
   const { status } = useSession();
 
+
+
   return (
+
     <header className={styles.header}>
+
       <div className={styles.container}>
+
         <div className={styles.flexBetween}>
+
           {/* Logo */}
+
           <Link href="/" className={styles.logoLink}>
+
             <div className={styles.logoContainer}>
+
               <div className={styles.logoIconWrapper}>
+
                 <TrendingUp className={styles.logoIcon} />
+
               </div>
+
               <span className={styles.logoText}>CriptoGame</span>
+
             </div>
+
           </Link>
 
           {/* Desktop Navigation */}
+
           <nav className={styles.desktopNav}>
+
             <Link href="/" className={styles.navLink}>
+
               Home
+
             </Link>
+
             <Link href="/play" className={styles.navLink}>
+
               Play Game
+
             </Link>
+
             <Link href="/#recursos" className={styles.navLink}>
+
               Recursos
+
             </Link>
+
             <Link href="/contato" className={styles.navLink}>
+
               Contato
+
             </Link>
+
             {status === "authenticated" && (
+
               <Link href="/curso" className={styles.navLink}>
+
                 Jornada Cripto
+
               </Link>
+
             )}
+
           </nav>
 
           {/* Desktop CTA */}
@@ -142,4 +178,4 @@ const Header = () => {
   );
 };
 
-export default Header;
+export default Navbar;

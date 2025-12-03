@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     const {
       symbol,
       type,
+      marketType,
       entryDate,
       entryPrice,
       quantity,
@@ -50,13 +51,14 @@ export async function POST(request: Request) {
     } = body;
 
     // Basic validation
-    if (!symbol || !type || !entryDate || !entryPrice || !quantity || !stopLoss || !takeProfit) {
+    if (!symbol || !type || !marketType || !entryDate || !entryPrice || !quantity || !stopLoss || !takeProfit) {
         return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const tradeData = {
       symbol,
       type,
+      marketType,
       entryDate: new Date(entryDate),
       entryPrice,
       quantity,

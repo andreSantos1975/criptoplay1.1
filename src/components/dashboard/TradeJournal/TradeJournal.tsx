@@ -17,7 +17,8 @@ interface TradeFormData {
 // Interface para os dados enviados para a API (Payload para abrir trade)
 interface OpenTradePayload {
   symbol: string;
-  type: string;
+  type: 'BUY' | 'SELL';
+  marketType: 'SPOT' | 'FUTURES';
   entryDate: string; // Agora capturada no momento do clique
   entryPrice: number;
   quantity: number;
@@ -36,6 +37,7 @@ interface TradeJournalProps {
   selectedCrypto: string;
   tipoOperacao: 'compra' | 'venda' | '';
   onTipoOperacaoChange: (value: 'compra' | 'venda' | '') => void;
+  marketType: 'spot' | 'futures';
 }
 
 const TradeJournal = ({ 
@@ -44,6 +46,7 @@ const TradeJournal = ({
   selectedCrypto,
   tipoOperacao,
   onTipoOperacaoChange,
+  marketType,
 }: TradeJournalProps) => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('operacao');
@@ -168,9 +171,13 @@ const TradeJournal = ({
         return;
     }
 
+    // Traduzir 'compra'/'venda' para 'BUY'/'SELL'
+    const tradeType = tipoOperacao === 'compra' ? 'BUY' : 'SELL';
+
     const payload: OpenTradePayload = {
       symbol: tradeData.ativo,
-      type: tipoOperacao,
+      type: tradeType,
+      marketType: marketType.toUpperCase() as 'SPOT' | 'FUTURES',
       entryDate: new Date().toISOString(),
       entryPrice: tradeLevels.entry,
       quantity: parseQuantity(tradeData.quantidade),

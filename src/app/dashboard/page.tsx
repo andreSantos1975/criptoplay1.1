@@ -483,6 +483,7 @@ const DashboardPage = () => {
                 selectedCrypto={selectedCrypto}
                 tipoOperacao={tipoOperacao}
                 onTipoOperacaoChange={setTipoOperacao}
+                marketType={marketType}
               />
             </TechnicalAnalysisChart>
           </>
