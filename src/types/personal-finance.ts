@@ -22,6 +22,8 @@ export interface ExpenseSummary {
   essentialDifference: number;
   expenses: Expense[];
   totalBudgeted: number;
+  allocatedTotalExpenses: number;
+  remainingTotalExpenses: number;
 }
 
 export interface Income {

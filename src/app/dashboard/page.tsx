@@ -32,6 +32,14 @@ import { ReportsSection } from "@/components/dashboard/ReportsSection/ReportsSec
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview/DashboardOverview";
 import styles from "./dashboard.module.css";
 
+const DEFAULT_ALLOCATION_PERCENTAGES: { [key: string]: number } = {
+  "Investimento": 15,
+  "Reserva Financeira": 20,
+  "Despesas": 50, // Assuming "Despesas Essenciais" or general expenses
+  "Lazer": 10,
+  "Outros": 5,
+};
+
 type BinanceKline = [
   number, // Open time
   string, // Open
@@ -46,6 +54,12 @@ type BinanceKline = [
   string, // Taker buy quote asset volume
   string, // Ignore
 ];
+
+interface BudgetCategoryFromApi {
+  id: string;
+  name: string;
+  type: "INCOME" | "EXPENSE";
+}
 
 // API Functions
 const addIncome = async (newIncome: Omit<Income, 'id'>): Promise<Income> => {
@@ -125,22 +139,37 @@ const DashboardPage = () => {
   const [isIncomeDialogOpen, setIsIncomeDialogOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState<Income | undefined>();
 
-  const [budgetCategories, setBudgetCategories] = useState<Category[]>([]);
-  const isBudgetLoading = false;
-  
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth() + 1;
 
+  const { data: fetchedBudgetCategories = [], isLoading: isLoadingBudgetCategories } = useQuery<BudgetCategoryFromApi[]>({
+    queryKey: ["budgetCategories"],
+    queryFn: async () => {
+      const response = await fetch("/api/budget/categories");
+      if (!response.ok) throw new Error("Failed to fetch budget categories");
+      return response.json();
+    },
+  });
+
+  const processedBudgetCategories = useMemo(() => {
+    return fetchedBudgetCategories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      percentage: DEFAULT_ALLOCATION_PERCENTAGES[cat.name] || 0, // Apply default percentage
+      amount: 0, // Initial amount, will be calculated later based on income
+      actualSpending: 0,
+    }));
+  }, [fetchedBudgetCategories]);
+
+  const [budgetCategories, setBudgetCategories] = useState<Category[]>([]); // Initialize as empty
+
   useEffect(() => {
-    // Mantém os dados de exemplo enquanto a nova lógica não é implementada
-    setBudgetCategories([
-      { id: '1', name: 'Investimentos', percentage: 20, amount: 0, actualSpending: 0 },
-      { id: '2', name: 'Reserva Financeira', percentage: 15, amount: 0, actualSpending: 0 },
-      { id: '3', name: 'Despesas Essenciais', percentage: 50, amount: 0, actualSpending: 0 },
-      { id: '4', name: 'Lazer', percentage: 10, amount: 0, actualSpending: 0 },
-      { id: '5', name: 'Outros', percentage: 5, amount: 0, actualSpending: 0 },
-    ]);
-  }, []);
+    if (!isLoadingBudgetCategories && processedBudgetCategories.length > 0) {
+      setBudgetCategories(processedBudgetCategories);
+    }
+  }, [processedBudgetCategories, isLoadingBudgetCategories]); // Depend on loading state too
+
+  const isBudgetLoading = isLoadingBudgetCategories;
 
 
   const totalPercentage = useMemo(() => {
@@ -194,6 +223,13 @@ const DashboardPage = () => {
     const totalSavings = expenses.reduce((sum, e) => sum + (e.savedAmount || 0), 0);
 
     const totalBudgeted = categoriesWithAmounts.reduce((sum, c) => sum + c.amount, 0);
+    
+    // Find the specific budget for the "Despesas" category
+    const despesasCategory = categoriesWithAmounts.find(c => c.name === "Despesas");
+    const allocatedTotalExpenses = despesasCategory ? despesasCategory.amount : 0;
+    
+    const remainingTotalExpenses = allocatedTotalExpenses - totalExpenses;
+
 
     // New logic here
     const essentialCategory = categoriesWithSpending.find(c => c.name === 'Despesas Essenciais');
@@ -215,6 +251,8 @@ const DashboardPage = () => {
       essentialDifference,
       expenses,
       totalBudgeted,
+      allocatedTotalExpenses,
+      remainingTotalExpenses,
     };
   }, [expenses, totalIncome, categoriesWithSpending, categoriesWithAmounts]);
 

@@ -12,7 +12,7 @@ export async function GET() {
   }
 
   try {
-    const categories = await prisma.budgetCategory.findMany({
+    let categories = await prisma.budgetCategory.findMany({
       where: {
         userId: session.user.id,
       },
@@ -20,6 +20,33 @@ export async function GET() {
         name: "asc",
       },
     });
+
+    if (categories.length === 0) {
+      // Create default categories if none exist for the user
+      const defaultCategories = [
+        { name: "Investimento", type: "EXPENSE", userId: session.user.id },
+        { name: "Reserva Financeira", type: "EXPENSE", userId: session.user.id },
+        { name: "Despesas", type: "EXPENSE", userId: session.user.id },
+        { name: "Lazer", type: "EXPENSE", userId: session.user.id },
+        { name: "Outros", type: "EXPENSE", userId: session.user.id },
+      ];
+
+      await prisma.budgetCategory.createMany({
+        data: defaultCategories,
+        skipDuplicates: true, // In case of a race condition, prevent errors
+      });
+
+      // Fetch them again to include the newly created ones
+      categories = await prisma.budgetCategory.findMany({
+        where: {
+          userId: session.user.id,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      });
+    }
+
     return NextResponse.json(categories);
   } catch (error) {
     console.error("Erro ao buscar categorias do orçamento:", error);

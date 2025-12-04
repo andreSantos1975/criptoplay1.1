@@ -25,7 +25,7 @@ const Hero = () => {
           <div className={styles.badge}>
             <Shield className={styles.badgeIcon} />
             <span className={styles.badgeText}>
-              Plataforma 100% Segura
+              Plataforma 100% Gameficada
             </span>
           </div>
 

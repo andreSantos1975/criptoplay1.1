@@ -18,13 +18,18 @@ export function PersonalFinanceSummary({ summary }: PersonalFinanceSummaryProps)
     <div className={styles.summaryGrid}>
       <Card className={styles.summaryCard}>
         <CardHeader className={styles.cardHeader}>
-          <CardTitle className={styles.cardTitle}>Total Geral (Despesas)</CardTitle>
+          <CardTitle className={styles.cardTitle}>Despesas: Orçamento vs Gasto</CardTitle>
           <span className={styles.icon}>💲</span>
         </CardHeader>
         <CardContent>
           <div className={styles.value}>{formatCurrency(summary.totalGeral)}</div>
           <p className={styles.description}>
-            {summary.countPagos + summary.countPendentes} despesas no total
+            Gasto total de {summary.countPagos + summary.countPendentes} despesas.
+          </p>
+          <p className={`${styles.description} ${summary.remainingTotalExpenses < 0 ? styles.negative : styles.positive}`}>
+            {summary.remainingTotalExpenses >= 0
+              ? `${formatCurrency(summary.remainingTotalExpenses)} restantes do orçamento de ${formatCurrency(summary.allocatedTotalExpenses)}`
+              : `${formatCurrency(Math.abs(summary.remainingTotalExpenses))} acima do orçamento de ${formatCurrency(summary.allocatedTotalExpenses)}`}
           </p>
         </CardContent>
       </Card>
