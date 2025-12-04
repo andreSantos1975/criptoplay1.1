@@ -251,7 +251,7 @@ export const TechnicalAnalysisChart = memo(
       };
 
       createPriceLine("entry", tradeLevels.entry, "#42A5F5", "Entrada");
-      if (marketType === 'futures' || (marketType === 'spot' && tipoOperacao === 'compra')) {
+      if (marketType === 'futures' || (marketType === 'spot' && (tipoOperacao === 'compra' || tipoOperacao === 'venda'))) {
         createPriceLine("takeProfit", tradeLevels.takeProfit, "#26A69A", "Take Profit");
         createPriceLine("stopLoss", tradeLevels.stopLoss, "#EF5350", "Stop Loss");
       }
