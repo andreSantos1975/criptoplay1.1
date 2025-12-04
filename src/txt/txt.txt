@@ -93,7 +93,7 @@ git push
 INICIAR A INTERFACE DO PRISMA CLIENTE 
 npx prisma studio
 ----------------------------------------------------------------------
-npx prisma migrate reset
+npx prisma migrate reset --force
   ------------------------------------------------------------------------------
 (Gerando o cliente Prisma para refletir as novas configurações no banco de dados
   npx prisma generate 
@@ -437,6 +437,14 @@ Acesso premium mais barato para compradores
 Bônus exclusivo se assinar agora
 
 O comprador já está quente — conversão alta.
+
+===============================================================================================
+
+04 de dezembro 2025 
+
+TESTE DO FECHAMENTO DA OPERAÇÃO PELAS LINHAS DE MARCAÇÃO STOP E TAKE PROFIT
+
+curl -X POST "http://localhost:3000/api/simulator/process-trades?secret=05009f1f7a5510201c1ed9afb8c203e14554fee980140f4a453a4f8213546991"
 
 
 

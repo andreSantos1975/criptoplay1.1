@@ -5,23 +5,23 @@ const steps = [
   {
     icon: UserPlus,
     title: "Cadastre-se",
-    description: "Crie sua conta em poucos minutos com nosso processo simplificado e seguro."
+    description: "Crie sua conta em poucos minutos com nosso processo simplificado."
   },
   {
     icon: Search,
     title: "Analise o Mercado",
-    description: "Use nossas ferramentas avançadas para analisar tendências e identificar oportunidades."
+    description: "Análise de tendências pela inteligência artificial para identificar e sugerir oportunidades."
   },
 
   {
     icon: TrendingUp,
-    title: "Execute Trades",
-    description: "Faça negociações inteligentes com nossa interface intuitiva e execução rápida."
+    title: "Execute Trades no Simulador",
+    description: "Faça negociações inteligentes com nossa interface intuitiva e execução rápida no simulador."
   },
   {
     icon: Shield,
     title: "Acompanhe Resultados",
-    description: "Monitore seu portfólio em tempo real e otimize suas estratégias de investimento."
+    description: "Monitore seu portfólio, e otimize suas estratégias de investimento."
   }
 ];
 

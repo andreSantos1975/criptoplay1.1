@@ -39,8 +39,8 @@ const Hero = () => {
 
           {/* Subtitle */}
           <p className={styles.subtitle}>
-            Descubra a plataforma que combina análise profissional, segurança avançada
-            e interface intuitiva para potencializar seus investimentos em criptomoedas.
+            Descubra a plataforma que combina análise profissional, interface intuitiva e gameficação no aprendizado, para 
+            potencializar seus investimentos em criptomoedas.
           </p>
 
           {/* CTA Buttons */}

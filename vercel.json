@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/simulator/close-day",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/simulator/process-trades?secret=${CRON_SECRET}",
+      "schedule": "* * * * *"
+    }
+  ]
+}

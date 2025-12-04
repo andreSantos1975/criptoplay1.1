@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,66 +8,25 @@ datasource db {
 }
 
 model User {
-  id               String           @id @default(cuid())
+  id               String            @id @default(cuid())
   name             String?
-  email            String?          @unique
+  email            String?           @unique
   emailVerified    DateTime?
   image            String?
   password         String?
-  isAdmin          Boolean          @default(false)
+  isAdmin          Boolean           @default(false)
+  virtualBalance   Decimal           @default(10000) @db.Decimal(12, 2)
+  dailyPerformances DailyPerformance[]
   accounts         Account[]
-  sessions         Session[]
-  trades           Trade[]
+  budgets          Budget[]
+  BudgetCategory   BudgetCategory[]
   capitalMovements CapitalMovement[]
+  Contact          Contact[]
   expenses         Expense[]
   incomes          Income[]
-  budgets          Budget[]
-  budgetCategories BudgetCategory[]
-  contacts         Contact[]
-  progress         UserProgress[]
-}
-
-model Budget {
-  id     String       @id @default(cuid())
-  year   Int
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-  items  BudgetItem[]
-
-  @@unique([userId, year])
-}
-
-model BudgetCategory {
-  id     String       @id @default(cuid())
-  name   String
-  type   String // "INCOME" ou "EXPENSE"
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-  items  BudgetItem[]
-}
-
-model BudgetItem {
-  id         String         @id @default(cuid())
-  budget     Budget         @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  budgetId   String
-  category   BudgetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  categoryId String
-  month      Int // 1 para Janeiro, 12 para Dezembro
-  amount     Float          // Valor orçado
-
-  @@unique([budgetId, categoryId, month])
-}
-
-model Income {
-  id          String   @id @default(cuid())
-  userId      String
-  description String
-  amount      Decimal  @db.Decimal(18, 2)
-  date        DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions         Session[]
+  trades           Trade[]
+  userProgress     UserProgress[]
 }
 
 model Account {
@@ -79,15 +35,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -108,67 +63,6 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-
-enum CapitalMovementType {
-  DEPOSIT
-  WITHDRAWAL
-}
-
-model CapitalMovement {
-  id          String                @id @default(cuid())
-  userId      String
-  amount      Decimal               @db.Decimal(18, 2)
-  type        CapitalMovementType
-  date        DateTime              @default(now())
-  description String?               @db.Text
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Expense {
-  id             String    @id @default(cuid())
-  userId         String
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  categoria      String
-  valor          Decimal   @db.Decimal(18, 2)
-  originalValor  Decimal?  @db.Decimal(18, 2) // New field for original value
-  savedAmount    Decimal?  @db.Decimal(18, 2) // New field for calculated economy
-  dataVencimento DateTime
-  status         String
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-}
-
-enum TradeMarketType {
-  SPOT
-  FUTURES
-}
-
-model Trade {
-  id          String    @id @default(cuid())
-  symbol      String
-  type        String    // e.g., 'BUY' or 'SELL'
-  marketType  TradeMarketType @default(SPOT)
-  status      String    @default("OPEN") // e.g., 'OPEN', 'CLOSED'
-  entryDate   DateTime
-  exitDate    DateTime?
-  entryPrice  Decimal   @db.Decimal(18, 8)
-  exitPrice   Decimal?  @db.Decimal(18, 8)
-  quantity    Decimal   @db.Decimal(18, 8)
-  stopLoss    Decimal   @db.Decimal(18, 8)
-  takeProfit  Decimal   @db.Decimal(18, 8)
-  pnl         Decimal?  @db.Decimal(18, 8) // Profit and Loss
-  notes       String?   @db.Text
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
-}
-
 model Contact {
   id        Int      @id @default(autoincrement())
   name      String
@@ -176,8 +70,97 @@ model Contact {
   subject   String
   message   String
   createdAt DateTime @default(now())
-  user      User?    @relation(fields: [userId], references: [id])
   userId    String?
+  User      User?    @relation(fields: [userId], references: [id])
+}
+
+model Income {
+  id          String   @id @default(cuid())
+  userId      String
+  description String
+  amount      Decimal  @db.Decimal(18, 2)
+  date        DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id             String   @id @default(cuid())
+  userId         String
+  categoria      String
+  valor          Decimal  @db.Decimal(18, 2)
+  originalValor  Decimal? @db.Decimal(18, 2)
+  savedAmount    Decimal? @db.Decimal(18, 2)
+  dataVencimento DateTime
+  status         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Trade {
+  id         String          @id @default(cuid())
+  symbol     String
+  type       String
+  status     String          @default("OPEN")
+  entryDate  DateTime
+  exitDate   DateTime?
+  entryPrice Decimal         @db.Decimal(18, 8)
+  exitPrice  Decimal?        @db.Decimal(18, 8)
+  quantity   Decimal         @db.Decimal(18, 8)
+  stopLoss   Decimal         @db.Decimal(18, 8)
+  takeProfit Decimal         @db.Decimal(18, 8)
+  pnl        Decimal?        @db.Decimal(18, 8)
+  notes      String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  userId     String
+  marketType TradeMarketType @default(SPOT)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CapitalMovement {
+  id          String              @id @default(cuid())
+  userId      String
+  amount      Decimal             @db.Decimal(18, 2)
+  type        CapitalMovementType
+  date        DateTime            @default(now())
+  description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Budget {
+  id     String       @id @default(cuid())
+  userId String
+  year   Int
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items  BudgetItem[]
+
+  @@unique([userId, year])
+}
+
+model BudgetItem {
+  id         String         @id @default(cuid())
+  budgetId   String
+  categoryId String
+  month      Int
+  amount     Float
+  budget     Budget         @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  category   BudgetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([budgetId, categoryId, month])
+}
+
+model BudgetCategory {
+  id     String       @id @default(cuid())
+  name   String
+  type   String
+  userId String
+  User   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items  BudgetItem[]
 }
 
 model UserProgress {
@@ -187,8 +170,30 @@ model UserProgress {
   completed Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, slug])
+}
+
+enum CapitalMovementType {
+  DEPOSIT
+  WITHDRAWAL
+}
+
+enum TradeMarketType {
+  SPOT
+  FUTURES
+  SIMULATOR
+}
+
+model DailyPerformance {
+  id                  String   @id @default(cuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date                DateTime @db.Date
+  startingBalance     Decimal  @db.Decimal(12, 2)
+  endingBalance       Decimal  @db.Decimal(12, 2)
+  dailyPercentageGain Float
+
+  @@unique([userId, date])
 }
