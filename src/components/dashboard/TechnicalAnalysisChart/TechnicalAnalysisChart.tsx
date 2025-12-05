@@ -49,8 +49,8 @@ export const TechnicalAnalysisChart = memo(
     const [isChartReady, setIsChartReady] = useState(false);
     const [newSymbolInput, setNewSymbolInput] = useState("");
     const [watchedSymbols, setWatchedSymbols] = useState<string[]>([
-      "BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT",
-      "ADAUSDT", "BNBUSDT", "DOGEUSDT", "SHIBUSDT",
+      "BTCBRL", "ETHBRL", "SOLBRL", "XRPBRL",
+      "ADABRL", "BNBBRL", "DOGEBRL", "SHIBBRL",
     ]);
     const [draggingLine, setDraggingLine] = useState<PriceLineKey | null>(null);
 
@@ -70,15 +70,7 @@ export const TechnicalAnalysisChart = memo(
       }
     };
 
-    const { data: exchangeRateData } = useQuery({
-      queryKey: ["exchangeRate"],
-      queryFn: async () => {
-        const response = await fetch("/api/exchange-rate");
-        if (!response.ok) throw new Error("Failed to fetch exchange rate");
-        return response.json();
-      },
-      refetchInterval: 60000,
-    });
+
 
     const { data: initialChartData } = useQuery({
       queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
@@ -199,17 +191,24 @@ export const TechnicalAnalysisChart = memo(
     // 4. Apply BRL formatting
     useEffect(() => {
       const chart = chartRef.current;
-      if (!chart || !exchangeRateData || !initialChartData) return;
+      if (!chart || !initialChartData?.length) return;
 
       const firstPrice = initialChartData[0]?.close || 0;
       const precision = firstPrice < 1 ? 4 : 2;
 
       chart.applyOptions({
         localization: {
-          priceFormatter: (price: number) => `R$ ${(price * (exchangeRateData?.usdtToBrl || 1)).toFixed(precision)}`,
+          priceFormatter: (price: number) => {
+            return new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+              minimumFractionDigits: precision,
+              maximumFractionDigits: precision,
+            }).format(price);
+          },
         },
       });
-    }, [isChartReady, exchangeRateData, initialChartData]);
+    }, [isChartReady, initialChartData]);
 
     // 5. Connect WebSocket
     useEffect(() => {

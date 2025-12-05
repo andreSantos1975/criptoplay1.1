@@ -11,7 +11,7 @@ interface CryptoData {
   symbol: string;
   current_price: number;
   price_change_percentage_24h: number;
-  quote_volume: number; // Changed from total_volume to quote_volume for currency value
+  quote_volume: number;
 }
 
 interface BinanceTicker24hr {
@@ -44,16 +44,17 @@ const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
   return data
     .filter((crypto) => symbols.includes(crypto.symbol))
     .map((crypto) => {
-      const baseAsset = crypto.symbol.replace("USDT", "");
+      // Adjusted to handle BRL pairs
+      const baseAsset = crypto.symbol.replace("BRL", "").replace("USDT", "");
       const name = coinNameMap[baseAsset] || baseAsset;
 
       return {
-        id: baseAsset,
+        id: crypto.symbol, // Use the full symbol as ID
         name,
-        symbol: baseAsset,
+        symbol: crypto.symbol, // Use the full symbol
         current_price: parseFloat(crypto.lastPrice),
         price_change_percentage_24h: parseFloat(crypto.priceChangePercent),
-        quote_volume: parseFloat(crypto.quoteVolume), // Use quoteVolume for currency value
+        quote_volume: parseFloat(crypto.quoteVolume),
       };
     });
 };
@@ -81,28 +82,9 @@ interface CryptoListProps {
 }
 
 export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) => {
-  const { data: exchangeRateData } = useQuery({
-    queryKey: ["exchangeRate"],
-    queryFn: async () => {
-      const response = await fetch("/api/exchange-rate");
-      if (!response.ok) throw new Error("Failed to fetch exchange rate");
-      return response.json();
-    },
-    refetchInterval: 60000, // Refetch every minute
-  });
-
   const { data: cryptos, isLoading, error } = useQuery<CryptoData[]>({
-    queryKey: ["cryptos", watchedSymbols, exchangeRateData],
-    queryFn: async () => {
-      const data = await fetchCryptoData(watchedSymbols);
-      const brlRate = exchangeRateData?.usdtToBrl || 1;
-      return data.map(crypto => ({
-        ...crypto,
-        current_price: crypto.current_price * brlRate,
-        quote_volume: crypto.quote_volume * brlRate,
-      }));
-    },
-    enabled: !!exchangeRateData,
+    queryKey: ["cryptos", watchedSymbols],
+    queryFn: () => fetchCryptoData(watchedSymbols),
     refetchInterval: 30000,
   });
 
@@ -129,11 +111,11 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) 
           </thead>
           <tbody>
             {cryptos?.map((crypto) => (
-              <tr key={crypto.id} className={styles.tableRow} onClick={() => onCryptoSelect(crypto.symbol + "USDT")}>
+              <tr key={crypto.id} className={styles.tableRow} onClick={() => onCryptoSelect(crypto.symbol)}>
                 <td className={styles.td}>
                   <div className={styles.nameCell}>
                     <CryptoIcon
-                      symbol={crypto.symbol}
+                      symbol={crypto.symbol.replace("BRL", "")}
                       className={styles.cryptoImage}
                     />
                     <div>

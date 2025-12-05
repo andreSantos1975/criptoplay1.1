@@ -130,7 +130,7 @@ const DashboardPage = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   const [klines, setKlines] = useState<BinanceKline[]>([]);
-  const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCUSDT');
+  const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCBRL');
   const [marketType, setMarketType] = useState<'spot' | 'futures'>('spot');
   const [tipoOperacao, setTipoOperacao] = useState<'compra' | 'venda' | ''>('compra');
 
@@ -328,15 +328,7 @@ const DashboardPage = () => {
     },
   });
 
-  const { data: exchangeRateData } = useQuery({
-    queryKey: ["exchangeRate"],
-    queryFn: async () => {
-      const response = await fetch("/api/exchange-rate");
-      if (!response.ok) throw new Error("Failed to fetch exchange rate");
-      return response.json();
-    },
-    refetchInterval: 60000,
-  });
+
 
   const [tradeLevels, setTradeLevels] = useState(() => {
     const savedLevels = typeof window !== 'undefined' ? localStorage.getItem('tradeLevels') : null;
@@ -493,7 +485,6 @@ const DashboardPage = () => {
         );
       case "analise":
         const latestKline = klines && klines.length > 0 ? klines[klines.length - 1] : null;
-        const brlRate = exchangeRateData?.usdtToBrl || 1;
         return (
           <>
             {latestKline && (
@@ -503,7 +494,6 @@ const DashboardPage = () => {
                 open={parseFloat(latestKline[1])}
                 high={parseFloat(latestKline[2])}
                 low={parseFloat(latestKline[3])}
-                brlRate={brlRate}
               />
             )}
             <TechnicalAnalysisChart

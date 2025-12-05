@@ -5,12 +5,29 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import styles from './play.module.css';
 import { Trade } from '@prisma/client';
 import { Rankings } from '@/components/simulator/Rankings';
+import { SimulatorChart } from '@/components/simulator/SimulatorChart/SimulatorChart';
 
 // Tipagem para os dados do perfil do simulador
 interface SimulatorProfile {
   virtualBalance: number;
   openTrades: Trade[];
 }
+
+// Tipagem para o preço atual
+interface CurrentPrice {
+  symbol: string;
+  price: string;
+}
+
+// Função para buscar o preço atual do ativo
+const fetchCurrentPrice = async (symbol: string): Promise<CurrentPrice> => {
+  const res = await fetch(`/api/binance/price?symbol=${symbol}`);
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.error || 'Falha ao buscar preço atual.');
+  }
+  return res.json();
+};
 
 // Função para buscar os dados do perfil
 const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
@@ -23,7 +40,7 @@ const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
 };
 
 // Função para criar uma nova operação
-const createTrade = async (tradeData: { symbol: string, quantity: number, type: 'BUY', stopLoss: number, takeProfit: number }) => {
+const createTrade = async (tradeData: { symbol: string, quantity: number, type: 'BUY', entryPrice: number, stopLoss: number, takeProfit: number }) => {
   const res = await fetch('/api/simulator/trades', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -53,7 +70,7 @@ const closeTrade = async (tradeId: string) => {
 
 const PlayPage = () => {
   const queryClient = useQueryClient();
-  const [symbol, setSymbol] = useState('BTCUSDT');
+  const [symbol, setSymbol] = useState('BTCBRL');
   const [quantity, setQuantity] = useState(0.01);
   const [stopLoss, setStopLoss] = useState(0);
   const [takeProfit, setTakeProfit] = useState(0);
@@ -62,6 +79,13 @@ const PlayPage = () => {
   const { data: profile, isLoading, error } = useQuery<SimulatorProfile, Error>({
     queryKey: ['simulatorProfile'],
     queryFn: fetchSimulatorProfile,
+  });
+
+  // Query para buscar o preço atual do ativo selecionado
+  const { data: currentPriceData, isLoading: isLoadingPrice, error: priceError } = useQuery<CurrentPrice, Error>({
+    queryKey: ['currentPrice', symbol],
+    queryFn: () => fetchCurrentPrice(symbol),
+    refetchInterval: 5000, // Atualiza a cada 5 segundos
   });
 
   // Mutation para criar uma nova operação
@@ -85,7 +109,12 @@ const PlayPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate({ symbol, quantity, type: 'BUY', stopLoss, takeProfit });
+    if (!currentPriceData?.price) {
+        // Handle case where price is not available yet
+        return;
+    }
+    const entryPrice = parseFloat(currentPriceData.price);
+    createMutation.mutate({ symbol, quantity, type: 'BUY', entryPrice, stopLoss, takeProfit });
   };
   
   const formatCurrency = (value: number) => {
@@ -93,6 +122,16 @@ const PlayPage = () => {
       style: 'currency',
       currency: 'BRL',
     }).format(value);
+  }
+
+  const formatPrice = (value: string) => {
+    const numValue = parseFloat(value);
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 8, // Allow for more precision in crypto prices
+    }).format(numValue);
   }
 
   return (
@@ -106,107 +145,121 @@ const PlayPage = () => {
             Saldo Virtual: <span>{formatCurrency(profile.virtualBalance)}</span>
           </div>
         )}
+        {isLoadingPrice ? (
+            <p className={styles.currentPrice}>Carregando preço...</p>
+        ) : priceError ? (
+            <p className={styles.currentPrice}>Erro ao carregar preço</p>
+        ) : currentPriceData && (
+            <div className={styles.currentPrice}>
+                Preço {currentPriceData.symbol}: <span>{formatPrice(currentPriceData.price)}</span>
+            </div>
+        )}
       </div>
 
       <div className={styles.mainContent}>
-        <div className={styles.formContainer}>
-          <h2 className={styles.formTitle}>Abrir Nova Operação</h2>
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <div className={styles.formGroup}>
-              <label htmlFor="symbol" className={styles.label}>Ativo</label>
-              <input
-                id="symbol"
-                type="text"
-                value={symbol}
-                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-                className={styles.input}
-                required
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label htmlFor="quantity" className={styles.label}>Quantidade</label>
-              <input
-                id="quantity"
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                className={styles.input}
-                step="0.001"
-                min="0.001"
-                required
-              />
-            </div>
-             <div className={styles.formGroup}>
-              <label htmlFor="stopLoss" className={styles.label}>Stop Loss</label>
-              <input
-                id="stopLoss"
-                type="number"
-                value={stopLoss}
-                onChange={(e) => setStopLoss(Number(e.target.value))}
-                className={styles.input}
-                step="0.01"
-                min="0"
-              />
-            </div>
-             <div className={styles.formGroup}>
-              <label htmlFor="takeProfit" className={styles.label}>Take Profit</label>
-              <input
-                id="takeProfit"
-                type="number"
-                value={takeProfit}
-                onChange={(e) => setTakeProfit(Number(e.target.value))}
-                className={styles.input}
-                step="0.01"
-                min="0"
-              />
-            </div>
-            <button type="submit" className={styles.submitButton} disabled={createMutation.isPending}>
-              {createMutation.isPending ? 'Enviando...' : 'Comprar'}
-            </button>
-            {createMutation.isError && (
-              <p style={{ color: 'red', marginTop: '1rem' }}>Erro: {createMutation.error.message}</p>
-            )}
-          </form>
-        </div>
 
-        <div className={styles.tradesContainer}>
-          <h2 className={styles.tradesTitle}>Operações Abertas</h2>
-          {isLoading && <p>Carregando operações...</p>}
-          {error && <p style={{ color: 'red' }}>Não foi possível carregar as operações.</p>}
-          {profile && profile.openTrades.length > 0 ? (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.th}>Ativo</th>
-                  <th className={styles.th}>Qtd.</th>
-                  <th className={styles.th}>Preço Entrada</th>
-                  <th className={styles.th}>Data</th>
-                  <th className={styles.th}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {profile.openTrades.map((trade) => (
-                  <tr key={trade.id}>
-                    <td className={styles.td}>{trade.symbol}</td>
-                    <td className={styles.td}>{Number(trade.quantity)}</td>
-                    <td className={styles.td}>{formatCurrency(Number(trade.entryPrice))}</td>
-                    <td className={styles.td}>{new Date(trade.entryDate).toLocaleDateString('pt-BR')}</td>
-                    <td className={styles.td}>
-                      <button 
-                        onClick={() => closeMutation.mutate(trade.id)}
-                        disabled={closeMutation.isPending && closeMutation.variables === trade.id}
-                        className={styles.submitButton}
-                      >
-                        {(closeMutation.isPending && closeMutation.variables === trade.id) ? '...' : 'Fechar'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>Nenhuma operação aberta no momento.</p>
-          )}
+        <SimulatorChart symbol={symbol} />
+
+        <div className={styles.controlsContainer}>
+            <div className={styles.formContainer}>
+            <h2 className={styles.formTitle}>Abrir Nova Operação</h2>
+            <form onSubmit={handleSubmit} className={styles.form}>
+                <div className={styles.formGroup}>
+                <label htmlFor="symbol" className={styles.label}>Ativo</label>
+                <input
+                    id="symbol"
+                    type="text"
+                    value={symbol}
+                    onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                    className={styles.input}
+                    required
+                />
+                </div>
+                <div className={styles.formGroup}>
+                <label htmlFor="quantity" className={styles.label}>Quantidade</label>
+                <input
+                    id="quantity"
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    className={styles.input}
+                    step="0.001"
+                    min="0.001"
+                    required
+                />
+                </div>
+                <div className={styles.formGroup}>
+                <label htmlFor="stopLoss" className={styles.label}>Stop Loss</label>
+                <input
+                    id="stopLoss"
+                    type="number"
+                    value={stopLoss}
+                    onChange={(e) => setStopLoss(Number(e.target.value))}
+                    className={styles.input}
+                    step="0.01"
+                    min="0"
+                />
+                </div>
+                <div className={styles.formGroup}>
+                <label htmlFor="takeProfit" className={styles.label}>Take Profit</label>
+                <input
+                    id="takeProfit"
+                    type="number"
+                    value={takeProfit}
+                    onChange={(e) => setTakeProfit(Number(e.target.value))}
+                    className={styles.input}
+                    step="0.01"
+                    min="0"
+                />
+                </div>
+                <button type="submit" className={styles.submitButton} disabled={createMutation.isPending}>
+                {createMutation.isPending ? 'Enviando...' : 'Comprar'}
+                </button>
+                {createMutation.isError && (
+                <p style={{ color: 'red', marginTop: '1rem' }}>Erro: {createMutation.error.message}</p>
+                )}
+            </form>
+            </div>
+
+            <div className={styles.tradesContainer}>
+            <h2 className={styles.tradesTitle}>Operações Abertas</h2>
+            {isLoading && <p>Carregando operações...</p>}
+            {error && <p style={{ color: 'red' }}>Não foi possível carregar as operações.</p>}
+            {profile && profile.openTrades.length > 0 ? (
+                <table className={styles.table}>
+                <thead>
+                    <tr>
+                    <th className={styles.th}>Ativo</th>
+                    <th className={styles.th}>Qtd.</th>
+                    <th className={styles.th}>Preço Entrada</th>
+                    <th className={styles.th}>Data</th>
+                    <th className={styles.th}>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {profile.openTrades.map((trade) => (
+                    <tr key={trade.id}>
+                        <td className={styles.td}>{trade.symbol}</td>
+                        <td className={styles.td}>{Number(trade.quantity)}</td>
+                        <td className={styles.td}>{formatCurrency(Number(trade.entryPrice))}</td>
+                        <td className={styles.td}>{new Date(trade.entryDate).toLocaleDateString('pt-BR')}</td>
+                        <td className={styles.td}>
+                        <button 
+                            onClick={() => closeMutation.mutate(trade.id)}
+                            disabled={closeMutation.isPending && closeMutation.variables === trade.id}
+                            className={styles.submitButton}
+                        >
+                            {(closeMutation.isPending && closeMutation.variables === trade.id) ? '...' : 'Fechar'}
+                        </button>
+                        </td>
+                    </tr>
+                    ))}
+                </tbody>
+                </table>
+            ) : (
+                <p>Nenhuma operação aberta no momento.</p>
+            )}
+            </div>
         </div>
       </div>
       

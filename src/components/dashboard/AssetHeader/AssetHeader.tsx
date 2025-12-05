@@ -8,7 +8,6 @@ interface AssetHeaderProps {
   open: number;
   high: number;
   low: number;
-  brlRate: number;
 }
 
 const formatAsBRL = (value: number) => {
@@ -20,15 +19,10 @@ const formatAsBRL = (value: number) => {
   });
 };
 
-const AssetHeader: React.FC<AssetHeaderProps> = ({ symbol, price, open, high, low, brlRate }) => {
-  const priceInBRL = price * brlRate;
-  const openInBRL = open * brlRate;
-  const highInBRL = high * brlRate;
-  const lowInBRL = low * brlRate;
-
-  const changeInBRL = priceInBRL - openInBRL;
+const AssetHeader: React.FC<AssetHeaderProps> = ({ symbol, price, open, high, low }) => {
+  const change = price - open;
   const changePercent = open !== 0 ? ((price - open) / open) * 100 : 0;
-  const isPositive = changeInBRL >= 0;
+  const isPositive = change >= 0;
 
   
 
@@ -38,23 +32,23 @@ const AssetHeader: React.FC<AssetHeaderProps> = ({ symbol, price, open, high, lo
     <div className={styles.headerContainer}>
       <div className={styles.symbolInfo}>
         <h2 className={styles.symbol}>{symbol}</h2>
-        <p className={styles.price}>{formatAsBRL(priceInBRL)}</p>
+        <p className={styles.price}>{formatAsBRL(price)}</p>
         <p className={`${styles.change} ${isPositive ? styles.positive : styles.negative}`}>
-          {formatAsBRL(changeInBRL)} ({changePercent.toFixed(2)}%)
+          {formatAsBRL(change)} ({changePercent.toFixed(2)}%)
         </p>
       </div>
       <div className={styles.marketInfo}>
         <div className={styles.infoItem}>
           <span className={styles.label}>Abertura</span>
-          <span className={styles.value}>{formatAsBRL(openInBRL)}</span>
+          <span className={styles.value}>{formatAsBRL(open)}</span>
         </div>
         <div className={styles.infoItem}>
           <span className={styles.label}>Máxima</span>
-          <span className={styles.value}>{formatAsBRL(highInBRL)}</span>
+          <span className={styles.value}>{formatAsBRL(high)}</span>
         </div>
         <div className={styles.infoItem}>
           <span className={styles.label}>Mínima</span>
-          <span className={styles.value}>{formatAsBRL(lowInBRL)}</span>
+          <span className={styles.value}>{formatAsBRL(low)}</span>
         </div>
       </div>
     </div>

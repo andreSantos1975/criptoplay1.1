@@ -39,9 +39,22 @@
 }
 
 .mainContent {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.controlsContainer {
     display: grid;
     grid-template-columns: 1fr 2fr;
     gap: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .controlsContainer {
+        grid-template-columns: 1fr;
+    }
 }
 
 .formContainer {
@@ -146,4 +159,15 @@
     .mainContent {
         grid-template-columns: 1fr;
     }
+}
+
+.currentPrice {
+  margin-top: 10px;
+  font-size: 1.1em;
+  color: #007bff; /* A nice blue color */
+  font-weight: bold;
+}
+
+.currentPrice span {
+  color: #28a745; /* A success green color for the actual price */
 }

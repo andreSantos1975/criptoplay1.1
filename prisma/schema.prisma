@@ -17,7 +17,9 @@ model User {
   isAdmin          Boolean           @default(false)
   virtualBalance   Decimal           @default(10000) @db.Decimal(12, 2)
   dailyPerformances DailyPerformance[]
-  accounts         Account[]
+  oauthAccounts    OAuthAccount[]
+  bankAccounts     BankAccount[]
+  creditCards      CreditCard[]
   budgets          Budget[]
   BudgetCategory   BudgetCategory[]
   capitalMovements CapitalMovement[]
@@ -29,7 +31,7 @@ model User {
   userProgress     UserProgress[]
 }
 
-model Account {
+model OAuthAccount {
   id                String  @id @default(cuid())
   userId            String
   type              String
@@ -46,6 +48,36 @@ model Account {
 
   @@unique([provider, providerAccountId])
 }
+
+model BankAccount {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  bankName  String
+  balance   Decimal         @db.Decimal(18, 2)
+  type      BankAccountType
+  expenses  Expense[]
+
+  @@index([userId])
+}
+
+model CreditCard {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  issuer          String
+  creditLimit     Decimal   @db.Decimal(18, 2)
+  availableCredit Decimal   @db.Decimal(18, 2)
+  closingDay      Int
+  dueDay          Int
+  flag            CardFlag
+  expenses        Expense[]
+
+  @@index([userId])
+}
+
 
 model Session {
   id           String   @id @default(cuid())
@@ -97,6 +129,13 @@ model Expense {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccountId  String?
+  bankAccount    BankAccount? @relation(fields: [bankAccountId], references: [id])
+  creditCardId   String?
+  creditCard     CreditCard?  @relation(fields: [creditCardId], references: [id])
+
+  @@index([bankAccountId])
+  @@index([creditCardId])
 }
 
 model Trade {
@@ -196,4 +235,18 @@ model DailyPerformance {
   dailyPercentageGain Float
 
   @@unique([userId, date])
+}
+
+enum BankAccountType {
+  CHECKING
+  SAVINGS
+}
+
+enum CardFlag {
+  VISA
+  MASTERCARD
+  AMEX
+  ELO
+  HIPERCARD
+  OTHER
 }

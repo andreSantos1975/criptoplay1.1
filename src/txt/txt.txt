@@ -444,7 +444,7 @@ O comprador já está quente — conversão alta.
 
 TESTE DO FECHAMENTO DA OPERAÇÃO PELAS LINHAS DE MARCAÇÃO STOP E TAKE PROFIT
 
-curl -X POST "http://localhost:3000/api/simulator/process-trades?secret=05009f1f7a5510201c1ed9afb8c203e14554fee980140f4a453a4f8213546991"
+ 
 
 
 
