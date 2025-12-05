@@ -3,10 +3,12 @@
 import React, { useEffect, useRef, memo, useState } from "react";
 import {
   createChart, ColorType, CrosshairMode, ISeriesApi,
-  IChartApi, BarData, CandlestickSeries
+  IChartApi, BarData, CandlestickSeries, IPriceLine, LineStyle
 } from "lightweight-charts";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./SimulatorChart.module.css";
+
+type PriceLineKey = "entry" | "takeProfit" | "stopLoss";
 
 type BinanceKlineData = [
   number, string, string, string, string, string, number,
@@ -15,15 +17,25 @@ type BinanceKlineData = [
 
 interface SimulatorChartProps {
   symbol: string;
+  tradeLevels: { entry: number; takeProfit: number; stopLoss: number };
+  onLevelsChange: (levels: { entry: number; takeProfit: number; stopLoss: number; }) => void;
 }
 
-export const SimulatorChart = memo(({ symbol }: SimulatorChartProps) => {
+export const SimulatorChart = memo(({ symbol, tradeLevels, onLevelsChange }: SimulatorChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const priceLinesRef = useRef<Partial<Record<PriceLineKey, IPriceLine>>>({});
   
-  const [interval, setInterval] = useState("1m"); // Interval state that can be changed
+  const [interval, setInterval] = useState("1m");
   const [isChartReady, setIsChartReady] = useState(false);
+  const [draggingLine, setDraggingLine] = useState<PriceLineKey | null>(null);
+
+  // Refs to hold the latest props for use in callbacks without causing re-renders
+  const onLevelsChangeRef = useRef(onLevelsChange);
+  onLevelsChangeRef.current = onLevelsChange;
+  const tradeLevelsRef = useRef(tradeLevels);
+  tradeLevelsRef.current = tradeLevels;
 
   const { data: initialChartData, isFetching } = useQuery({
     queryKey: ["binanceKlines", "spot", interval, symbol],
@@ -33,9 +45,9 @@ export const SimulatorChart = memo(({ symbol }: SimulatorChartProps) => {
       const data: BinanceKlineData[] = await response.json();
       return data.map(k => ({ time: k[0] / 1000, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) } as BarData));
     },
-    staleTime: 60000, // 1 minute
+    staleTime: 60000,
     refetchOnWindowFocus: false,
-    enabled: !!symbol, // Only run if symbol is available
+    enabled: !!symbol,
   });
 
   // Effect to create and cleanup the chart
@@ -74,12 +86,91 @@ export const SimulatorChart = memo(({ symbol }: SimulatorChartProps) => {
     };
   }, []);
 
+  // Effect to setup drag-and-drop listeners
+  useEffect(() => {
+    const chartElement = chartContainerRef.current;
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+
+    if (!isChartReady || !chartElement || !chart || !series) return;
+
+    const isNearPriceLine = (price: number, y: number) => {
+      const priceY = series.priceToCoordinate(price);
+      return priceY !== null && Math.abs(priceY - y) < 10; // 10px tolerance
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const rect = chartElement.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+
+      for (const key in priceLinesRef.current) {
+        const priceLine = priceLinesRef.current[key as PriceLineKey];
+        if (priceLine && isNearPriceLine(priceLine.options().price, y)) {
+          setDraggingLine(key as PriceLineKey);
+          chart.applyOptions({ handleScroll: false, handleScale: false });
+          chartElement.style.cursor = 'ns-resize';
+          return;
+        }
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggingLine) return;
+      
+      const rect = chartElement.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const newPrice = series.coordinateToPrice(y);
+
+      if (newPrice !== null) {
+        onLevelsChangeRef.current({
+          ...tradeLevelsRef.current,
+          [draggingLine]: newPrice,
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setDraggingLine(null);
+      chart.applyOptions({ handleScroll: true, handleScale: true });
+      chartElement.style.cursor = 'default';
+    };
+
+    chartElement.addEventListener('mousedown', handleMouseDown);
+    chartElement.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      chartElement.removeEventListener('mousedown', handleMouseDown);
+      chartElement.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isChartReady, draggingLine]);
+
   // Load initial data
   useEffect(() => {
     if (isChartReady && seriesRef.current && initialChartData) {
       seriesRef.current.setData(initialChartData);
     }
   }, [isChartReady, initialChartData]);
+  
+  // Update Price Lines
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!isChartReady || !series || !tradeLevels) return;
+
+    Object.values(priceLinesRef.current).forEach(line => line && series.removePriceLine(line));
+    priceLinesRef.current = {};
+
+    const createPriceLine = (key: PriceLineKey, price: number, color: string, title: string) => {
+      if (price > 0) {
+        priceLinesRef.current[key] = series.createPriceLine({ price, color, lineWidth: 2, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title });
+      }
+    };
+
+    createPriceLine("entry", tradeLevels.entry, "#42A5F5", "Entrada");
+    createPriceLine("takeProfit", tradeLevels.takeProfit, "#26A69A", "Take Profit");
+    createPriceLine("stopLoss", tradeLevels.stopLoss, "#EF5350", "Stop Loss");
+  }, [isChartReady, tradeLevels]);
 
   // Apply BRL formatting
   useEffect(() => {

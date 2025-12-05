@@ -1,0 +1,9 @@
+/* src/components/simulator/TradeRow/TradeRow.module.css */
+
+.textProfit {
+    color: #4ade80; /* Green accent */
+}
+
+.textLoss {
+    color: #ef5350; /* Red accent */
+}
