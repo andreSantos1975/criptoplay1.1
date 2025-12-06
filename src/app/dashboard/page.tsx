@@ -344,7 +344,10 @@ const DashboardPage = () => {
       try {
         const apiPath = marketType === "futures" ? "futures-klines" : "klines";
         const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=1d`);
-        if (!response.ok) throw new Error("Network response was not ok");
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Network response was not ok");
+        }
         const data = await response.json();
         setKlines(data);
         if (data && data.length > 0) {
@@ -355,9 +358,16 @@ const DashboardPage = () => {
             stopLoss: lastPrice * 0.98,
           };
           setTradeLevels(newLevels);
+        } else {
+          toast.error(`Não foram encontrados dados para o ativo ${selectedCrypto} no mercado ${marketType}.`);
         }
       } catch (error) {
         console.error("Failed to fetch initial crypto price:", error);
+        if (error instanceof Error) {
+          toast.error(`Erro ao buscar dados do ativo: ${error.message}`);
+        } else {
+          toast.error("Erro ao buscar dados do ativo.");
+        }
       }
     };
     fetchAndSetInitialLevels();
@@ -366,6 +376,26 @@ const DashboardPage = () => {
   useEffect(() => {
     localStorage.setItem('tradeLevels', JSON.stringify(tradeLevels));
   }, [tradeLevels]);
+
+  useEffect(() => {
+    const entry = tradeLevels.entry;
+    if (!entry) return;
+
+    // Apenas troca se a ordem estiver incorreta para o tipo de operação atual
+    if (tipoOperacao === 'venda' && tradeLevels.takeProfit > entry && tradeLevels.stopLoss < entry) {
+        setTradeLevels(currentLevels => ({
+            ...currentLevels,
+            takeProfit: currentLevels.stopLoss,
+            stopLoss: currentLevels.takeProfit
+        }));
+    } else if (tipoOperacao === 'compra' && tradeLevels.takeProfit < entry && tradeLevels.stopLoss > entry) {
+        setTradeLevels(currentLevels => ({
+            ...currentLevels,
+            takeProfit: currentLevels.stopLoss,
+            stopLoss: currentLevels.takeProfit
+        }));
+    }
+  }, [tipoOperacao, tradeLevels.entry, tradeLevels.stopLoss, tradeLevels.takeProfit]);
 
   const handleCryptoSelect = (symbol: string) => {
     setSelectedCrypto(symbol);
