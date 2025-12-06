@@ -3,29 +3,16 @@
 import Image from "next/image";
 import React from "react";
 
-// Statically import all the icons we know we'll need
-import btc from 'cryptocurrency-icons/svg/color/btc.svg';
-import eth from 'cryptocurrency-icons/svg/color/eth.svg';
-import bnb from 'cryptocurrency-icons/svg/color/bnb.svg';
-import xrp from 'cryptocurrency-icons/svg/color/xrp.svg';
-import doge from 'cryptocurrency-icons/svg/color/doge.svg';
-import ada from 'cryptocurrency-icons/svg/color/ada.svg';
-import sol from 'cryptocurrency-icons/svg/color/sol.svg';
-import usdc from 'cryptocurrency-icons/svg/color/usdc.svg';
-import generic from 'cryptocurrency-icons/svg/color/generic.svg';
-
-// Create a map from symbol to imported icon
-const iconMap: { [key: string]: any } = {
-  btc,
-  eth,
-  bnb,
-  xrp,
-  doge,
-  ada,
-  sol,
-  usdc,
-  generic,
-};
+// Statically import all the icons as React components
+import BtcIcon from 'cryptocurrency-icons/svg/color/btc.svg';
+import EthIcon from 'cryptocurrency-icons/svg/color/eth.svg';
+import BnbIcon from 'cryptocurrency-icons/svg/color/bnb.svg';
+import XrpIcon from 'cryptocurrency-icons/svg/color/xrp.svg';
+import DogeIcon from 'cryptocurrency-icons/svg/color/doge.svg';
+import AdaIcon from 'cryptocurrency-icons/svg/color/ada.svg';
+import SolIcon from 'cryptocurrency-icons/svg/color/sol.svg';
+import UsdcIcon from 'cryptocurrency-icons/svg/color/usdc.svg';
+import GenericIcon from 'cryptocurrency-icons/svg/color/generic.svg';
 
 interface CryptoIconProps {
   symbol: string;
@@ -38,18 +25,41 @@ const CryptoIcon: React.FC<CryptoIconProps> = ({
   size = 24,
   className = "",
 }) => {
-  const lowerSymbol = symbol.toLowerCase();
-  const iconSrc = iconMap[lowerSymbol] || iconMap.generic;
+  const lowerSymbol = symbol.toLowerCase().replace('brl', '').replace('usdt', '');
 
-  return (
-    <Image
-      src={iconSrc}
-      alt={`${symbol} icon`}
-      width={size}
-      height={size}
-      className={className}
-    />
-  );
+  const iconProps = {
+    width: size,
+    height: size,
+    className: className,
+    alt: `${symbol} icon`,
+  };
+
+  switch (lowerSymbol) {
+    case 'btc':
+      return <BtcIcon {...iconProps} />;
+    case 'eth':
+      return <EthIcon {...iconProps} />;
+    case 'bnb':
+      return <BnbIcon {...iconProps} />;
+    case 'xrp':
+      return <XrpIcon {...iconProps} />;
+    case 'doge':
+      return <DogeIcon {...iconProps} />;
+    case 'ada':
+      return <AdaIcon {...iconProps} />;
+    case 'sol':
+      return <SolIcon {...iconProps} />;
+    case 'usdc':
+      return <UsdcIcon {...iconProps} />;
+    case 'shib':
+        // shib icon is missing, fallback to generic
+        return <GenericIcon {...iconProps} />;
+    case 'fdusd':
+        // fdusd icon is missing, fallback to generic
+        return <GenericIcon {...iconProps} />;
+    default:
+      return <GenericIcon {...iconProps} />;
+  }
 };
 
 export default CryptoIcon;

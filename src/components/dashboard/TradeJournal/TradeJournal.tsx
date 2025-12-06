@@ -56,9 +56,12 @@ const TradeJournal = ({
     observacoes: '',
   });
 
-  const [tradeCostInBRL, setTradeCostInBRL] = useState<number | null>(null);
+  const [tradeCost, setTradeCost] = useState<number | null>(null);
   const [potentialLoss, setPotentialLoss] = useState<number | null>(null);
   const [potentialProfit, setPotentialProfit] = useState<number | null>(null);
+
+  const currencyCode = selectedCrypto.endsWith('USDT') ? 'USD' : 'BRL';
+  const locale = selectedCrypto.endsWith('USDT') ? 'en-US' : 'pt-BR';
 
   const formatNumber = (num: number) => {
     if (isNaN(num)) return '';
@@ -66,12 +69,14 @@ const TradeJournal = ({
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     };
-    return num.toLocaleString('pt-BR', options);
+    return num.toLocaleString(locale, options);
   };
 
-  const formatCurrencyBRL = (num: number): string => {
-    if (isNaN(num) || num === null) return 'R$ 0,00';
-    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const formatCurrency = (num: number): string => {
+    if (isNaN(num) || num === null) {
+      return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode }).format(0);
+    }
+    return num.toLocaleString(locale, { style: 'currency', currency: currencyCode });
   };
 
   useEffect(() => {
@@ -96,9 +101,9 @@ const TradeJournal = ({
 
     if (entryPrice > 0 && quantity > 0) {
       const cost = entryPrice * quantity;
-      setTradeCostInBRL(cost);
+      setTradeCost(cost);
     } else {
-      setTradeCostInBRL(null);
+      setTradeCost(null);
     }
   }, [tradeLevels.entry, tradeData.quantidade]);
 
@@ -243,8 +248,8 @@ const TradeJournal = ({
                                         <input id="quantidade" type="text" className={styles.input} placeholder="0" value={tradeData.quantidade} onChange={(e) => updateTradeData('quantidade', e.target.value)} />
                                     </div>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Custo Total (BRL)</label>
-                                        <input type="text" className={styles.input} value={tradeCostInBRL !== null ? formatCurrencyBRL(tradeCostInBRL) : 'R$ 0,00'} readOnly />
+                                        <label className={styles.label}>Custo Total ({currencyCode})</label>
+                                        <input type="text" className={styles.input} value={tradeCost !== null ? formatCurrency(tradeCost) : formatCurrency(0)} readOnly />
                                     </div>
                                 </div>
                             </CardContent>
@@ -267,12 +272,12 @@ const TradeJournal = ({
                                                onChange={(e) => handleLevelChange('takeProfit', e.target.value)} />
                                     </div>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Perda Potencial (BRL)</label>
-                                        <input type="text" className={`${styles.input} ${potentialLoss !== null && potentialLoss < 0 ? styles.textLoss : ''}`} value={potentialLoss !== null ? formatCurrencyBRL(potentialLoss) : 'R$ 0,00'} readOnly />
+                                        <label className={styles.label}>Perda Potencial ({currencyCode})</label>
+                                        <input type="text" className={`${styles.input} ${potentialLoss !== null && potentialLoss < 0 ? styles.textLoss : ''}`} value={potentialLoss !== null ? formatCurrency(potentialLoss) : formatCurrency(0)} readOnly />
                                     </div>
                                     <div className={styles.inputGroup}>
-                                        <label className={styles.label}>Lucro Potencial (BRL)</label>
-                                        <input type="text" className={`${styles.input} ${potentialProfit !== null && potentialProfit > 0 ? styles.textProfit : ''}`} value={potentialProfit !== null ? formatCurrencyBRL(potentialProfit) : 'R$ 0,00'} readOnly />
+                                        <label className={styles.label}>Lucro Potencial ({currencyCode})</label>
+                                        <input type="text" className={`${styles.input} ${potentialProfit !== null && potentialProfit > 0 ? styles.textProfit : ''}`} value={potentialProfit !== null ? formatCurrency(potentialProfit) : formatCurrency(0)} readOnly />
                                     </div>
                                 </div>
                             </CardContent>
