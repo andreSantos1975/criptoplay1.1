@@ -59,11 +59,13 @@ const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
     });
 };
 
-// Helper function for formatting prices and volumes in BRL
-const formatBRLCurrency = (value: number): string => {
+const formatCurrency = (value: number, symbol: string): string => {
+  const currency = symbol.endsWith('USDT') ? 'USD' : 'BRL';
+  const locale = symbol.endsWith('USDT') ? 'en-US' : 'pt-BR';
+
   const options: Intl.NumberFormatOptions = {
     style: 'currency',
-    currency: 'BRL',
+    currency: currency,
     minimumFractionDigits: 2,
   };
 
@@ -73,7 +75,7 @@ const formatBRLCurrency = (value: number): string => {
     options.maximumFractionDigits = 2; // For standard prices
   }
 
-  return value.toLocaleString('pt-BR', options);
+  return value.toLocaleString(locale, options);
 };
 
 interface CryptoListProps {
@@ -115,7 +117,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) 
                 <td className={styles.td}>
                   <div className={styles.nameCell}>
                     <CryptoIcon
-                      symbol={crypto.symbol.replace("BRL", "")}
+                      symbol={crypto.symbol.replace("BRL", "").replace("USDT", "")}
                       className={styles.cryptoImage}
                     />
                     <div>
@@ -127,7 +129,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) 
                   </div>
                 </td>
                 <td className={styles.td}>
-                  {formatBRLCurrency(crypto.current_price)}
+                  {formatCurrency(crypto.current_price, crypto.symbol)}
                 </td>
                 <td className={styles.td}>
                   <span
@@ -149,7 +151,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) 
                   </span>
                 </td>
                 <td className={styles.td}>
-                  {formatBRLCurrency(crypto.quote_volume)}
+                  {formatCurrency(crypto.quote_volume, crypto.symbol)}
                 </td>
               </tr>
             ))}

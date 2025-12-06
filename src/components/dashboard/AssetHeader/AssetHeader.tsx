@@ -10,12 +10,14 @@ interface AssetHeaderProps {
   low: number;
 }
 
-const formatAsBRL = (value: number) => {
-  return value.toLocaleString('pt-BR', {
+const formatCurrency = (value: number, symbol: string) => {
+  const currency = symbol.endsWith('USDT') ? 'USD' : 'BRL';
+  const locale = symbol.endsWith('USDT') ? 'en-US' : 'pt-BR';
+  return value.toLocaleString(locale, {
     style: 'currency',
-    currency: 'BRL',
+    currency: currency,
     minimumFractionDigits: 2,
-    maximumFractionDigits: 6,
+    maximumFractionDigits: 8, // Increased for low-value cryptos
   });
 };
 
@@ -32,23 +34,23 @@ const AssetHeader: React.FC<AssetHeaderProps> = ({ symbol, price, open, high, lo
     <div className={styles.headerContainer}>
       <div className={styles.symbolInfo}>
         <h2 className={styles.symbol}>{symbol}</h2>
-        <p className={styles.price}>{formatAsBRL(price)}</p>
+        <p className={styles.price}>{formatCurrency(price, symbol)}</p>
         <p className={`${styles.change} ${isPositive ? styles.positive : styles.negative}`}>
-          {formatAsBRL(change)} ({changePercent.toFixed(2)}%)
+          {formatCurrency(change, symbol)} ({changePercent.toFixed(2)}%)
         </p>
       </div>
       <div className={styles.marketInfo}>
         <div className={styles.infoItem}>
           <span className={styles.label}>Abertura</span>
-          <span className={styles.value}>{formatAsBRL(open)}</span>
+          <span className={styles.value}>{formatCurrency(open, symbol)}</span>
         </div>
         <div className={styles.infoItem}>
           <span className={styles.label}>Máxima</span>
-          <span className={styles.value}>{formatAsBRL(high)}</span>
+          <span className={styles.value}>{formatCurrency(high, symbol)}</span>
         </div>
         <div className={styles.infoItem}>
           <span className={styles.label}>Mínima</span>
-          <span className={styles.value}>{formatAsBRL(low)}</span>
+          <span className={styles.value}>{formatCurrency(low, symbol)}</span>
         </div>
       </div>
     </div>

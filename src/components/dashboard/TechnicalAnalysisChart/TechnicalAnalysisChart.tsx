@@ -54,11 +54,22 @@ export const TechnicalAnalysisChart = memo(
     
     const [isChartReady, setIsChartReady] = useState(false);
     const [newSymbolInput, setNewSymbolInput] = useState("");
-    const [watchedSymbols, setWatchedSymbols] = useState<string[]>([
-      "BTCBRL", "ETHBRL", "SOLBRL", "XRPBRL",
-      "ADABRL", "BNBBRL", "DOGEBRL", "SHIBBRL",
-    ]);
+    const [watchedSymbols, setWatchedSymbols] = useState<string[]>([]);
     const [draggingLine, setDraggingLine] = useState<PriceLineKey | null>(null);
+
+    useEffect(() => {
+        if (marketType === 'futures') {
+            setWatchedSymbols([
+                "BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT",
+                "ADAUSDT", "BNBUSDT", "DOGEUSDT", "SHIBUSDT",
+            ]);
+        } else { // spot
+            setWatchedSymbols([
+                "BTCBRL", "ETHBRL", "SOLBRL", "XRPBRL",
+                "ADABRL", "BNBBRL", "DOGEBRL", "SHIBBRL",
+            ]);
+        }
+    }, [marketType]);
 
     // Refs to hold the latest props for use in callbacks without causing re-renders
     const onLevelsChangeRef = useRef(onLevelsChange);
