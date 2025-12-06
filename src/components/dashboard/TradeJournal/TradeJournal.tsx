@@ -108,19 +108,29 @@ const TradeJournal = ({
     const stopLossPrice = tradeLevels.stopLoss;
     const takeProfitPrice = tradeLevels.takeProfit;
 
-    if (tipoOperacao === 'compra' && entryPrice > 0 && quantity > 0 && stopLossPrice > 0) {
-      const loss = (stopLossPrice - entryPrice) * quantity;
-      setPotentialLoss(loss);
-    } else {
-      setPotentialLoss(null);
+    let loss = null;
+    let profit = null;
+
+    if (entryPrice > 0 && quantity > 0) {
+      if (tipoOperacao === 'compra') {
+        if (stopLossPrice > 0) {
+          loss = (entryPrice - stopLossPrice) * quantity;
+        }
+        if (takeProfitPrice > 0) {
+          profit = (takeProfitPrice - entryPrice) * quantity;
+        }
+      } else if (tipoOperacao === 'venda') {
+        if (stopLossPrice > 0) {
+          loss = (stopLossPrice - entryPrice) * quantity;
+        }
+        if (takeProfitPrice > 0) {
+          profit = (entryPrice - takeProfitPrice) * quantity;
+        }
+      }
     }
 
-    if (tipoOperacao === 'compra' && entryPrice > 0 && quantity > 0 && takeProfitPrice > 0) {
-      const profit = (takeProfitPrice - entryPrice) * quantity;
-      setPotentialProfit(profit);
-    } else {
-      setPotentialProfit(null);
-    }
+    setPotentialLoss(loss);
+    setPotentialProfit(profit);
   }, [tradeLevels, tradeData.quantidade, tipoOperacao]);
 
   const createTradeMutation = useMutation({
@@ -239,7 +249,7 @@ const TradeJournal = ({
                                 </div>
                             </CardContent>
                         </Card>
-                        {tipoOperacao === 'compra' && (
+                        {tipoOperacao && (
                         <Card>
                             <CardHeader><CardTitle className={styles.cardTitle}>Gestão de Risco</CardTitle></CardHeader>
                             <CardContent>
