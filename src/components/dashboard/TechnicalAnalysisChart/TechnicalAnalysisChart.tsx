@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useEffect, useRef, memo, useState } from "react";
+import React, { useEffect, useRef, memo, useState, useMemo } from "react";
 import {
   createChart, ColorType, CrosshairMode, LineStyle, ISeriesApi,
   IPriceLine, IChartApi, CandlestickSeries, BarData
@@ -10,6 +8,7 @@ import styles from "./TechnicalAnalysisChart.module.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MarketData } from "@/components/dashboard/MarketData/MarketData";
 import { CryptoList } from "@/components/dashboard/CryptoList/CryptoList";
+import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
 
 type PriceLineKey = "entry" | "takeProfit" | "stopLoss";
 
@@ -19,6 +18,10 @@ type BinanceKlineData = [
 ];
 
 interface TechnicalAnalysisChartProps {
+  initialChartData: BarData[] | undefined;
+  isLoading: boolean;
+  interval: string;
+  onIntervalChange: (interval: string) => void;
   tradeLevels: { entry: number; takeProfit: number; stopLoss: number };
   onLevelsChange: (levels: { entry: number; takeProfit: number; stopLoss: number; }) => void;
   children?: React.ReactNode;
@@ -31,6 +34,10 @@ interface TechnicalAnalysisChartProps {
 
 export const TechnicalAnalysisChart = memo(
   ({
+    initialChartData,
+    isLoading,
+    interval,
+    onIntervalChange,
     tradeLevels,
     onLevelsChange,
     children,
@@ -45,7 +52,6 @@ export const TechnicalAnalysisChart = memo(
     const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
     const priceLinesRef = useRef<Partial<Record<PriceLineKey, IPriceLine>>>({});
     
-    const [interval, setInterval] = useState("1d");
     const [isChartReady, setIsChartReady] = useState(false);
     const [newSymbolInput, setNewSymbolInput] = useState("");
     const [watchedSymbols, setWatchedSymbols] = useState<string[]>([
@@ -60,31 +66,17 @@ export const TechnicalAnalysisChart = memo(
     const tradeLevelsRef = useRef(tradeLevels);
     tradeLevelsRef.current = tradeLevels;
 
-    const handleAddSymbol = (symbolToAdd?: string) => {
-      const symbol = symbolToAdd || newSymbolInput.trim();
-      if (symbol === "") return;
-      const formattedSymbol = symbol.toUpperCase();
-      if (!watchedSymbols.includes(formattedSymbol)) {
-        setWatchedSymbols((prev) => [...prev, formattedSymbol]);
-        if (!symbolToAdd) setNewSymbolInput("");
-      }
-    };
-
-
-
-    const { data: initialChartData } = useQuery({
-      queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
-      queryFn: async () => {
-        const apiPath = marketType === "futures" ? "futures-klines" : "klines";
-        const symbolForApi = selectedCrypto;
-        const response = await fetch(`/api/binance/${apiPath}?symbol=${symbolForApi}&interval=${interval}`);
-        if (!response.ok) throw new Error("Network response was not ok");
-        const data: BinanceKlineData[] = await response.json();
-        return data.map(k => ({ time: k[0] / 1000, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) } as BarData));
-      },
-      staleTime: Infinity,
-      refetchOnWindowFocus: false,
-    });
+    const latestKlineForHeader = useMemo(() => {
+      if (!initialChartData || initialChartData.length === 0) return null;
+      const latestKline = initialChartData[initialChartData.length - 1];
+      return {
+        symbol: selectedCrypto,
+        price: latestKline.close,
+        open: latestKline.open,
+        high: latestKline.high,
+        low: latestKline.low,
+      };
+    }, [initialChartData, selectedCrypto]);
 
     // 1. Effect to create and cleanup the chart (runs only once)
     useEffect(() => {
@@ -189,27 +181,57 @@ export const TechnicalAnalysisChart = memo(
       seriesRef.current.setData(initialChartData);
     }, [isChartReady, initialChartData, selectedCrypto]);
 
-    // 4. Apply BRL formatting
+    // 4. Apply Dynamic Price Formatting
     useEffect(() => {
       const chart = chartRef.current;
-      if (!chart || !initialChartData?.length) return;
+      const series = seriesRef.current;
+      if (!chart || !series || !initialChartData?.length) return;
 
-      const firstPrice = initialChartData[0]?.close || 0;
-      const precision = firstPrice < 1 ? 4 : 2;
+      const lastPrice = initialChartData[initialChartData.length - 1]?.close || 0;
+      
+      let precision = 2;
+      // More robust precision calculation for very small numbers
+      if (lastPrice > 0 && lastPrice < 0.1) {
+        const priceStr = lastPrice.toFixed(20); // Use toFixed for a consistent string format
+        const decimalPart = priceStr.split('.')[1];
+        if (decimalPart) {
+            const firstDigitIndex = decimalPart.search(/[1-9]/);
+            if (firstDigitIndex !== -1) {
+                // Add 4 to show a few significant digits after the leading zeros
+                precision = firstDigitIndex + 4; 
+            }
+        }
+      }
+      
+      // Cap precision to a reasonable max (Binance uses up to 8 for many pairs)
+      if (precision > 8) precision = 8;
+
+      const minMove = 1 / Math.pow(10, precision);
+      
+      const currency = selectedCrypto.endsWith('USDT') ? 'USD' : 'BRL';
+      const locale = selectedCrypto.endsWith('USDT') ? 'en-US' : 'pt-BR';
+
+      series.applyOptions({
+        priceFormat: {
+          type: 'price',
+          precision: precision,
+          minMove: minMove,
+        },
+      });
 
       chart.applyOptions({
         localization: {
           priceFormatter: (price: number) => {
-            return new Intl.NumberFormat('pt-BR', {
+            return new Intl.NumberFormat(locale, {
               style: 'currency',
-              currency: 'BRL',
+              currency: currency,
               minimumFractionDigits: precision,
               maximumFractionDigits: precision,
             }).format(price);
           },
         },
       });
-    }, [isChartReady, initialChartData]);
+    }, [isChartReady, initialChartData, selectedCrypto]);
 
     // 5. Connect WebSocket
     useEffect(() => {
@@ -259,13 +281,25 @@ export const TechnicalAnalysisChart = memo(
     
     return (
       <Card>
-        <CardHeader><CardTitle>Análise Técnica - {selectedCrypto} (Binance)</CardTitle></CardHeader>
+        <CardHeader>
+          {latestKlineForHeader && (
+              <AssetHeader
+                symbol={latestKlineForHeader.symbol}
+                price={latestKlineForHeader.price}
+                open={latestKlineForHeader.open}
+                high={latestKlineForHeader.high}
+                low={latestKlineForHeader.low}
+              />
+            )}
+          <CardTitle>Análise Técnica - {selectedCrypto} (Binance)</CardTitle>
+        </CardHeader>
         <CardContent>
+          {isLoading && <div>Carregando gráfico...</div>}
           <MarketData selectedCrypto={selectedCrypto} marketType={marketType} />
           <div className={styles.intervalSelector}>
-            {["1m", "15m", "1h", "1d"].map(int => <button key={int} onClick={() => setInterval(int)} className={interval === int ? styles.active : ""}>{int}</button>)}
+            {["1m", "15m", "1h", "1d"].map(int => <button key={int} onClick={() => onIntervalChange(int)} className={interval === int ? styles.active : ""}>{int}</button>)}
           </div>
-          <div ref={chartContainerRef} className={styles.chartContainer} />
+          <div ref={chartContainerRef} className={styles.chartContainer} style={{ display: isLoading ? 'none' : 'block' }} />
           <div className={styles.marketSelector}>
             <button onClick={() => onMarketTypeChange("spot")} className={marketType === "spot" ? styles.active : ""}>Spot</button>
             <button onClick={() => onMarketTypeChange("futures")} className={marketType === "futures" ? styles.active : ""}>Futuros</button>
@@ -292,3 +326,4 @@ export const TechnicalAnalysisChart = memo(
 
 TechnicalAnalysisChart.displayName = "TechnicalAnalysisChart";
 export default TechnicalAnalysisChart;
+

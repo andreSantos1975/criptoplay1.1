@@ -129,10 +129,42 @@ const DashboardPage = () => {
   // Date state for filtering
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const [klines, setKlines] = useState<BinanceKline[]>([]);
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCBRL');
   const [marketType, setMarketType] = useState<'spot' | 'futures'>('spot');
   const [tipoOperacao, setTipoOperacao] = useState<'compra' | 'venda' | ''>('compra');
+  const [interval, setInterval] = useState("1d");
+
+  const isQueryEnabled = !(marketType === 'futures' && selectedCrypto.endsWith('BRL'));
+
+  const { data: initialChartData, isLoading: isChartDataLoading } = useQuery({
+      queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
+      queryFn: async () => {
+        const apiPath = marketType === "futures" ? "futures-klines" : "klines";
+        const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Network response was not ok");
+        }
+        const data: BinanceKline[] = await response.json();
+        return data.map(k => ({ time: (k[0] / 1000) as any, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
+      },
+      enabled: isQueryEnabled,
+      staleTime: 1000 * 60, // 1 minute
+      refetchOnWindowFocus: false,
+  });
+
+  useEffect(() => {
+    if (initialChartData && initialChartData.length > 0) {
+      const lastPrice = initialChartData[initialChartData.length - 1].close;
+      const newLevels = {
+        entry: lastPrice,
+        takeProfit: lastPrice * 1.02,
+        stopLoss: lastPrice * 0.98,
+      };
+      setTradeLevels(newLevels);
+    }
+  }, [initialChartData]);
+
 
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
@@ -340,40 +372,6 @@ const DashboardPage = () => {
   });
 
   useEffect(() => {
-    const fetchAndSetInitialLevels = async () => {
-      try {
-        const apiPath = marketType === "futures" ? "futures-klines" : "klines";
-        const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=1d`);
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Network response was not ok");
-        }
-        const data = await response.json();
-        setKlines(data);
-        if (data && data.length > 0) {
-          const lastPrice = parseFloat(data[data.length - 1][4]);
-          const newLevels = {
-            entry: lastPrice,
-            takeProfit: lastPrice * 1.02,
-            stopLoss: lastPrice * 0.98,
-          };
-          setTradeLevels(newLevels);
-        } else {
-          toast.error(`Não foram encontrados dados para o ativo ${selectedCrypto} no mercado ${marketType}.`);
-        }
-      } catch (error) {
-        console.error("Failed to fetch initial crypto price:", error);
-        if (error instanceof Error) {
-          toast.error(`Erro ao buscar dados do ativo: ${error.message}`);
-        } else {
-          toast.error("Erro ao buscar dados do ativo.");
-        }
-      }
-    };
-    fetchAndSetInitialLevels();
-  }, [selectedCrypto, marketType]);
-
-  useEffect(() => {
     localStorage.setItem('tradeLevels', JSON.stringify(tradeLevels));
   }, [tradeLevels]);
 
@@ -396,6 +394,15 @@ const DashboardPage = () => {
         }));
     }
   }, [tipoOperacao, tradeLevels.entry, tradeLevels.stopLoss, tradeLevels.takeProfit]);
+
+  const handleMarketTypeChange = (newMarketType: 'spot' | 'futures') => {
+    setMarketType(newMarketType);
+    if (newMarketType === 'futures' && selectedCrypto.endsWith('BRL')) {
+      const newSymbol = selectedCrypto.replace('BRL', 'USDT');
+      toast(`Símbolo alterado para ${newSymbol} para ser compatível com o mercado de Futuros.`);
+      setSelectedCrypto(newSymbol);
+    }
+  };
 
   const handleCryptoSelect = (symbol: string) => {
     setSelectedCrypto(symbol);
@@ -514,25 +521,19 @@ const DashboardPage = () => {
           </>
         );
       case "analise":
-        const latestKline = klines && klines.length > 0 ? klines[klines.length - 1] : null;
         return (
           <>
-            {latestKline && (
-              <AssetHeader
-                symbol={selectedCrypto}
-                price={parseFloat(latestKline[4])}
-                open={parseFloat(latestKline[1])}
-                high={parseFloat(latestKline[2])}
-                low={parseFloat(latestKline[3])}
-              />
-            )}
             <TechnicalAnalysisChart
+              initialChartData={initialChartData}
+              isLoading={isChartDataLoading}
+              interval={interval}
+              onIntervalChange={setInterval}
               tradeLevels={tradeLevels}
               onLevelsChange={setTradeLevels}
               selectedCrypto={selectedCrypto}
               onCryptoSelect={handleCryptoSelect}
               marketType={marketType}
-              onMarketTypeChange={setMarketType}
+              onMarketTypeChange={handleMarketTypeChange}
               tipoOperacao={tipoOperacao}
             >
               <TradeJournal 
