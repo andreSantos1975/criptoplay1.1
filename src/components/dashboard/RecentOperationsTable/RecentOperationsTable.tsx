@@ -108,14 +108,19 @@ export const RecentOperationsTable = () => {
     queryFn: async () => {
       const data = await fetchTrades();
       const brlRate = exchangeRateData?.usdtToBrl || 1;
-      return data.map(trade => ({
-        ...trade,
-        entryPrice: trade.entryPrice * brlRate,
-        exitPrice: trade.exitPrice ? trade.exitPrice * brlRate : undefined,
-        pnl: trade.pnl ? trade.pnl * brlRate : undefined,
-        stopLoss: trade.stopLoss * brlRate,
-        takeProfit: trade.takeProfit * brlRate,
-      }));
+      return data.map(trade => {
+        const isBrlPair = trade.symbol.endsWith('BRL');
+        const conversionRate = isBrlPair ? 1 : brlRate;
+
+        return {
+          ...trade,
+          entryPrice: trade.entryPrice * conversionRate,
+          exitPrice: trade.exitPrice ? trade.exitPrice * conversionRate : undefined,
+          pnl: trade.pnl ? trade.pnl * conversionRate : undefined,
+          stopLoss: trade.stopLoss * conversionRate,
+          takeProfit: trade.takeProfit * conversionRate,
+        };
+      });
     },
     enabled: !!exchangeRateData,
   });
@@ -201,7 +206,9 @@ export const RecentOperationsTable = () => {
 
     return filteredTrades.map((trade) => {
       const currentCrypto = cryptoData?.find(c => c.symbol === trade.symbol);
-      const currentPrice = currentCrypto ? parseFloat(currentCrypto.lastPrice) * (exchangeRateData?.usdtToBrl || 1) : undefined;
+      const isBrlPair = trade.symbol.endsWith('BRL');
+      const conversionRate = isBrlPair ? 1 : (exchangeRateData?.usdtToBrl || 1);
+      const currentPrice = currentCrypto ? parseFloat(currentCrypto.lastPrice) * conversionRate : undefined;
 
       let pnl = null;
       if (trade.status === 'CLOSED') {
