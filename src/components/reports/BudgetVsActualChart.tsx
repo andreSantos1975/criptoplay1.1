@@ -61,9 +61,9 @@ export const BudgetVsActualChart = () => {
     queryKey: ["budget"], 
     queryFn: fetchBudget 
   });
-
+  
   const chartData = useMemo(() => {
-    if (!budget || !expenses) return [];
+    if (!budget || !budget.categories || !expenses) return [];
 
     const actualExpenses: { [key: string]: number } = {};
     expenses.forEach((expense) => {

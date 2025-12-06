@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, memo, useState } from "react";
 import {
   createChart, ColorType, CrosshairMode, ISeriesApi,
-  IChartApi, BarData, CandlestickSeries, IPriceLine, LineStyle
+  IChartApi, BarData, CandlestickSeries, IPriceLine, LineStyle, PriceLineOptions, LineWidth
 } from "lightweight-charts";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./SimulatorChart.module.css";
@@ -104,6 +104,9 @@ export const SimulatorChart = memo(({ symbol, tradeLevels, onLevelsChange }: Sim
       const y = e.clientY - rect.top;
 
       for (const key in priceLinesRef.current) {
+        // Entry line should not be draggable
+        if (key === 'entry') continue;
+
         const priceLine = priceLinesRef.current[key as PriceLineKey];
         if (priceLine && isNearPriceLine(priceLine.options().price, y)) {
           setDraggingLine(key as PriceLineKey);
@@ -158,19 +161,33 @@ export const SimulatorChart = memo(({ symbol, tradeLevels, onLevelsChange }: Sim
     const series = seriesRef.current;
     if (!isChartReady || !series || !tradeLevels) return;
 
-    Object.values(priceLinesRef.current).forEach(line => line && series.removePriceLine(line));
-    priceLinesRef.current = {};
-
-    const createPriceLine = (key: PriceLineKey, price: number, color: string, title: string) => {
+    const updateOrCreatePriceLine = (key: PriceLineKey, price: number, color: string, title: string) => {
+      const existingLine = priceLinesRef.current[key];
       if (price > 0) {
-        priceLinesRef.current[key] = series.createPriceLine({ price, color, lineWidth: 2, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title });
+        const lineOptions = { 
+            price, 
+            color, 
+            lineWidth: 2 as LineWidth, 
+            lineStyle: LineStyle.Dashed, 
+            axisLabelVisible: true, 
+            title 
+        };
+        if (existingLine) {
+          existingLine.applyOptions(lineOptions);
+        } else {
+          priceLinesRef.current[key] = series.createPriceLine(lineOptions);
+        }
+      } else if (existingLine) {
+        series.removePriceLine(existingLine);
+        delete priceLinesRef.current[key];
       }
     };
 
-    createPriceLine("entry", tradeLevels.entry, "#42A5F5", "Entrada");
-    createPriceLine("takeProfit", tradeLevels.takeProfit, "#26A69A", "Take Profit");
-    createPriceLine("stopLoss", tradeLevels.stopLoss, "#EF5350", "Stop Loss");
+    updateOrCreatePriceLine("entry", tradeLevels.entry, "#42A5F5", "Entrada");
+    updateOrCreatePriceLine("takeProfit", tradeLevels.takeProfit, "#26A69A", "Take Profit");
+    updateOrCreatePriceLine("stopLoss", tradeLevels.stopLoss, "#EF5350", "Stop Loss");
   }, [isChartReady, tradeLevels]);
+
 
   // Apply BRL formatting
   useEffect(() => {

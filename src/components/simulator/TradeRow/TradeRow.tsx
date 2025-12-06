@@ -58,6 +58,7 @@ export const TradeRow = ({ trade, closeMutation }: TradeRowProps) => {
       <td className={parentStyles.td}>{trade.symbol}</td>
       <td className={parentStyles.td}>{Number(trade.quantity)}</td>
       <td className={parentStyles.td}>{formatCurrency(Number(trade.entryPrice))}</td>
+      <td className={parentStyles.td}>{formatCurrency(Number(trade.quantity) * Number(trade.entryPrice))}</td>
       <td className={parentStyles.td}>
         {pl !== null ? (
           <span className={pl >= 0 ? styles.textProfit : styles.textLoss}>

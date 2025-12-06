@@ -185,8 +185,9 @@ export const TechnicalAnalysisChart = memo(
     // 3. Load initial data
     useEffect(() => {
       if (!isChartReady || !seriesRef.current || !initialChartData) return;
+      console.log(`Setting chart data for ${selectedCrypto}:`, initialChartData.slice(-5)); // Log last 5 data points
       seriesRef.current.setData(initialChartData);
-    }, [isChartReady, initialChartData]);
+    }, [isChartReady, initialChartData, selectedCrypto]);
 
     // 4. Apply BRL formatting
     useEffect(() => {
@@ -260,7 +261,7 @@ export const TechnicalAnalysisChart = memo(
       <Card>
         <CardHeader><CardTitle>Análise Técnica - {selectedCrypto} (Binance)</CardTitle></CardHeader>
         <CardContent>
-          <MarketData />
+          <MarketData selectedCrypto={selectedCrypto} marketType={marketType} />
           <div className={styles.intervalSelector}>
             {["1m", "15m", "1h", "1d"].map(int => <button key={int} onClick={() => setInterval(int)} className={interval === int ? styles.active : ""}>{int}</button>)}
           </div>

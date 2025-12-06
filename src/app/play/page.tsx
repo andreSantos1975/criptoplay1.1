@@ -248,6 +248,7 @@ const PlayPage = () => {
                         <th className={styles.th}>Ativo</th>
                         <th className={styles.th}>Qtd.</th>
                         <th className={styles.th}>Preço Entrada</th>
+                        <th className={styles.th}>Valor</th>
                         <th className={styles.th}>Lucro/Prejuízo</th>
                         <th className={styles.th}>Data</th>
                         <th className={styles.th}>Ações</th>
