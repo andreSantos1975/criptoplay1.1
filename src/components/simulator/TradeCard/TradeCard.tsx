@@ -21,15 +21,15 @@ export function TradeCard({ trade, closeMutation }: TradeCardProps) {
       </div>
       <div className={styles.cardRow}>
         <strong>Qtd.:</strong>
-        <span>{trade.quantity}</span>
+        <span>{trade.quantity.toString()}</span>
       </div>
       <div className={styles.cardRow}>
         <strong>Preço Entrada:</strong>
-        <span>{formatCurrency(trade.entryPrice)}</span>
+        <span>{formatCurrency(trade.entryPrice.toNumber())}</span>
       </div>
       <div className={styles.cardRow}>
         <strong>Valor:</strong>
-        <span>{formatCurrency(trade.quantity * trade.entryPrice)}</span>
+        <span>{formatCurrency(trade.quantity.mul(trade.entryPrice).toNumber())}</span>
       </div>
       <div className={styles.cardRow}>
         <strong>Lucro/Prejuízo:</strong>

@@ -57,6 +57,13 @@ export const TechnicalAnalysisChart = memo(
     const [watchedSymbols, setWatchedSymbols] = useState<string[]>([]);
     const [draggingLine, setDraggingLine] = useState<PriceLineKey | null>(null);
 
+    const handleAddSymbol = () => {
+      if (newSymbolInput && !watchedSymbols.includes(newSymbolInput.toUpperCase())) {
+        setWatchedSymbols(prev => [...prev, newSymbolInput.toUpperCase()]);
+        setNewSymbolInput("");
+      }
+    };
+
     useEffect(() => {
         if (marketType === 'futures') {
             setWatchedSymbols([
@@ -306,7 +313,7 @@ export const TechnicalAnalysisChart = memo(
         </CardHeader>
         <CardContent>
           {isLoading && <div>Carregando gráfico...</div>}
-          <MarketData selectedCrypto={selectedCrypto} marketType={marketType} />
+          <MarketData />
           <div className={styles.intervalSelector}>
             {["1m", "15m", "1h", "1d"].map(int => <button key={int} onClick={() => onIntervalChange(int)} className={interval === int ? styles.active : ""}>{int}</button>)}
           </div>

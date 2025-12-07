@@ -2,7 +2,7 @@ import React from 'react';
 import styles from './button.module.css'; // Import CSS Module
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'outline' | 'ghost' | 'cta';
+  variant?: 'default' | 'outline' | 'ghost' | 'cta' | 'destructive';
   size?: 'default' | 'sm' | 'lg' | 'xl';
 }
 

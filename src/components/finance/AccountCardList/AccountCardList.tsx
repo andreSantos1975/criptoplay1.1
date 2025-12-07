@@ -46,20 +46,20 @@ export function AccountCardList({ title, items, onAdd, onEdit, onDelete, type }:
                 </div>
                 <div className={styles.itemValues}>
                   {type === 'account' && 'balance' in item && (
-                    <span className={styles.balance}>{formatCurrency(item.balance)}</span>
+                    <span className={styles.balance}>{formatCurrency(item.balance.toNumber())}</span>
                   )}
                    {type === 'card' && 'availableCredit' in item && (
                     <div>
-                      <span className={styles.limit}>Limite: {formatCurrency(item.creditLimit)}</span>
-                      <span className={styles.available}>Disponível: {formatCurrency(item.availableCredit)}</span>
+                      <span className={styles.limit}>Limite: {formatCurrency(item.creditLimit.toNumber())}</span>
+                      <span className={styles.available}>Disponível: {formatCurrency(item.availableCredit.toNumber())}</span>
                     </div>
                   )}
                 </div>
                 <div className={styles.actions}>
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(item)}>
+                  <Button variant="ghost" size="sm" onClick={() => onEdit(item)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onDelete(item.id)}>
+                  <Button variant="ghost" size="sm" onClick={() => onDelete(item.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

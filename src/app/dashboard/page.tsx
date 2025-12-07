@@ -381,13 +381,13 @@ const DashboardPage = () => {
 
     // Apenas troca se a ordem estiver incorreta para o tipo de operação atual
     if (tipoOperacao === 'venda' && tradeLevels.takeProfit > entry && tradeLevels.stopLoss < entry) {
-        setTradeLevels(currentLevels => ({
+        setTradeLevels((currentLevels: typeof tradeLevels) => ({
             ...currentLevels,
             takeProfit: currentLevels.stopLoss,
             stopLoss: currentLevels.takeProfit
         }));
     } else if (tipoOperacao === 'compra' && tradeLevels.takeProfit < entry && tradeLevels.stopLoss > entry) {
-        setTradeLevels(currentLevels => ({
+        setTradeLevels((currentLevels: typeof tradeLevels) => ({
             ...currentLevels,
             takeProfit: currentLevels.stopLoss,
             stopLoss: currentLevels.takeProfit
