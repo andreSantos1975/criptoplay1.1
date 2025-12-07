@@ -1,0 +1,57 @@
+.card {
+  background-color: #2a2a2a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cardRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.cardRow strong {
+  color: #aaa;
+}
+
+.profit {
+  color: #4ade80;
+  font-weight: bold;
+}
+
+.loss {
+  color: #f87171;
+  font-weight: bold;
+}
+
+.actions {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.closeButton {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background-color: #dc2626;
+}
+
+.closeButton:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}

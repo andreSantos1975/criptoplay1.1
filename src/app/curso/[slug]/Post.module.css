@@ -81,3 +81,25 @@
   background-color: #f7f7f7;
   font-weight: bold;
 }
+
+.post img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5rem auto;
+}
+
+.post pre {
+  overflow-x: auto;
+  background-color: #f4f4f4;
+  padding: 1rem;
+  border-radius: 5px;
+  margin: 2rem 0;
+}
+
+.post table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}

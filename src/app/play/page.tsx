@@ -228,9 +228,11 @@ const PlayPage = () => {
                       step="0.01"
                   />
                 </div>
-                <button type="submit" className={styles.submitButton} disabled={createMutation.isPending || !entryPrice}>
-                  {createMutation.isPending ? 'Enviando...' : 'Comprar'}
-                </button>
+                <div className={styles.formGroup}>
+                    <button type="submit" className={styles.submitButton} disabled={createMutation.isPending || !entryPrice}>
+                    {createMutation.isPending ? 'Enviando...' : 'Comprar'}
+                    </button>
+                </div>
                 {createMutation.isError && (
                   <p style={{ color: 'red', marginTop: '1rem' }}>Erro: {createMutation.error.message}</p>
                 )}
@@ -242,6 +244,7 @@ const PlayPage = () => {
               {isLoading && <p>Carregando operações...</p>}
               {error && <p style={{ color: 'red' }}>Não foi possível carregar as operações.</p>}
               {profile && profile.openTrades.length > 0 ? (
+                <div className={styles.tableWrapper}>
                   <table className={styles.table}>
                     <thead>
                       <tr>
@@ -260,6 +263,7 @@ const PlayPage = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
               ) : (
                   <p>Nenhuma operação aberta no momento.</p>
               )}

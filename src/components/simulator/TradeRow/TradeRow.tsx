@@ -55,11 +55,11 @@ export const TradeRow = ({ trade, closeMutation }: TradeRowProps) => {
 
   return (
     <tr key={trade.id}>
-      <td className={parentStyles.td}>{trade.symbol}</td>
-      <td className={parentStyles.td}>{Number(trade.quantity)}</td>
-      <td className={parentStyles.td}>{formatCurrency(Number(trade.entryPrice))}</td>
-      <td className={parentStyles.td}>{formatCurrency(Number(trade.quantity) * Number(trade.entryPrice))}</td>
-      <td className={parentStyles.td}>
+      <td data-label="Ativo" className={parentStyles.td}>{trade.symbol}</td>
+      <td data-label="Qtd." className={parentStyles.td}>{Number(trade.quantity)}</td>
+      <td data-label="Preço Entrada" className={parentStyles.td}>{formatCurrency(Number(trade.entryPrice))}</td>
+      <td data-label="Valor" className={parentStyles.td}>{formatCurrency(Number(trade.quantity) * Number(trade.entryPrice))}</td>
+      <td data-label="Lucro/Prejuízo" className={parentStyles.td}>
         {pl !== null ? (
           <span className={pl >= 0 ? styles.textProfit : styles.textLoss}>
             {formatCurrency(pl)}
@@ -68,8 +68,8 @@ export const TradeRow = ({ trade, closeMutation }: TradeRowProps) => {
           'Calculando...'
         )}
       </td>
-      <td className={parentStyles.td}>{new Date(trade.entryDate).toLocaleDateString('pt-BR')}</td>
-      <td className={parentStyles.td}>
+      <td data-label="Data" className={parentStyles.td}>{new Date(trade.entryDate).toLocaleDateString('pt-BR')}</td>
+      <td data-label="Ações" className={parentStyles.td}>
         <button
           onClick={() => closeMutation.mutate(trade.id)}
           disabled={closeMutation.isPending && closeMutation.variables === trade.id}

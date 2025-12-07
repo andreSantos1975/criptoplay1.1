@@ -54,3 +54,19 @@
   padding: 2rem 3rem;
   background-color: hsl(var(--background));
 }
+
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid hsl(var(--sidebar-border));
+  }
+
+  .content {
+    padding: 2rem 1.5rem;
+  }
+}
