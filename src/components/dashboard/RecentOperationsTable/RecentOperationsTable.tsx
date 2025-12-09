@@ -43,17 +43,17 @@ const fetchTrades = async (): Promise<Trade[]> => {
 };
 
 // Helper para formatar moeda
-const formatCurrency = (value: number | null | undefined) => {
+const formatCurrency = (value: number | null | undefined, currencyCode: string = "BRL", locale: string = "pt-BR") => {
   if (value === null || value === undefined) return "N/A";
 
   const options: Intl.NumberFormatOptions = {
     style: "currency",
-    currency: "BRL",
+    currency: currencyCode,
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2, // Garante sempre 2 casas decimais
+    maximumFractionDigits: 8, // Ajustado para exibir mais casas decimais para criptomoedas de baixo valor
   };
 
-  return new Intl.NumberFormat("pt-BR", options).format(value);
+  return new Intl.NumberFormat(locale, options).format(value);
 };
 
 // Helper para formatar data e hora
@@ -107,20 +107,8 @@ export const RecentOperationsTable = () => {
     queryKey: ['trades', exchangeRateData],
     queryFn: async () => {
       const data = await fetchTrades();
-      const brlRate = exchangeRateData?.usdtToBrl || 1;
-      return data.map(trade => {
-        const isBrlPair = trade.symbol.endsWith('BRL');
-        const conversionRate = isBrlPair ? 1 : brlRate;
-
-        return {
-          ...trade,
-          entryPrice: trade.entryPrice * conversionRate,
-          exitPrice: trade.exitPrice ? trade.exitPrice * conversionRate : undefined,
-          pnl: trade.pnl ? trade.pnl * conversionRate : undefined,
-          stopLoss: trade.stopLoss * conversionRate,
-          takeProfit: trade.takeProfit * conversionRate,
-        };
-      });
+      // Não há conversão aqui, os preços permanecem em sua moeda original
+      return data;
     },
     enabled: !!exchangeRateData,
   });
@@ -171,21 +159,34 @@ export const RecentOperationsTable = () => {
   };
 
   const calculatePnlPercent = (trade: Trade, currentPrice?: number): string => {
-    const initialCost = trade.entryPrice * trade.quantity;
+    // Determine the base currency for calculation (e.g., USD for USDT/FUTURES, BRL for BRL pairs)
+    const baseCurrencyEntryPrice = trade.entryPrice;
+    const baseCurrencyCurrentPrice = currentPrice; // currentPrice already comes in the trade's original currency
+    
+    const initialCost = baseCurrencyEntryPrice * trade.quantity;
     if (initialCost === 0) return "N/A";
 
-    if (trade.status === 'CLOSED' && trade.pnl) {
+    // Use trade.pnl which should be in the original currency, or calculate based on original currency prices
+    if (trade.status === 'CLOSED' && trade.pnl !== undefined && trade.pnl !== null) {
       const percent = (trade.pnl / initialCost) * 100;
       return `${percent.toFixed(2)}%`;
     }
 
-    if (trade.status === 'OPEN' && currentPrice) {
-      const pnl = (trade.type === 'compra' ? (currentPrice - trade.entryPrice) : (trade.entryPrice - currentPrice)) * trade.quantity;
+    if (trade.status === 'OPEN' && baseCurrencyCurrentPrice !== undefined) {
+      const pnl = (trade.type === 'compra' ? (baseCurrencyCurrentPrice - baseCurrencyEntryPrice) : (baseCurrencyEntryPrice - baseCurrencyCurrentPrice)) * trade.quantity;
       const percent = (pnl / initialCost) * 100;
       return `${percent.toFixed(2)}%`;
     }
 
     return "N/A";
+  };
+
+  const getCurrencyDetails = (trade: Trade) => {
+    const isUSDT = trade.symbol.endsWith('USDT') || trade.marketType === 'FUTURES';
+    return {
+      currencyCode: isUSDT ? 'USD' : 'BRL',
+      locale: isUSDT ? 'en-US' : 'pt-BR'
+    };
   };
 
   const renderTableContent = () => {
@@ -205,16 +206,21 @@ export const RecentOperationsTable = () => {
     if (filteredTrades.length === 0) return <TableRow><TableCell colSpan={activeTab === 'open' ? 10 : 9} className="text-center">Nenhuma operação encontrada para esta categoria.</TableCell></TableRow>;
 
     return filteredTrades.map((trade) => {
-      const currentCrypto = cryptoData?.find(c => c.symbol === trade.symbol);
-      const isBrlPair = trade.symbol.endsWith('BRL');
-      const conversionRate = isBrlPair ? 1 : (exchangeRateData?.usdtToBrl || 1);
-      const currentPrice = currentCrypto ? parseFloat(currentCrypto.lastPrice) * conversionRate : undefined;
+      const { currencyCode, locale } = getCurrencyDetails(trade);
+      const brlRate = exchangeRateData?.usdtToBrl || 1;
 
+      // Current crypto price in its original currency (USD or BRL)
+      const currentCryptoData = cryptoData?.find(c => c.symbol === trade.symbol);
+      let currentPriceInOriginalCurrency: number | undefined;
+      if (currentCryptoData) {
+        currentPriceInOriginalCurrency = parseFloat(currentCryptoData.lastPrice);
+      }
+      
       let pnl = null;
       if (trade.status === 'CLOSED') {
         pnl = trade.pnl;
-      } else if (trade.status === 'OPEN' && currentPrice) {
-        pnl = (trade.type === 'compra' ? (currentPrice - trade.entryPrice) : (trade.entryPrice - currentPrice)) * trade.quantity;
+      } else if (trade.status === 'OPEN' && currentPriceInOriginalCurrency !== undefined) {
+        pnl = (trade.type === 'compra' ? (currentPriceInOriginalCurrency - trade.entryPrice) : (trade.entryPrice - currentPriceInOriginalCurrency)) * trade.quantity;
       }
 
       const isProfit = pnl != null && pnl >= 0;
@@ -224,13 +230,13 @@ export const RecentOperationsTable = () => {
           <TableCell>{trade.symbol.replace("USDT", "")}</TableCell>
           <TableCell>{`${trade.type} (${trade.marketType})`}</TableCell>
           <TableCell>{trade.quantity}</TableCell>
-          <TableCell>{formatCurrency(trade.entryPrice * trade.quantity)}</TableCell>
-          <TableCell>{formatCurrency(trade.exitPrice ? trade.exitPrice * trade.quantity : null)}</TableCell>
+          <TableCell>{formatCurrency(trade.entryPrice, currencyCode, locale)}</TableCell>
+          <TableCell>{formatCurrency(trade.exitPrice, currencyCode, locale)}</TableCell>
           <TableCell className={pnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
-            {formatCurrency(pnl)}
+            {formatCurrency(pnl, currencyCode, locale)}
           </TableCell>
           <TableCell className={pnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
-            {calculatePnlPercent(trade, currentPrice)}
+            {calculatePnlPercent(trade, currentPriceInOriginalCurrency)}
           </TableCell>
           <TableCell>
             <span className={`${styles.status} ${trade.status === 'CLOSED' ? styles.statusPaid : styles.statusPending}`}>
@@ -328,6 +334,7 @@ export const RecentOperationsTable = () => {
       </Modal>
 
       {isModalOpen && selectedTrade && (() => {
+        const { currencyCode, locale } = getCurrencyDetails(selectedTrade);
         const potentialLoss = (selectedTrade.type === 'compra')
           ? (selectedTrade.stopLoss - selectedTrade.entryPrice) * selectedTrade.quantity
           : (selectedTrade.entryPrice - selectedTrade.stopLoss) * selectedTrade.quantity;
@@ -343,14 +350,14 @@ export const RecentOperationsTable = () => {
               <div className={styles.modalGrid}>
                 <div><strong>Ativo / Par:</strong> {selectedTrade.symbol}</div>
                 <div><strong>Tipo:</strong> {selectedTrade.type} ({selectedTrade.marketType})</div>
-                <div><strong>Preço de Entrada:</strong> {formatCurrency(selectedTrade.entryPrice)}</div>
+                <div><strong>Preço de Entrada:</strong> {formatCurrency(selectedTrade.entryPrice, currencyCode, locale)}</div>
                 <div><strong>Quantidade:</strong> {selectedTrade.quantity}</div>
-                <div><strong>Custo Total (BRL):</strong> {formatCurrency(selectedTrade.entryPrice * selectedTrade.quantity)}</div>
+                <div><strong>Custo Total ({currencyCode}):</strong> {formatCurrency(selectedTrade.entryPrice * selectedTrade.quantity, currencyCode, locale)}</div>
               </div>
               <h4>Gestão de Risco</h4>
               <div className={styles.modalGrid}>
-                <div><strong>Perda Potencial (BRL):</strong> <span className={potentialLoss < 0 ? styles.loss : ''}>{formatCurrency(potentialLoss)}</span></div>
-                <div><strong>Lucro Potencial (BRL):</strong> <span className={potentialProfit > 0 ? styles.profit : ''}>{formatCurrency(potentialProfit)}</span></div>
+                <div><strong>Perda Potencial ({currencyCode}):</strong> <span className={potentialLoss < 0 ? styles.loss : ''}>{formatCurrency(potentialLoss, currencyCode, locale)}</span></div>
+                <div><strong>Lucro Potencial ({currencyCode}):</strong> <span className={potentialProfit > 0 ? styles.profit : ''}>{formatCurrency(potentialProfit, currencyCode, locale)}</span></div>
               </div>
               {selectedTrade.notes && (
                 <>
