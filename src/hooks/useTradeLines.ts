@@ -105,7 +105,7 @@ export const useTradeLines = ({
     const updateOrCreatePriceLine = (key: PriceLineKey, price: number, color: string, title: string) => {
       const existingLine = priceLinesRef.current[key];
       if (price > 0) {
-        const lineOptions = { price, color, lineWidth: 2, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title };
+        const lineOptions = { price, color, lineWidth: 2, lineStyle: key === "entry" ? LineStyle.Solid : LineStyle.Dashed, axisLabelVisible: true, title };
         if (existingLine) {
           existingLine.applyOptions(lineOptions);
         } else {
