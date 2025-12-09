@@ -1,0 +1,168 @@
+
+-----------------------------------------------------------------------------------------
+
+Plano de Implementação: Vigilante de Servidor (Backend)
+
+  Dividiremos o plano em quatro fases principais: Estrutura, Dados, Lógica e Operação.
+
+  ---
+
+  Fase 1: Estrutura do Serviço (O "Worker")
+
+   1. Criação do Worker:
+       * O quê: Precisamos de um processo Node.js que rode continuamente em segundo
+         plano, separado da aplicação Next.js.
+       * Como: Criaremos uma nova pasta na raiz do projeto, chamada worker/. Dentro dela,
+         teremos um arquivo principal, worker/index.ts, que será o ponto de partida do
+         nosso vigilante.
+       * Ação: Configurar este script para poder usar TypeScript e ter acesso ao Prisma
+         Client para se comunicar com o banco de dados.
+
+   2. Script de Execução:
+       * O quê: Precisamos de uma forma de iniciar e parar este worker facilmente durante
+         o desenvolvimento.
+       * Como: Adicionaremos um novo comando no arquivo package.json.
+       * Ação: Criar o script "start:worker": "ts-node worker/index.ts". Isso nos
+         permitirá rodar o vigilante localmente com um simples comando no terminal.
+
+  ---
+
+  Fase 2: Coleta de Dados em Tempo Real
+
+   1. Gerenciador de Preços (Price Manager):
+       * O quê: O worker precisa saber o preço atual de todas as criptomoedas que estão
+         em operações abertas.
+       * Como: Criaremos um módulo worker/priceManager.ts. Este módulo será responsável
+         por:
+          a.  Conectar-se à API de WebSocket da Binance.
+          b.  Manter um registro em memória com o último preço de cada ativo (ex:
+  {'BTCBRL': 350000.00, 'ETHBRL': 18000.00}).
+          c.  Ser resiliente: se a conexão com a Binance cair, ele tentará se reconectar
+  automaticamente.
+
+   2. Gerenciador de Operações (Trade Manager):
+       * O quê: O worker precisa saber quais operações monitorar.
+       * Como: Criaremos um módulo worker/tradeManager.ts. A responsabilidade dele será:
+          a.  Consultar o banco de dados em intervalos regulares (ex: a cada 1 minuto)
+  para buscar todas as operações com o status OPEN.
+          b.  Manter uma lista interna de operações a serem vigiadas.
+          c.  Informar ao Price Manager quais são os ativos únicos que ele precisa
+  monitorar, para otimizar a conexão com a Binance.
+
+  ---
+
+  Fase 3: Lógica Central do Vigilante
+
+   1. O Loop Principal:
+       * O quê: A engrenagem que conecta tudo.
+       * Como: No arquivo worker/index.ts, implementaremos um loop infinito:
+           1. A cada segundo (ou um intervalo muito curto), o loop será acionado.
+           2. Ele pedirá ao Trade Manager a lista de operações abertas.
+           3. Para cada operação, ele pedirá ao Price Manager o preço atual do ativo
+              correspondente.
+           4. Ele então executará a lógica de verificação.
+
+   2. Lógica de Verificação e Execução:
+       * O quê: A função que decide se uma operação deve ser fechada.
+       * Como: Para cada operação, a função irá checar: Se (preço_atual <= stopLoss) OU
+         (preço_atual >= takeProfit).
+       * Ação: Se a condição for atendida, o sistema chamará uma função
+         closeTrade(tradeId, closingPrice, reason). Essa função irá:
+          a.  Atualizar a operação no banco de dados, mudando seu status para CLOSED.
+          b.  Calcular e salvar o lucro ou prejuízo (profitAndLoss).
+          c.  Salvar a data e o preço de fechamento.
+          d.  Melhoria: Adicionar um campo motivoFechamento na tabela de Trade para
+  registrar se foi por STOP_LOSS ou TAKE_PROFIT. Isso exigiria uma pequena alteração no
+  schema.prisma.
+
+  ---
+  Fase 4: Implantação em Produção (Deploy)
+
+   1. O Desafio: Plataformas como a Vercel (onde aplicações Next.js são comumente
+      hospedadas) são otimizadas para processos curtos (serveless) e não suportam
+      processos de longa duração como o nosso worker.
+   2. A Solução Profissional:
+       * Hospedagem Separada: O worker precisa ser implantado em um ambiente que suporte
+         processos de longa duração.
+       * Opções:
+          a.  Render / Heroku: Plataformas fáceis de usar que têm "Worker Services" ou
+  "Background Jobs".
+          b.  Container (Docker): "Empacotar" nosso worker em um container Docker e
+  hospedá-lo em serviços como AWS (ECS ou Fargate), Google Cloud Run, etc.
+
+  Resumo da Arquitetura Final: Você teria duas aplicações em produção: a aplicação web
+  Next.js (rodando na Vercel, por exemplo) e o Worker (rodando na Render/AWS/etc.), ambos
+  se comunicando com o mesmo banco de dados.
+
+  Este plano é detalhado e segue as melhores práticas da indústria para criar um sistema
+  de trading automatizado, garantindo que ele seja confiável e escalável.
+
+  -------------------$$$
+    Basicamente, você passa a ter um cérebro que está sempre acordado, observando o mercado
+  e os dados dos seus usuários.
+
+  Além de fechar ordens e enviar alertas por e-mail/notificação, veja o que mais se torna
+  possível com esse sistema:
+
+  ---
+
+  1. Gestão de Risco e Trading Avançado
+
+   * Trailing Stop (Stop Móvel): Em vez de um stop loss fixo, o "vigilante" pode ajustar
+     o stop loss automaticamente para cima à medida que o preço de uma operação lucrativa
+     sobe. Isso permite proteger os lucros sem limitar o ganho potencial.
+   * Realização de Lucro Parcial (Take Profit Parcial): O usuário poderia definir
+     múltiplos alvos de lucro. Por exemplo: "vender 50% da posição no primeiro alvo e o
+     restante no segundo". O vigilante executaria essas vendas parciais nos momentos
+     exatos.
+   * Saídas Baseadas no Tempo: Fechar uma operação automaticamente se ela permanecer
+     aberta por um determinado período. Ex: "Encerrar esta operação ao final do dia, não
+     importa o resultado".
+   * Ordens Condicionais (Gatilhos): Criar ordens mais complexas. Ex: "Se o preço do
+     Bitcoin ultrapassar $70.000, só então abra uma ordem de compra para o Ethereum". O
+     vigilante monitoraria a condição (preço do BTC) para disparar a ação (comprar ETH).
+
+  ---
+
+  2. Análise de Dados e Insights em Tempo Real
+
+   * Cálculo de Portfólio em Tempo Real: Como o sistema tem acesso constante aos preços,
+     ele pode recalcular o valor total do portfólio de cada usuário e o lucro/prejuízo de
+     cada operação aberta em tempo real, mostrando isso no dashboard.
+   * Alertas de Volatilidade: O vigilante pode detectar quando a volatilidade de um ativo
+     aumenta subitamente (um sinal de risco ou oportunidade) e notificar o usuário.
+   * Detecção de Padrões Simples: Uma versão mais avançada poderia ser programada para
+     identificar padrões técnicos básicos que acontecem em tempo real, como "Rompimento
+     da máxima das últimas 24 horas", e enviar isso como um insight para o usuário.
+   * Motor de Backtesting: A mesma lógica que compara preços com ordens pode ser usada
+     para criar uma ferramenta de backtesting, onde um usuário poderia testar uma
+     estratégia com dados históricos para ver qual teria sido o resultado.
+
+  ---
+
+  3. Automação e Integração
+   * Diário de Trade Automático: No momento em que o vigilante fecha uma operação, ele
+     poderia automaticamente "tirar uma foto" do gráfico e de alguns indicadores técnicos
+     e anexá-la ao diário de trade daquela operação.
+   * Integração com Bots (Telegram, Discord): Em vez de apenas e-mails, o sistema poderia
+     enviar alertas e relatórios diretamente para o Telegram ou Discord do usuário. Seria
+     possível até criar comandos para interagir com a plataforma através do bot.
+   * Execução de Sinais Externos: A plataforma poderia se conectar a serviços de sinais
+     de trading. O vigilante poderia receber esses sinais e, com a permissão do usuário,
+     executar as operações automaticamente.
+
+  ---
+
+  4. Funcionalidades Sociais e de Comunidade
+
+   * Leaderboards em Tempo Real: Em vez de um ranking que atualiza de tempos em tempos, o
+     vigilante poderia alimentar um leaderboard que mostra a performance dos traders do
+     simulador em tempo real.
+   * Copy Trading: Esta é uma funcionalidade muito avançada onde o sistema se torna a
+     base para um recurso de copy trading. O vigilante poderia replicar as operações de
+     um trader experiente na conta de um usuário que optou por "copiá-lo", tudo em tempo
+     real e de forma automatizada.
+
+  Em resumo, a implementação do "vigilante" no backend é o passo fundamental para
+  transformar sua plataforma de uma ferramenta passiva de análise e registro em um
+  ecossistema de trading ativo, automatizado e inteligente.
