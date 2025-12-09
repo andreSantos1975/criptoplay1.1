@@ -211,3 +211,15 @@
 .currentPrice span {
   color: #28a745; /* A success green color for the actual price */
 }
+
+.riskInfo {
+  font-size: 0.8rem;
+  color: #ef5350; /* Red */
+  margin-top: 0.5rem;
+}
+
+.rewardInfo {
+  font-size: 0.8rem;
+  color: #26a69a; /* Green */
+  margin-top: 0.5rem;
+}

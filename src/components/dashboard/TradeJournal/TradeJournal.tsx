@@ -113,20 +113,20 @@ const TradeJournal = ({
     const stopLossPrice = tradeLevels.stopLoss;
     const takeProfitPrice = tradeLevels.takeProfit;
 
-    let loss = null;
-    let profit = null;
+    let loss: number | null = null;
+    let profit: number | null = null;
 
     if (entryPrice > 0 && quantity > 0) {
       if (tipoOperacao === 'compra') {
         if (stopLossPrice > 0) {
-          loss = (entryPrice - stopLossPrice) * quantity;
+          loss = (stopLossPrice - entryPrice) * quantity;
         }
         if (takeProfitPrice > 0) {
           profit = (takeProfitPrice - entryPrice) * quantity;
         }
       } else if (tipoOperacao === 'venda') {
         if (stopLossPrice > 0) {
-          loss = (stopLossPrice - entryPrice) * quantity;
+          loss = (entryPrice - stopLossPrice) * quantity;
         }
         if (takeProfitPrice > 0) {
           profit = (entryPrice - takeProfitPrice) * quantity;

@@ -165,6 +165,9 @@ const PlayPage = () => {
     }).format(numValue);
   }
 
+  const riskAmount = entryPrice > 0 && stopLoss > 0 ? (entryPrice - stopLoss) * quantity : 0;
+  const rewardAmount = entryPrice > 0 && takeProfit > 0 ? (takeProfit - entryPrice) * quantity : 0;
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -234,6 +237,11 @@ const PlayPage = () => {
                       className={styles.input}
                       step="0.01"
                   />
+                  {riskAmount > 0 && (
+                    <p className={styles.riskInfo}>
+                      Risco: {formatCurrency(riskAmount)}
+                    </p>
+                  )}
                 </div>
                 <div className={styles.formGroup}>
                   <label htmlFor="takeProfit" className={styles.label}>Take Profit</label>
@@ -245,6 +253,11 @@ const PlayPage = () => {
                       className={styles.input}
                       step="0.01"
                   />
+                  {rewardAmount > 0 && (
+                    <p className={styles.rewardInfo}>
+                      Ganho Potencial: {formatCurrency(rewardAmount)}
+                    </p>
+                  )}
                 </div>
                 <div className={styles.formGroup}>
                     <button type="submit" className={styles.submitButton} disabled={createMutation.isPending || !entryPrice}>

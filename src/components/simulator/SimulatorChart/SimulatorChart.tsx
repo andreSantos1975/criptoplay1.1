@@ -95,10 +95,14 @@ export const SimulatorChart = memo(({ symbol, tradeLevels, onLevelsChange, tipoO
 
   // Load initial data
   useEffect(() => {
-    if (isChartReady && seriesRef.current && initialChartData) {
+    if (!seriesRef.current) return;
+
+    if (isFetching) {
+      seriesRef.current.setData([]); // Clear chart data while fetching
+    } else if (isChartReady && initialChartData) {
       seriesRef.current.setData(initialChartData);
     }
-  }, [isChartReady, initialChartData]);
+  }, [isChartReady, initialChartData, isFetching]);
 
   // Apply BRL formatting
   useEffect(() => {
