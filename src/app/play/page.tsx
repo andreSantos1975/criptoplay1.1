@@ -7,6 +7,7 @@ import { Trade } from '@prisma/client';
 import { Rankings } from '@/components/simulator/Rankings';
 import { SimulatorChart } from '@/components/simulator/SimulatorChart/SimulatorChart';
 import { TradeRow } from '@/components/simulator/TradeRow/TradeRow';
+import { BarData } from 'lightweight-charts';
 
 // Type definitions
 interface SimulatorProfile {
@@ -24,6 +25,11 @@ interface TradeLevels {
   takeProfit: number;
   stopLoss: number;
 }
+
+type BinanceKlineData = [
+  number, string, string, string, string, string, number,
+  string, number, string, string, string
+];
 
 // API fetching functions
 const fetchCurrentPrice = async (symbol: string): Promise<CurrentPrice> => {
@@ -79,6 +85,8 @@ const PlayPage = () => {
   const [quantity, setQuantity] = useState(0.01);
   const [stopLoss, setStopLoss] = useState(0);
   const [takeProfit, setTakeProfit] = useState(0);
+  const [interval, setInterval] = useState("1m"); // Lifted from SimulatorChart
+  const [realtimeChartUpdate, setRealtimeChartUpdate] = useState<BarData | null>(null);
 
   // Queries
   const { data: profile, isLoading, error } = useQuery<SimulatorProfile, Error>({
@@ -89,28 +97,60 @@ const PlayPage = () => {
   const { data: currentPriceData, isLoading: isLoadingPrice, error: priceError } = useQuery<CurrentPrice, Error>({
     queryKey: ['currentPrice', symbol],
     queryFn: () => fetchCurrentPrice(symbol),
-    refetchInterval: 5000,
+    refetchInterval: 5000, // Keep this for the header display
   });
   
+  // Query for historical chart data (lifted from SimulatorChart)
+  const { data: initialChartData, isFetching: isChartLoading } = useQuery({
+    queryKey: ["binanceKlines", "spot", interval, symbol],
+    queryFn: async () => {
+      const response = await fetch(`/api/binance/klines?symbol=${symbol}&interval=${interval}`);
+      if (!response.ok) throw new Error("Network response was not ok");
+      const data: BinanceKlineData[] = await response.json();
+      const historicalData = data.slice(0, -1);
+      return historicalData.map(k => ({ time: k[0] / 1000, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) } as BarData));
+    },
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
+    enabled: !!symbol,
+  });
+
+  // WebSocket for real-time chart updates and vigilante trigger
+  useEffect(() => {
+    const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_${interval}`);
+    
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      const kline = message.k;
+      if (kline) {
+        const candleUpdate = { time: kline.t / 1000, open: parseFloat(kline.o), high: parseFloat(kline.h), low: parseFloat(kline.l), close: parseFloat(kline.c) } as BarData;
+        setRealtimeChartUpdate(candleUpdate);
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [symbol, interval]);
+
   const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
   const tradeLevelsForChart: TradeLevels = { entry: entryPrice, stopLoss, takeProfit };
 
   useEffect(() => {
-    // Set default SL/TP when entry price is available and the user hasn't set them yet
     if (entryPrice > 0 && stopLoss === 0 && takeProfit === 0) {
-      // Set default SL 1% below and TP 2% above entry price
       const defaultStopLoss = entryPrice * 0.99;
       const defaultTakeProfit = entryPrice * 1.02;
       setStopLoss(defaultStopLoss);
       setTakeProfit(defaultTakeProfit);
     }
-    // If entry price becomes 0 (e.g. switching symbol), reset SL/TP
     if (entryPrice === 0) {
         setStopLoss(0);
         setTakeProfit(0);
     }
   }, [entryPrice]);
 
+
+  const [closingTradeIds, setClosingTradeIds] = useState<string[]>([]);
 
   // Mutations
   const createMutation = useMutation({
@@ -125,14 +165,53 @@ const PlayPage = () => {
 
   const closeMutation = useMutation<Trade, Error, string>({
     mutationFn: closeTrade,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
+      // Remove from the closing list on success
+      setClosingTradeIds(prev => prev.filter(id => id !== data.id));
     },
+    onError: (error, tradeId) => {
+      // Also remove from the closing list on error to allow retrying
+      setClosingTradeIds(prev => prev.filter(id => id !== tradeId));
+    }
   });
+
+  // VIGILANTE: Checks for SL/TP hits on every price update
+  useEffect(() => {
+    if (!realtimeChartUpdate || !profile?.openTrades) {
+      return;
+    }
+
+    const currentPrice = realtimeChartUpdate.close;
+
+    for (const trade of profile.openTrades) {
+      // Skip if we are already in the process of closing this trade
+      if (closingTradeIds.includes(trade.id)) {
+        continue;
+      }
+
+      // Current logic is for 'BUY' trades only
+      if (trade.type === 'BUY') {
+        let shouldClose = false;
+        if (trade.stopLoss && currentPrice <= trade.stopLoss) {
+          console.log(`VIGILANTE: Stop Loss atingido para ${trade.symbol}! Fechando...`);
+          shouldClose = true;
+        } else if (trade.takeProfit && currentPrice >= trade.takeProfit) {
+          console.log(`VIGILANTE: Take Profit atingido para ${trade.symbol}! Fechando...`);
+          shouldClose = true;
+        }
+
+        if (shouldClose) {
+          // Add to the closing list to prevent duplicate mutations
+          setClosingTradeIds(prev => [...prev, trade.id]);
+          closeMutation.mutate(trade.id);
+        }
+      }
+    }
+  }, [realtimeChartUpdate, profile?.openTrades, closingTradeIds, closeMutation]);
 
   // Handlers
   const handleLevelsChange = (newLevels: TradeLevels) => {
-    // Only update SL and TP from chart dragging, entry is read-only from chart's perspective
     setStopLoss(newLevels.stopLoss);
     setTakeProfit(newLevels.takeProfit);
   };
@@ -197,6 +276,12 @@ const PlayPage = () => {
             tradeLevels={tradeLevelsForChart}
             onLevelsChange={handleLevelsChange}
             tipoOperacao="compra"
+            // New Props
+            initialChartData={initialChartData}
+            isChartLoading={isChartLoading}
+            interval={interval}
+            onIntervalChange={setInterval}
+            realtimeChartUpdate={realtimeChartUpdate}
         />
 
         <div className={styles.controlsContainer}>
