@@ -95,6 +95,23 @@ const PlayPage = () => {
   const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
   const tradeLevelsForChart: TradeLevels = { entry: entryPrice, stopLoss, takeProfit };
 
+  useEffect(() => {
+    // Set default SL/TP when entry price is available and the user hasn't set them yet
+    if (entryPrice > 0 && stopLoss === 0 && takeProfit === 0) {
+      // Set default SL 1% below and TP 2% above entry price
+      const defaultStopLoss = entryPrice * 0.99;
+      const defaultTakeProfit = entryPrice * 1.02;
+      setStopLoss(defaultStopLoss);
+      setTakeProfit(defaultTakeProfit);
+    }
+    // If entry price becomes 0 (e.g. switching symbol), reset SL/TP
+    if (entryPrice === 0) {
+        setStopLoss(0);
+        setTakeProfit(0);
+    }
+  }, [entryPrice]);
+
+
   // Mutations
   const createMutation = useMutation({
     mutationFn: createTrade,
@@ -176,6 +193,7 @@ const PlayPage = () => {
             symbol={symbol} 
             tradeLevels={tradeLevelsForChart}
             onLevelsChange={handleLevelsChange}
+            tipoOperacao="compra"
         />
 
         <div className={styles.controlsContainer}>

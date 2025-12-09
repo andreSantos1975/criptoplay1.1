@@ -1,21 +1,14 @@
 import React, { useEffect, useRef, memo, useState, useMemo } from "react";
 import {
-  createChart, ColorType, CrosshairMode, LineStyle, ISeriesApi,
-  IPriceLine, IChartApi, CandlestickSeries, BarData
+  createChart, ColorType, CrosshairMode, ISeriesApi,
+  IChartApi, CandlestickSeries, BarData
 } from "lightweight-charts";
-import { useQuery } from "@tanstack/react-query";
 import styles from "./TechnicalAnalysisChart.module.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MarketData } from "@/components/dashboard/MarketData/MarketData";
 import { CryptoList } from "@/components/dashboard/CryptoList/CryptoList";
 import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
-
-type PriceLineKey = "entry" | "takeProfit" | "stopLoss";
-
-type BinanceKlineData = [
-  number, string, string, string, string, string, number,
-  string, number, string, string, string
-];
+import { useTradeLines } from "../../../hooks/useTradeLines";
 
 interface TechnicalAnalysisChartProps {
   initialChartData: BarData[] | undefined;
@@ -50,12 +43,23 @@ export const TechnicalAnalysisChart = memo(
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-    const priceLinesRef = useRef<Partial<Record<PriceLineKey, IPriceLine>>>({});
     
     const [isChartReady, setIsChartReady] = useState(false);
     const [newSymbolInput, setNewSymbolInput] = useState("");
     const [watchedSymbols, setWatchedSymbols] = useState<string[]>([]);
-    const [draggingLine, setDraggingLine] = useState<PriceLineKey | null>(null);
+
+    // Use the custom hook for trade lines
+    useTradeLines({
+      chartRef,
+      seriesRef,
+      chartContainerRef,
+      tradeLevels,
+      onLevelsChange,
+      isChartReady,
+      marketType,
+      tipoOperacao,
+      isDraggable: true, // Lines are always draggable in this component
+    });
 
     const handleAddSymbol = () => {
       if (newSymbolInput && !watchedSymbols.includes(newSymbolInput.toUpperCase())) {
@@ -78,12 +82,6 @@ export const TechnicalAnalysisChart = memo(
         }
     }, [marketType]);
 
-    // Refs to hold the latest props for use in callbacks without causing re-renders
-    const onLevelsChangeRef = useRef(onLevelsChange);
-    onLevelsChangeRef.current = onLevelsChange;
-    const tradeLevelsRef = useRef(tradeLevels);
-    tradeLevelsRef.current = tradeLevels;
-
     const latestKlineForHeader = useMemo(() => {
       if (!initialChartData || initialChartData.length === 0) return null;
       const latestKline = initialChartData[initialChartData.length - 1];
@@ -96,7 +94,7 @@ export const TechnicalAnalysisChart = memo(
       };
     }, [initialChartData, selectedCrypto]);
 
-    // 1. Effect to create and cleanup the chart (runs only once)
+    // Effect to create and cleanup the chart (runs only once)
     useEffect(() => {
       const chartElement = chartContainerRef.current;
       if (!chartElement) return;
@@ -131,75 +129,14 @@ export const TechnicalAnalysisChart = memo(
       };
     }, []);
 
-    // 2. Effect to setup drag-and-drop listeners (runs when chart is ready)
-    useEffect(() => {
-      const chartElement = chartContainerRef.current;
-      const chart = chartRef.current;
-      const series = seriesRef.current;
-
-      if (!isChartReady || !chartElement || !chart || !series) return;
-
-      const isNearPriceLine = (price: number, y: number) => {
-        const priceY = series.priceToCoordinate(price);
-        return priceY !== null && Math.abs(priceY - y) < 10; // 10px tolerance
-      };
-
-      const handleMouseDown = (e: MouseEvent) => {
-        const rect = chartElement.getBoundingClientRect();
-        const y = e.clientY - rect.top;
-
-        for (const key in priceLinesRef.current) {
-          const priceLine = priceLinesRef.current[key as PriceLineKey];
-          if (priceLine && isNearPriceLine(priceLine.options().price, y)) {
-            setDraggingLine(key as PriceLineKey);
-            chart.applyOptions({ handleScroll: false, handleScale: false });
-            chartElement.style.cursor = 'ns-resize';
-            return;
-          }
-        }
-      };
-
-      const handleMouseMove = (e: MouseEvent) => {
-        if (!draggingLine) return;
-        
-        const rect = chartElement.getBoundingClientRect();
-        const y = e.clientY - rect.top;
-        const newPrice = series.coordinateToPrice(y);
-
-        if (newPrice !== null) {
-          // Use refs to get the latest props without causing re-renders
-          onLevelsChangeRef.current({
-            ...tradeLevelsRef.current,
-            [draggingLine]: newPrice,
-          });
-        }
-      };
-
-      const handleMouseUp = () => {
-        setDraggingLine(null);
-        chart.applyOptions({ handleScroll: true, handleScale: true });
-        chartElement.style.cursor = 'default';
-      };
-
-      chartElement.addEventListener('mousedown', handleMouseDown);
-      chartElement.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-
-      return () => {
-        chartElement.removeEventListener('mousedown', handleMouseDown);
-        chartElement.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-      };
-    }, [isChartReady, draggingLine]); // Rerun only when chart is ready or dragging state changes
-
-    // 3. Load initial data
+    // Load initial data
     useEffect(() => {
       if (!isChartReady || !seriesRef.current || !initialChartData) return;
       console.log(`Setting chart data for ${selectedCrypto}:`, initialChartData.slice(-5)); // Log last 5 data points
       seriesRef.current.setData(initialChartData);
     }, [isChartReady, initialChartData, selectedCrypto]);
 
-    // 4. Apply Dynamic Price Formatting
+    // Apply Dynamic Price Formatting
     useEffect(() => {
       const chart = chartRef.current;
       const series = seriesRef.current;
@@ -208,20 +145,17 @@ export const TechnicalAnalysisChart = memo(
       const lastPrice = initialChartData[initialChartData.length - 1]?.close || 0;
       
       let precision = 2;
-      // More robust precision calculation for very small numbers
       if (lastPrice > 0 && lastPrice < 0.1) {
-        const priceStr = lastPrice.toFixed(20); // Use toFixed for a consistent string format
+        const priceStr = lastPrice.toFixed(20);
         const decimalPart = priceStr.split('.')[1];
         if (decimalPart) {
             const firstDigitIndex = decimalPart.search(/[1-9]/);
             if (firstDigitIndex !== -1) {
-                // Add 4 to show a few significant digits after the leading zeros
                 precision = firstDigitIndex + 4; 
             }
         }
       }
       
-      // Cap precision to a reasonable max (Binance uses up to 8 for many pairs)
       if (precision > 8) precision = 8;
 
       const minMove = 1 / Math.pow(10, precision);
@@ -251,7 +185,7 @@ export const TechnicalAnalysisChart = memo(
       });
     }, [isChartReady, initialChartData, selectedCrypto]);
 
-    // 5. Connect WebSocket
+    // Connect WebSocket
     useEffect(() => {
       if (!isChartReady || !seriesRef.current || !selectedCrypto) return;
 
@@ -275,27 +209,6 @@ export const TechnicalAnalysisChart = memo(
         ws.close();
       };
     }, [isChartReady, selectedCrypto, interval, marketType]);
-
-    // 6. Update Price Lines
-    useEffect(() => {
-      const series = seriesRef.current;
-      if (!isChartReady || !series || !tradeLevels) return;
-
-      Object.values(priceLinesRef.current).forEach(line => line && series.removePriceLine(line));
-      priceLinesRef.current = {};
-
-      const createPriceLine = (key: PriceLineKey, price: number, color: string, title: string) => {
-        if (price > 0) {
-          priceLinesRef.current[key] = series.createPriceLine({ price, color, lineWidth: 2, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title });
-        }
-      };
-
-      createPriceLine("entry", tradeLevels.entry, "#42A5F5", "Entrada");
-      if (marketType === 'futures' || (marketType === 'spot' && (tipoOperacao === 'compra' || tipoOperacao === 'venda'))) {
-        createPriceLine("takeProfit", tradeLevels.takeProfit, "#26A69A", "Take Profit");
-        createPriceLine("stopLoss", tradeLevels.stopLoss, "#EF5350", "Stop Loss");
-      }
-    }, [isChartReady, tradeLevels, tipoOperacao, marketType]);
     
     return (
       <Card>
@@ -344,4 +257,3 @@ export const TechnicalAnalysisChart = memo(
 
 TechnicalAnalysisChart.displayName = "TechnicalAnalysisChart";
 export default TechnicalAnalysisChart;
-
