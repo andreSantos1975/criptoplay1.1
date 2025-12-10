@@ -173,7 +173,8 @@ export const RecentOperationsTable = () => {
     }
 
     if (trade.status === 'OPEN' && baseCurrencyCurrentPrice !== undefined) {
-      const pnl = (trade.type === 'compra' ? (baseCurrencyCurrentPrice - baseCurrencyEntryPrice) : (baseCurrencyEntryPrice - baseCurrencyCurrentPrice)) * trade.quantity;
+      const isBuy = trade.type.toLowerCase() === 'compra' || trade.type.toLowerCase() === 'buy';
+      const pnl = (isBuy ? (baseCurrencyCurrentPrice - baseCurrencyEntryPrice) : (baseCurrencyEntryPrice - baseCurrencyCurrentPrice)) * trade.quantity;
       const percent = (pnl / initialCost) * 100;
       return `${percent.toFixed(2)}%`;
     }
@@ -220,7 +221,8 @@ export const RecentOperationsTable = () => {
       if (trade.status === 'CLOSED') {
         pnl = trade.pnl;
       } else if (trade.status === 'OPEN' && currentPriceInOriginalCurrency !== undefined) {
-        pnl = (trade.type === 'compra' ? (currentPriceInOriginalCurrency - trade.entryPrice) : (trade.entryPrice - currentPriceInOriginalCurrency)) * trade.quantity;
+        const isBuy = trade.type.toLowerCase() === 'compra' || trade.type.toLowerCase() === 'buy';
+        pnl = (isBuy ? (currentPriceInOriginalCurrency - trade.entryPrice) : (trade.entryPrice - currentPriceInOriginalCurrency)) * trade.quantity;
       }
 
       const isProfit = pnl != null && pnl >= 0;
@@ -335,11 +337,13 @@ export const RecentOperationsTable = () => {
 
       {isModalOpen && selectedTrade && (() => {
         const { currencyCode, locale } = getCurrencyDetails(selectedTrade);
-        const potentialLoss = (selectedTrade.type === 'compra')
+        const isBuy = selectedTrade.type.toLowerCase() === 'compra' || selectedTrade.type.toLowerCase() === 'buy';
+
+        const potentialLoss = (isBuy)
           ? (selectedTrade.stopLoss - selectedTrade.entryPrice) * selectedTrade.quantity
           : (selectedTrade.entryPrice - selectedTrade.stopLoss) * selectedTrade.quantity;
 
-        const potentialProfit = (selectedTrade.type === 'compra')
+        const potentialProfit = (isBuy)
           ? (selectedTrade.takeProfit - selectedTrade.entryPrice) * selectedTrade.quantity
           : (selectedTrade.entryPrice - selectedTrade.takeProfit) * selectedTrade.quantity;
 

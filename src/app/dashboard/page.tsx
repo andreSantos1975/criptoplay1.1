@@ -31,6 +31,7 @@ const TechnicalAnalysisChart = dynamic(
 import { ReportsSection } from "@/components/dashboard/ReportsSection/ReportsSection";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview/DashboardOverview";
 import styles from "./dashboard.module.css";
+import { Trade } from "@prisma/client";
 
 const DEFAULT_ALLOCATION_PERCENTAGES: { [key: string]: number } = {
   "Investimento": 15,
@@ -60,6 +61,33 @@ interface BudgetCategoryFromApi {
   name: string;
   type: "INCOME" | "EXPENSE";
 }
+
+// SIMULATOR TYPES & API
+interface SimulatorProfile {
+  virtualBalance: number;
+  openTrades: Trade[];
+}
+
+const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
+  const res = await fetch('/api/simulator/profile');
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || 'Falha ao buscar dados do perfil do simulador.');
+  }
+  return res.json();
+};
+
+const closeTrade = async (tradeId: string): Promise<Trade> => {
+  const res = await fetch(`/api/simulator/trades/${tradeId}/close`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || 'Falha ao fechar operação do simulador.');
+  }
+  return res.json();
+};
+
 
 // API Functions
 const addIncome = async (newIncome: Omit<Income, 'id'>): Promise<Income> => {
@@ -152,6 +180,25 @@ const DashboardPage = () => {
       staleTime: 1000 * 60, // 1 minute
       refetchOnWindowFocus: false,
   });
+
+    // Fetch simulator profile data
+    const { data: simulatorProfile } = useQuery<SimulatorProfile>({
+      queryKey: ['simulatorProfile'],
+      queryFn: fetchSimulatorProfile,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+  
+    // Mutation for closing a simulator trade
+    const closeTradeMutation = useMutation<Trade, Error, string>({
+      mutationFn: closeTrade,
+      onSuccess: (data) => {
+        toast.success(`Ordem para ${data.symbol} fechada com lucro/prejuízo de ${data.result?.toFixed(2)} BRL`);
+        queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
+      },
+      onError: (error) => {
+        toast.error(`Erro ao fechar ordem: ${error.message}`);
+      }
+    });
 
   useEffect(() => {
     if (initialChartData && initialChartData.length > 0) {
@@ -535,6 +582,8 @@ const DashboardPage = () => {
               marketType={marketType}
               onMarketTypeChange={handleMarketTypeChange}
               tipoOperacao={tipoOperacao}
+              openTrades={simulatorProfile?.openTrades}
+              closeMutation={closeTradeMutation}
             >
               <TradeJournal 
                 tradeLevels={tradeLevels} 

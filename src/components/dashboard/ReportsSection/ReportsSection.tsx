@@ -83,10 +83,15 @@ const generatePortfolioPerformanceData = (
   const events = [
     ...trades
       .filter((t) => t.status === "CLOSED" && t.pnl != null)
-      .map((t) => ({
-        date: new Date(t.exitDate!),
-        amount: (Number(t.pnl) || 0) * brlRate,
-      })),
+      .map((t) => {
+        const pnlInBrl = t.symbol.includes('BRL')
+          ? Number(t.pnl)
+          : (Number(t.pnl) || 0) * brlRate;
+        return {
+          date: new Date(t.exitDate!),
+          amount: pnlInBrl,
+        };
+      }),
     ...capitalMovements.map((m) => ({
       date: new Date(m.date),
       amount:
@@ -120,10 +125,9 @@ const generatePortfolioDistributionData = (
   openTrades.forEach((trade) => {
     const ticker = tickers.find((t) => t.symbol === trade.symbol);
     if (ticker) {
-      const value =
-        parseFloat(trade.quantity.toString()) *
-        parseFloat(ticker.lastPrice) *
-        brlRate;
+      const value = t.symbol.includes('BRL')
+        ? parseFloat(trade.quantity.toString()) * parseFloat(ticker.lastPrice)
+        : parseFloat(trade.quantity.toString()) * parseFloat(ticker.lastPrice) * brlRate;
       const asset = trade.symbol.replace("USDT", "");
       portfolio[asset] = (portfolio[asset] || 0) + value;
     }
@@ -165,7 +169,10 @@ const generateMonthlyReportData = (
           withdrawals: 0,
           tradeCount: 0,
         };
-      monthlyMap[key].pnl += (Number(trade.pnl) || 0) * brlRate;
+      const pnlInBrl = trade.symbol.includes('BRL')
+        ? Number(trade.pnl)
+        : (Number(trade.pnl) || 0) * brlRate;
+      monthlyMap[key].pnl += pnlInBrl;
       monthlyMap[key].tradeCount++;
     });
 
@@ -284,7 +291,12 @@ export const ReportsSection = () => {
 
     const totalPnl = trades
       .filter((t) => t.status === 'CLOSED' && t.pnl != null)
-      .reduce((acc, t) => acc + Number(t.pnl) * brlRate, 0);
+      .reduce((acc, t) => {
+        const pnlInBrl = t.symbol.includes('BRL')
+          ? Number(t.pnl)
+          : Number(t.pnl) * brlRate;
+        return acc + pnlInBrl;
+      }, 0);
 
     const patrimonioAtual = totalDeposits - totalWithdrawals + totalPnl;
 

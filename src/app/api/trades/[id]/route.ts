@@ -61,9 +61,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     console.log('Quantity:', quantity.toString());
     // --- END DEBUG LOG ---
 
-    if (tradeToClose.type === 'compra' || tradeToClose.type === 'long') {
+    const tradeType = tradeToClose.type.toLowerCase();
+    const isBuyTrade = tradeType === 'compra' || tradeType === 'long' || tradeType === 'buy';
+
+    if (isBuyTrade) {
       pnl = (exitPrice.minus(entryPrice)).times(quantity);
-    } else { // 'venda' or 'short'
+    } else { // 'venda', 'short', 'sell'
       pnl = (entryPrice.minus(exitPrice)).times(quantity);
     }
 

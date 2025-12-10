@@ -37,7 +37,14 @@ export async function POST(
     const exitPrice = await getCurrentPrice(trade.symbol);
 
     // 4. Calcular o Lucro ou Prejuízo (PnL)
-    const pnl = exitPrice.sub(trade.entryPrice).mul(trade.quantity);
+    let pnl;
+    if (trade.type === 'BUY') {
+      // Para uma operação de compra (long), o lucro é (preço de saída - preço de entrada) * quantidade
+      pnl = exitPrice.sub(trade.entryPrice).mul(trade.quantity);
+    } else { // Presume-se que seja 'SELL'
+      // Para uma operação de venda (short), o lucro é (preço de entrada - preço de saída) * quantidade
+      pnl = trade.entryPrice.sub(exitPrice).mul(trade.quantity);
+    }
 
     // 5. Executar as atualizações no banco de dados como uma transação
     const [updatedTrade, updatedUser] = await prisma.$transaction([

@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, memo, useState, useMemo } from "react";
-import {
-  createChart, ColorType, CrosshairMode, ISeriesApi,
-  IChartApi, CandlestickSeries, BarData
-} from "lightweight-charts";
+import { createChart, ColorType, CrosshairMode, ISeriesApi, IChartApi, CandlestickSeries, BarData } from "lightweight-charts";
 import styles from "./TechnicalAnalysisChart.module.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MarketData } from "@/components/dashboard/MarketData/MarketData";
 import { CryptoList } from "@/components/dashboard/CryptoList/CryptoList";
 import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
 import { useTradeLines } from "../../../hooks/useTradeLines";
+import { useVigilante } from "@/hooks/useVigilante";
+import { Trade } from "@prisma/client";
+import { UseMutationResult } from "@tanstack/react-query";
 
 interface TechnicalAnalysisChartProps {
   initialChartData: BarData[] | undefined;
@@ -23,6 +23,8 @@ interface TechnicalAnalysisChartProps {
   marketType: "spot" | "futures";
   onMarketTypeChange: (marketType: "spot" | "futures") => void;
   tipoOperacao: "compra" | "venda" | "";
+  openTrades?: Trade[];
+  closeMutation?: UseMutationResult<Trade, Error, string, unknown>;
 }
 
 export const TechnicalAnalysisChart = memo(
@@ -39,6 +41,8 @@ export const TechnicalAnalysisChart = memo(
     marketType,
     onMarketTypeChange,
     tipoOperacao,
+    openTrades,
+    closeMutation,
   }: TechnicalAnalysisChartProps) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
@@ -58,8 +62,24 @@ export const TechnicalAnalysisChart = memo(
       isChartReady,
       marketType,
       tipoOperacao,
-      isDraggable: true, // Lines are always draggable in this component
+      isDraggable: true,
     });
+    
+    // Use the Vigilante hook for monitoring trades
+    const { realtimeChartUpdate } = useVigilante({
+        symbol: selectedCrypto,
+        interval,
+        openTrades,
+        closeMutation: closeMutation!,
+        enabled: !!openTrades && openTrades.length > 0 && !!closeMutation,
+    });
+
+    // Update chart with real-time data from Vigilante
+    useEffect(() => {
+        if (realtimeChartUpdate) {
+            seriesRef.current?.update(realtimeChartUpdate);
+        }
+    }, [realtimeChartUpdate]);
 
     const handleAddSymbol = () => {
       if (newSymbolInput && !watchedSymbols.includes(newSymbolInput.toUpperCase())) {
@@ -185,9 +205,12 @@ export const TechnicalAnalysisChart = memo(
       });
     }, [isChartReady, initialChartData, selectedCrypto]);
 
-    // Connect WebSocket
+    // NOTE: The WebSocket connection is now handled by the useVigilante hook
+    // when open trades are present. We can add a fallback for when there are no trades.
     useEffect(() => {
-      if (!isChartReady || !seriesRef.current || !selectedCrypto) return;
+      if (!isChartReady || !seriesRef.current || !selectedCrypto || (openTrades && openTrades.length > 0)) {
+        return; // Vigilante is handling the WebSocket
+      }
 
       let wsUrl;
       if (marketType === 'spot') {
@@ -208,7 +231,7 @@ export const TechnicalAnalysisChart = memo(
       return () => {
         ws.close();
       };
-    }, [isChartReady, selectedCrypto, interval, marketType]);
+    }, [isChartReady, selectedCrypto, interval, marketType, openTrades]);
     
     return (
       <Card>

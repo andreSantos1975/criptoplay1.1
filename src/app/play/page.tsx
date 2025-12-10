@@ -7,7 +7,7 @@ import { Trade } from '@prisma/client';
 import { Rankings } from '@/components/simulator/Rankings';
 import { SimulatorChart } from '@/components/simulator/SimulatorChart/SimulatorChart';
 import { TradeRow } from '@/components/simulator/TradeRow/TradeRow';
-import { BarData } from 'lightweight-charts';
+import { useVigilante } from '@/hooks/useVigilante';
 
 // Type definitions
 interface SimulatorProfile {
@@ -85,8 +85,7 @@ const PlayPage = () => {
   const [quantity, setQuantity] = useState(0.01);
   const [stopLoss, setStopLoss] = useState(0);
   const [takeProfit, setTakeProfit] = useState(0);
-  const [interval, setInterval] = useState("1m"); // Lifted from SimulatorChart
-  const [realtimeChartUpdate, setRealtimeChartUpdate] = useState<BarData | null>(null);
+  const [interval, setInterval] = useState("1m");
 
   // Queries
   const { data: profile, isLoading, error } = useQuery<SimulatorProfile, Error>({
@@ -100,7 +99,6 @@ const PlayPage = () => {
     refetchInterval: 5000, // Keep this for the header display
   });
   
-  // Query for historical chart data (lifted from SimulatorChart)
   const { data: initialChartData, isFetching: isChartLoading } = useQuery({
     queryKey: ["binanceKlines", "spot", interval, symbol],
     queryFn: async () => {
@@ -114,24 +112,6 @@ const PlayPage = () => {
     refetchOnWindowFocus: false,
     enabled: !!symbol,
   });
-
-  // WebSocket for real-time chart updates and vigilante trigger
-  useEffect(() => {
-    const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_${interval}`);
-    
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      const kline = message.k;
-      if (kline) {
-        const candleUpdate = { time: kline.t / 1000, open: parseFloat(kline.o), high: parseFloat(kline.h), low: parseFloat(kline.l), close: parseFloat(kline.c) } as BarData;
-        setRealtimeChartUpdate(candleUpdate);
-      }
-    };
-
-    return () => {
-      ws.close();
-    };
-  }, [symbol, interval]);
 
   const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
   const tradeLevelsForChart: TradeLevels = { entry: entryPrice, stopLoss, takeProfit };
@@ -147,10 +127,7 @@ const PlayPage = () => {
         setStopLoss(0);
         setTakeProfit(0);
     }
-  }, [entryPrice]);
-
-
-  const [closingTradeIds, setClosingTradeIds] = useState<string[]>([]);
+  }, [entryPrice, stopLoss, takeProfit]);
 
   // Mutations
   const createMutation = useMutation({
@@ -165,50 +142,19 @@ const PlayPage = () => {
 
   const closeMutation = useMutation<Trade, Error, string>({
     mutationFn: closeTrade,
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
-      // Remove from the closing list on success
-      setClosingTradeIds(prev => prev.filter(id => id !== data.id));
     },
-    onError: (error, tradeId) => {
-      // Also remove from the closing list on error to allow retrying
-      setClosingTradeIds(prev => prev.filter(id => id !== tradeId));
-    }
   });
 
-  // VIGILANTE: Checks for SL/TP hits on every price update
-  useEffect(() => {
-    if (!realtimeChartUpdate || !profile?.openTrades) {
-      return;
-    }
-
-    const currentPrice = realtimeChartUpdate.close;
-
-    for (const trade of profile.openTrades) {
-      // Skip if we are already in the process of closing this trade
-      if (closingTradeIds.includes(trade.id)) {
-        continue;
-      }
-
-      // Current logic is for 'BUY' trades only
-      if (trade.type === 'BUY') {
-        let shouldClose = false;
-        if (trade.stopLoss && currentPrice <= trade.stopLoss) {
-          console.log(`VIGILANTE: Stop Loss atingido para ${trade.symbol}! Fechando...`);
-          shouldClose = true;
-        } else if (trade.takeProfit && currentPrice >= trade.takeProfit) {
-          console.log(`VIGILANTE: Take Profit atingido para ${trade.symbol}! Fechando...`);
-          shouldClose = true;
-        }
-
-        if (shouldClose) {
-          // Add to the closing list to prevent duplicate mutations
-          setClosingTradeIds(prev => [...prev, trade.id]);
-          closeMutation.mutate(trade.id);
-        }
-      }
-    }
-  }, [realtimeChartUpdate, profile?.openTrades, closingTradeIds, closeMutation]);
+  // VIGILANTE HOOK
+  const { realtimeChartUpdate } = useVigilante({
+    symbol,
+    interval,
+    openTrades: profile?.openTrades,
+    closeMutation,
+    enabled: true,
+  });
 
   // Handlers
   const handleLevelsChange = (newLevels: TradeLevels) => {
