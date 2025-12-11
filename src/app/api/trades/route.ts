@@ -4,18 +4,22 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
-// GET /api/trades - Fetch all trades for the logged-in user
-export async function GET() {
+// GET /api/trades - Fetch all trades for the logged-in user, optionally filtering by status
+export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const status = searchParams.get('status');
+
   try {
     const trades = await prisma.trade.findMany({
       where: {
         userId: session.user.id,
+        ...(status && { status: status.toUpperCase() }),
       },
       orderBy: {
         entryDate: 'desc',

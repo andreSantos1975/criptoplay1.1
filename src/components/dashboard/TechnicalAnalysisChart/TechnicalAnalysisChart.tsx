@@ -25,6 +25,8 @@ interface TechnicalAnalysisChartProps {
   tipoOperacao: "compra" | "venda" | "";
   openTrades?: Trade[];
   closeMutation?: UseMutationResult<Trade, Error, string, unknown>;
+  closingTradeIds: Set<string>;
+  onAddToClosingTradeIds: (tradeId: string) => void;
 }
 
 export const TechnicalAnalysisChart = memo(
@@ -43,6 +45,8 @@ export const TechnicalAnalysisChart = memo(
     tipoOperacao,
     openTrades,
     closeMutation,
+    closingTradeIds,
+    onAddToClosingTradeIds,
   }: TechnicalAnalysisChartProps) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
@@ -71,7 +75,9 @@ export const TechnicalAnalysisChart = memo(
         interval,
         openTrades,
         closeMutation: closeMutation!,
-        enabled: !!openTrades && openTrades.length > 0 && !!closeMutation,
+        enabled: !!openTrades && openTrades.length > 0 && !!closeMutation && !closeMutation.isPending,
+        closingTradeIds,
+        onAddToClosingTradeIds,
     });
 
     // Update chart with real-time data from Vigilante

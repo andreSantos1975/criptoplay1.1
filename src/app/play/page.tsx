@@ -86,6 +86,7 @@ const PlayPage = () => {
   const [stopLoss, setStopLoss] = useState(0);
   const [takeProfit, setTakeProfit] = useState(0);
   const [interval, setInterval] = useState("1m");
+  const [closingTradeIds, setClosingTradeIds] = useState(new Set<string>());
 
   // Queries
   const { data: profile, isLoading, error } = useQuery<SimulatorProfile, Error>({
@@ -114,26 +115,23 @@ const PlayPage = () => {
   });
 
   const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
-  const tradeLevelsForChart: TradeLevels = { entry: entryPrice, stopLoss, takeProfit };
-
-  useEffect(() => {
-    if (entryPrice > 0 && stopLoss === 0 && takeProfit === 0) {
-      const defaultStopLoss = entryPrice * 0.99;
-      const defaultTakeProfit = entryPrice * 1.02;
-      setStopLoss(defaultStopLoss);
-      setTakeProfit(defaultTakeProfit);
-    }
-    if (entryPrice === 0) {
-        setStopLoss(0);
-        setTakeProfit(0);
-    }
-  }, [entryPrice, stopLoss, takeProfit]);
-
-  // Mutations
-  const createMutation = useMutation({
-    mutationFn: createTrade,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
+      const tradeLevelsForChart: TradeLevels = { entry: entryPrice, stopLoss, takeProfit };
+    
+      useEffect(() => {
+        // Only set default SL/TP if they haven't been set, to avoid overwriting user adjustments.
+        // This will run when entryPrice changes, and SL/TP have been reset (e.g., after a trade).
+        if (entryPrice > 0 && stopLoss === 0 && takeProfit === 0) {
+          const defaultStopLoss = entryPrice * 0.99;
+          const defaultTakeProfit = entryPrice * 1.02;
+          setStopLoss(defaultStopLoss);
+          setTakeProfit(defaultTakeProfit);
+        }
+      }, [entryPrice]);
+    
+      // Mutations
+      const createMutation = useMutation({
+        mutationFn: createTrade,
+        onSuccess: () => {      queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
       setQuantity(0.01);
       setStopLoss(0);
       setTakeProfit(0);
@@ -142,10 +140,22 @@ const PlayPage = () => {
 
   const closeMutation = useMutation<Trade, Error, string>({
     mutationFn: closeTrade,
-    onSuccess: () => {
+    onMutate: (tradeId) => {
+      setClosingTradeIds(prev => new Set(prev).add(tradeId));
+    },
+    onSettled: (data, error, tradeId) => {
+      setClosingTradeIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(tradeId);
+        return newSet;
+      });
       queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
     },
   });
+
+  const handleAddToClosingTradeIds = (tradeId: string) => {
+    setClosingTradeIds(prev => new Set(prev).add(tradeId));
+  };
 
   // VIGILANTE HOOK
   const { realtimeChartUpdate } = useVigilante({
@@ -154,6 +164,8 @@ const PlayPage = () => {
     openTrades: profile?.openTrades,
     closeMutation,
     enabled: true,
+    closingTradeIds,
+    onAddToClosingTradeIds: handleAddToClosingTradeIds,
   });
 
   // Handlers
@@ -228,6 +240,7 @@ const PlayPage = () => {
             interval={interval}
             onIntervalChange={setInterval}
             realtimeChartUpdate={realtimeChartUpdate}
+            openTrades={profile?.openTrades}
         />
 
         <div className={styles.controlsContainer}>
@@ -321,7 +334,7 @@ const PlayPage = () => {
                     </thead>
                     <tbody>
                       {profile.openTrades.map((trade) => (
-                        <TradeRow key={trade.id} trade={trade} closeMutation={closeMutation} />
+                        <TradeRow key={trade.id} trade={trade} closeMutation={closeMutation} isClosing={closingTradeIds.has(trade.id)} />
                       ))}
                     </tbody>
                   </table>

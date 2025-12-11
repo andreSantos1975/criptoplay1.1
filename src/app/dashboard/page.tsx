@@ -62,28 +62,23 @@ interface BudgetCategoryFromApi {
   type: "INCOME" | "EXPENSE";
 }
 
-// SIMULATOR TYPES & API
-interface SimulatorProfile {
-  virtualBalance: number;
-  openTrades: Trade[];
-}
-
-const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
-  const res = await fetch('/api/simulator/profile');
+// REAL TRADES API
+const fetchOpenRealTrades = async (): Promise<Trade[]> => {
+  const res = await fetch('/api/trades?status=OPEN');
   if (!res.ok) {
     const errorData = await res.json();
-    throw new Error(errorData.message || 'Falha ao buscar dados do perfil do simulador.');
+    throw new Error(errorData.message || 'Falha ao buscar operações reais abertas.');
   }
   return res.json();
 };
 
-const closeTrade = async (tradeId: string): Promise<Trade> => {
-  const res = await fetch(`/api/simulator/trades/${tradeId}/close`, {
-    method: 'POST',
+const closeRealTrade = async (tradeId: string): Promise<Trade> => {
+  const res = await fetch(`/api/trades/${tradeId}`, {
+    method: 'PUT',
   });
   if (!res.ok) {
     const errorData = await res.json();
-    throw new Error(errorData.message || 'Falha ao fechar operação do simulador.');
+    throw new Error(errorData.message || 'Falha ao fechar operação real.');
   }
   return res.json();
 };
@@ -181,24 +176,49 @@ const DashboardPage = () => {
       refetchOnWindowFocus: false,
   });
 
-    // Fetch simulator profile data
-    const { data: simulatorProfile } = useQuery<SimulatorProfile>({
-      queryKey: ['simulatorProfile'],
-      queryFn: fetchSimulatorProfile,
-      staleTime: 1000 * 60 * 5, // 5 minutes
+    // Fetch open real trades data
+    const { data: openRealTrades } = useQuery<Trade[]>({
+      queryKey: ['openRealTrades'],
+      queryFn: fetchOpenRealTrades,
+      staleTime: 1000 * 30, // 30 seconds
     });
   
-    // Mutation for closing a simulator trade
-    const closeTradeMutation = useMutation<Trade, Error, string>({
-      mutationFn: closeTrade,
+    // Mutation for closing a real trade
+    const closeRealTradeMutation = useMutation<Trade, Error, string>({
+      mutationFn: closeRealTrade,
       onSuccess: (data) => {
-        toast.success(`Ordem para ${data.symbol} fechada com lucro/prejuízo de ${data.result?.toFixed(2)} BRL`);
-        queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
+        toast.success(`Ordem para ${data.symbol} fechada com sucesso!`);
+        queryClient.invalidateQueries({ queryKey: ['openRealTrades'] });
       },
       onError: (error) => {
         toast.error(`Erro ao fechar ordem: ${error.message}`);
       }
     });
+
+    // State for tracking trades being closed by the Vigilante, lifted up to survive re-mounts
+    const [closingTradeIds, setClosingTradeIds] = useState(new Set<string>());
+
+    const handleAddToClosingTradeIds = (tradeId: string) => {
+      setClosingTradeIds(prev => new Set(prev).add(tradeId));
+    };
+
+    // Effect to clean up closingTradeIds when the list of open trades is updated
+    useEffect(() => {
+      if (!openRealTrades) return;
+      const openTradeIds = new Set(openRealTrades.map(t => t.id));
+      
+      setClosingTradeIds(prevClosingIds => {
+        const newClosingIds = new Set(prevClosingIds);
+        let hasChanged = false;
+        newClosingIds.forEach(id => {
+          if (!openTradeIds.has(id)) {
+            newClosingIds.delete(id);
+            hasChanged = true;
+          }
+        });
+        return hasChanged ? newClosingIds : prevClosingIds;
+      });
+    }, [openRealTrades]);
 
   useEffect(() => {
     if (initialChartData && initialChartData.length > 0) {
@@ -582,8 +602,10 @@ const DashboardPage = () => {
               marketType={marketType}
               onMarketTypeChange={handleMarketTypeChange}
               tipoOperacao={tipoOperacao}
-              openTrades={simulatorProfile?.openTrades}
-              closeMutation={closeTradeMutation}
+              openTrades={openRealTrades}
+              closeMutation={closeRealTradeMutation}
+              closingTradeIds={closingTradeIds}
+              onAddToClosingTradeIds={handleAddToClosingTradeIds}
             >
               <TradeJournal 
                 tradeLevels={tradeLevels} 

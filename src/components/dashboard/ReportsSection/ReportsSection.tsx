@@ -125,7 +125,7 @@ const generatePortfolioDistributionData = (
   openTrades.forEach((trade) => {
     const ticker = tickers.find((t) => t.symbol === trade.symbol);
     if (ticker) {
-      const value = t.symbol.includes('BRL')
+      const value = ticker.symbol.includes('BRL')
         ? parseFloat(trade.quantity.toString()) * parseFloat(ticker.lastPrice)
         : parseFloat(trade.quantity.toString()) * parseFloat(ticker.lastPrice) * brlRate;
       const asset = trade.symbol.replace("USDT", "");

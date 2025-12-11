@@ -19,6 +19,7 @@ interface SimulatorChartProps {
   interval: string;
   onIntervalChange: (interval: string) => void;
   realtimeChartUpdate: BarData | null;
+  openTrades: Trade[] | undefined; // Added
 }
 
 export const SimulatorChart = memo(({ 
@@ -30,7 +31,8 @@ export const SimulatorChart = memo(({
   isChartLoading,
   interval,
   onIntervalChange,
-  realtimeChartUpdate
+  realtimeChartUpdate,
+  openTrades // Added
 }: SimulatorChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -47,6 +49,8 @@ export const SimulatorChart = memo(({
     isChartReady,
     marketType: 'spot', // Simulator is always spot
     tipoOperacao: tipoOperacao,
+    openTrades, // Passed to hook
+    symbol, // Pass symbol to the hook
   });
 
   // Effect to create and cleanup the chart

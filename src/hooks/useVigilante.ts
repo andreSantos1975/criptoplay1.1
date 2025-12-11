@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Trade } from '@prisma/client';
 import { BarData } from 'lightweight-charts';
@@ -10,6 +9,8 @@ interface VigilanteOptions {
   openTrades: Trade[] | undefined;
   closeMutation: UseMutationResult<Trade, Error, string, unknown>;
   enabled?: boolean;
+  closingTradeIds: Set<string>; // Estado elevado
+  onAddToClosingTradeIds: (tradeId: string) => void; // Callback para atualizar estado elevado
 }
 
 export const useVigilante = ({
@@ -18,9 +19,10 @@ export const useVigilante = ({
   openTrades,
   closeMutation,
   enabled = true,
+  closingTradeIds,
+  onAddToClosingTradeIds,
 }: VigilanteOptions) => {
   const [realtimeChartUpdate, setRealtimeChartUpdate] = useState<BarData | null>(null);
-  const [closingTradeIds, setClosingTradeIds] = useState<string[]>([]);
 
   // Effect for WebSocket connection
   useEffect(() => {
@@ -57,6 +59,11 @@ export const useVigilante = ({
 
   // VIGILANTE: Checks for SL/TP hits on every price update
   useEffect(() => {
+    // A lógica de log foi removida para esta correção final.
+    if (closeMutation.isPending) {
+      return;
+    }
+
     if (!realtimeChartUpdate || !openTrades || !enabled) {
       return;
     }
@@ -64,35 +71,47 @@ export const useVigilante = ({
     const currentPrice = realtimeChartUpdate.close;
 
     for (const trade of openTrades) {
-      if (closingTradeIds.includes(trade.id)) {
+      if (trade.symbol !== symbol) {
         continue;
       }
 
-      if (trade.type === 'BUY') {
-        let shouldClose = false;
-        if (trade.stopLoss && currentPrice <= trade.stopLoss) {
-          console.log(`VIGILANTE: Stop Loss atingido para ${trade.symbol}! Fechando...`);
+      // Usa o estado elevado para a verificação
+      if (closingTradeIds.has(trade.id)) {
+        continue;
+      }
+      
+      const stopLoss = trade.stopLoss ? parseFloat(trade.stopLoss as any) : null;
+      const takeProfit = trade.takeProfit ? parseFloat(trade.takeProfit as any) : null;
+
+      const tradeType = trade.type.toLowerCase();
+      const isBuyTrade = tradeType === 'compra' || tradeType === 'buy' || tradeType === 'long';
+      const isSellTrade = tradeType === 'venda' || tradeType === 'sell' || tradeType === 'short';
+
+      let shouldClose = false;
+
+      if (isBuyTrade) {
+        if (stopLoss && currentPrice <= stopLoss) {
           shouldClose = true;
-        } else if (trade.takeProfit && currentPrice >= trade.takeProfit) {
-          console.log(`VIGILANTE: Take Profit atingido para ${trade.symbol}! Fechando...`);
+        } else if (takeProfit && currentPrice >= takeProfit) {
           shouldClose = true;
         }
-
-        if (shouldClose) {
-          setClosingTradeIds((prev) => [...prev, trade.id]);
-          closeMutation.mutate(trade.id);
+      } else if (isSellTrade) {
+        if (stopLoss && currentPrice >= stopLoss) {
+          shouldClose = true;
+        } else if (takeProfit && currentPrice <= takeProfit) {
+          shouldClose = true;
         }
       }
-    }
-     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [realtimeChartUpdate, openTrades, enabled, closeMutation]);
-  
-    // Reset closingTradeIds when a trade is successfully closed and removed from openTrades
-    useEffect(() => {
-        const openTradeIds = new Set(openTrades?.map(t => t.id) ?? []);
-        setClosingTradeIds(prev => prev.filter(id => openTradeIds.has(id)));
-    }, [openTrades]);
 
+      if (shouldClose) {
+        onAddToClosingTradeIds(trade.id); // Chama o callback para atualizar o estado no pai
+        closeMutation.mutate(trade.id);
+        break;
+      }
+    }
+  }, [realtimeChartUpdate, openTrades, enabled, closeMutation, symbol, closingTradeIds, onAddToClosingTradeIds]);
+  
+  // O useEffect de limpeza foi removido e será movido para o componente pai.
 
   return { realtimeChartUpdate };
 };
