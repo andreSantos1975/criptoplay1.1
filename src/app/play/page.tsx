@@ -87,6 +87,7 @@ const PlayPage = () => {
   const [takeProfit, setTakeProfit] = useState(0);
   const [interval, setInterval] = useState("1m");
   const [closingTradeIds, setClosingTradeIds] = useState(new Set<string>());
+  const [isConfiguring, setIsConfiguring] = useState(true); // Control prospective lines
 
   // Queries
   const { data: profile, isLoading, error } = useQuery<SimulatorProfile, Error>({
@@ -97,7 +98,7 @@ const PlayPage = () => {
   const { data: currentPriceData, isLoading: isLoadingPrice, error: priceError } = useQuery<CurrentPrice, Error>({
     queryKey: ['currentPrice', symbol],
     queryFn: () => fetchCurrentPrice(symbol),
-    refetchInterval: 5000, // Keep this for the header display
+    refetchInterval: 5000,
   });
   
   const { data: initialChartData, isFetching: isChartLoading } = useQuery({
@@ -107,7 +108,7 @@ const PlayPage = () => {
       if (!response.ok) throw new Error("Network response was not ok");
       const data: BinanceKlineData[] = await response.json();
       const historicalData = data.slice(0, -1);
-      return historicalData.map(k => ({ time: k[0] / 1000, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) } as BarData));
+      return historicalData.map(k => ({ time: k[0] / 1000, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
     },
     staleTime: 60000,
     refetchOnWindowFocus: false,
@@ -115,26 +116,32 @@ const PlayPage = () => {
   });
 
   const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
-      const tradeLevelsForChart: TradeLevels = { entry: entryPrice, stopLoss, takeProfit };
-    
-      useEffect(() => {
-        // Only set default SL/TP if they haven't been set, to avoid overwriting user adjustments.
-        // This will run when entryPrice changes, and SL/TP have been reset (e.g., after a trade).
-        if (entryPrice > 0 && stopLoss === 0 && takeProfit === 0) {
-          const defaultStopLoss = entryPrice * 0.99;
-          const defaultTakeProfit = entryPrice * 1.02;
-          setStopLoss(defaultStopLoss);
-          setTakeProfit(defaultTakeProfit);
-        }
-      }, [entryPrice]);
-    
-      // Mutations
-      const createMutation = useMutation({
-        mutationFn: createTrade,
-        onSuccess: () => {      queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
+  
+  // Only show prospective lines if user is actively configuring a trade
+  const tradeLevelsForChart: TradeLevels = isConfiguring
+    ? { entry: entryPrice, stopLoss, takeProfit }
+    : { entry: 0, stopLoss: 0, takeProfit: 0 };
+
+  useEffect(() => {
+    // Set default SL/TP when starting to configure a new trade based on a new entry price
+    if (isConfiguring && entryPrice > 0 && stopLoss === 0 && takeProfit === 0) {
+      const defaultStopLoss = entryPrice * 0.99;
+      const defaultTakeProfit = entryPrice * 1.02;
+      setStopLoss(defaultStopLoss);
+      setTakeProfit(defaultTakeProfit);
+    }
+  }, [isConfiguring, entryPrice]);
+
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: createTrade,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
+      // Reset form and hide prospective lines
       setQuantity(0.01);
       setStopLoss(0);
       setTakeProfit(0);
+      setIsConfiguring(false);
     },
   });
 
@@ -172,6 +179,27 @@ const PlayPage = () => {
   const handleLevelsChange = (newLevels: TradeLevels) => {
     setStopLoss(newLevels.stopLoss);
     setTakeProfit(newLevels.takeProfit);
+    setIsConfiguring(true); // User is adjusting levels, so they are configuring
+  };
+
+  const handleSymbolChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSymbol(e.target.value.toUpperCase());
+    setIsConfiguring(true);
+  };
+
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuantity(Number(e.target.value));
+    setIsConfiguring(true);
+  };
+  
+  const handleStopLossChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStopLoss(Number(e.target.value));
+    setIsConfiguring(true);
+  };
+
+  const handleTakeProfitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTakeProfit(Number(e.target.value));
+    setIsConfiguring(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -253,7 +281,7 @@ const PlayPage = () => {
                       id="symbol"
                       type="text"
                       value={symbol}
-                      onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                      onChange={handleSymbolChange}
                       className={styles.input}
                       required
                   />
@@ -264,7 +292,7 @@ const PlayPage = () => {
                       id="quantity"
                       type="number"
                       value={quantity}
-                      onChange={(e) => setQuantity(Number(e.target.value))}
+                      onChange={handleQuantityChange}
                       className={styles.input}
                       step="0.001"
                       min="0.001"
@@ -277,7 +305,7 @@ const PlayPage = () => {
                       id="stopLoss"
                       type="number"
                       value={stopLoss === 0 ? '' : stopLoss}
-                      onChange={(e) => setStopLoss(Number(e.target.value))}
+                      onChange={handleStopLossChange}
                       className={styles.input}
                       step="0.01"
                   />
@@ -293,7 +321,7 @@ const PlayPage = () => {
                       id="takeProfit"
                       type="number"
                       value={takeProfit === 0 ? '' : takeProfit}
-                      onChange={(e) => setTakeProfit(Number(e.target.value))}
+                      onChange={handleTakeProfitChange}
                       className={styles.input}
                       step="0.01"
                   />
