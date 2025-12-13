@@ -181,6 +181,24 @@ const Simulator = () => {
     }
   }, [isConfiguring, entryPrice, stopLoss, takeProfit]);
 
+  // Efeito para reativar o modo de configuração quando todas as operações para o símbolo são fechadas
+  useEffect(() => {
+    if (!simulatorProfile?.openTrades) return;
+
+    // Verifica se há alguma operação aberta para o símbolo atualmente selecionado
+    const hasOpenTradesForSelectedSymbol = simulatorProfile.openTrades.some(trade => trade.symbol === selectedCrypto);
+    
+    // Se não houver operações abertas para o símbolo selecionado e não estivermos já configurando, ative o modo de configuração
+    if (!hasOpenTradesForSelectedSymbol && !isConfiguring) {
+      setIsConfiguring(true);
+    }
+    // Se houver operações abertas para o símbolo selecionado e estivermos no modo de configuração, desative-o
+    if (hasOpenTradesForSelectedSymbol && isConfiguring) {
+      setIsConfiguring(false);
+    }
+
+  }, [simulatorProfile?.openTrades, selectedCrypto, isConfiguring]);
+
   // --- HANDLERS ---
   const handleCryptoSelect = (symbol: string) => {
     setSelectedCrypto(symbol);
