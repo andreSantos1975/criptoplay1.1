@@ -220,7 +220,16 @@ const DashboardPage = () => {
     });
   }, [openRealTrades]);
 
-  // *** NEW: Centralized data fetching with custom hook ***
+  // *** NEW: Global Vigilante for all open trades ***
+  useVigilante({
+    openTrades: openRealTrades,
+    closeMutation: closeRealTradeMutation,
+    enabled: true, // Always enabled on the dashboard
+    closingTradeIds,
+    onAddToClosingTradeIds: handleAddToClosingTradeIds,
+  });
+
+  // *** Centralized data fetching with custom hook (now simplified) ***
   const {
     isChartLoading,
     chartSeriesData,
@@ -229,11 +238,8 @@ const DashboardPage = () => {
   } = useChartData(
     selectedCrypto,
     marketType,
-    interval,
-    closeRealTradeMutation,
-    openRealTrades,
-    closingTradeIds,
-    handleAddToClosingTradeIds
+    interval
+    // All trade-related props are removed as they are handled by the global vigilante
   );
 
   const { data: currentPriceData } = useQuery<CurrentPrice, Error>({

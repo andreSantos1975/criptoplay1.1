@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarData } from 'lightweight-charts';
-import { useVigilante } from './useVigilante'; // Assuming useVigilante is in the same hooks folder
+import { useRealtimeChartUpdate } from './useRealtimeChartUpdate'; // UPDATED IMPORT
 import { Trade } from "@prisma/client";
 
 // Define the structure of the raw API response for a Kline
@@ -23,11 +23,8 @@ const parseKlineData = (data: BinanceKline[]): BarData[] => {
 export const useChartData = (
   symbol: string,
   marketType: 'spot' | 'futures',
-  interval: string,
-  closeMutation: any, // Pass the mutation object from the parent
-  openTrades: Trade[] | undefined,
-  closingTradeIds: Set<string>,
-  onAddToClosingTradeIds: (tradeId: string) => void
+  interval: string
+  // REMOVED ALL TRADE-RELATED PROPS
 ) => {
   const [headerData, setHeaderData] = useState<BarData>({ open: 0, high: 0, low: 0, close: 0, time: 0 as any });
   
@@ -61,16 +58,12 @@ export const useChartData = (
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // 3. Get real-time updates from the Vigilante hook
-  const { realtimeChartUpdate } = useVigilante({
+  // 3. Get real-time updates from the new, view-only hook
+  const { realtimeChartUpdate } = useRealtimeChartUpdate({
     symbol,
-    interval: '1m', // Vigilante always uses 1m for real-time ticks
+    interval: '1m', // Always use 1m for real-time ticks
     marketType,
-    closeMutation,
-    openTrades,
-    enabled: isQueryEnabled, // Enable vigilante when queries are enabled
-    closingTradeIds,
-    onAddToClosingTradeIds,
+    enabled: isQueryEnabled,
   });
 
   // 4. Combine data sources to manage the headerData state

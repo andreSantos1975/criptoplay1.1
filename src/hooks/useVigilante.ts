@@ -1,12 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Trade } from '@prisma/client';
-import { BarData } from 'lightweight-charts';
 import { UseMutationResult } from '@tanstack/react-query';
 
 interface VigilanteOptions {
-  symbol: string;
-  interval: string;
-  marketType: 'spot' | 'futures';
   openTrades: Trade[] | undefined;
   closeMutation: UseMutationResult<Trade, Error, string, unknown>;
   enabled?: boolean;
@@ -25,92 +21,102 @@ const getNumericValue = (value: any): number | null => {
   return isNaN(num) ? null : num;
 };
 
+// This hook is now a "Global Vigilante". It watches all open trades
+// and closes them if their SL/TP is met. It does not return any UI data.
 export const useVigilante = ({
-  symbol,
-  interval,
-  marketType,
   openTrades,
   closeMutation,
   enabled = true,
   closingTradeIds,
   onAddToClosingTradeIds,
 }: VigilanteOptions) => {
-  const [realtimeChartUpdate, setRealtimeChartUpdate] = useState<BarData | null>(null);
-
   useEffect(() => {
-    if (!symbol || !interval || !enabled) {
-      setRealtimeChartUpdate(null);
+    if (!enabled || !openTrades || openTrades.length === 0) {
       return;
     }
-    
-    const streamHost = marketType === 'futures'
-      ? 'fstream.binance.com'
-      : 'stream.binance.com:9443';
+
+    const tradesBySymbol: { [key: string]: Trade[] } = {};
+    openTrades.forEach(trade => {
+      if (!tradesBySymbol[trade.symbol]) {
+        tradesBySymbol[trade.symbol] = [];
+      }
+      tradesBySymbol[trade.symbol].push(trade);
+    });
+
+    const symbols = Object.keys(tradesBySymbol);
+    const sockets: WebSocket[] = [];
+    const priceState: { [key: string]: number } = {};
+
+    symbols.forEach(symbol => {
+      // Assuming all trades for a symbol have the same marketType.
+      // This is a reasonable assumption for this app's structure.
+      const marketType = tradesBySymbol[symbol][0].marketType || 'spot'; 
       
-    const ws = new WebSocket(`wss://${streamHost}/ws/${symbol.toLowerCase()}@kline_${interval}`);
+      const streamHost = marketType === 'futures'
+        ? 'fstream.binance.com'
+        : 'stream.binance.com:9443';
+        
+      const ws = new WebSocket(`wss://${streamHost}/ws/${symbol.toLowerCase()}@kline_1m`);
 
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      const kline = message.k;
-      if (kline) {
-        const candleUpdate: BarData = {
-          time: (kline.t / 1000) as any,
-          open: parseFloat(kline.o),
-          high: parseFloat(kline.h),
-          low: parseFloat(kline.l),
-          close: parseFloat(kline.c),
-        };
-        setRealtimeChartUpdate(candleUpdate);
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        const kline = message.k;
 
-        if (closeMutation.isPending || !openTrades) return;
+        if (kline) {
+          const currentPrice = parseFloat(kline.c);
+          priceState[symbol] = currentPrice;
 
-        const currentPrice = candleUpdate.close;
+          if (closeMutation.isPending) return;
 
-        for (const trade of openTrades) {
-          if (trade.symbol !== symbol) {
-            continue;
-          }
+          const tradesForSymbol = tradesBySymbol[symbol] || [];
 
-          if (closingTradeIds.has(trade.id)) {
-            continue;
-          }
-          
-          const stopLoss = getNumericValue(trade.stopLoss);
-          const takeProfit = getNumericValue(trade.takeProfit);
+          for (const trade of tradesForSymbol) {
+            if (closingTradeIds.has(trade.id)) {
+              continue;
+            }
 
-          if (stopLoss === null && takeProfit === null) {
-            continue;
-          }
+            const stopLoss = getNumericValue(trade.stopLoss);
+            const takeProfit = getNumericValue(trade.takeProfit);
 
-          const tradeType = trade.type.toLowerCase();
-          const isBuyTrade = tradeType === 'compra' || tradeType === 'buy' || tradeType === 'long';
+            if (stopLoss === null && takeProfit === null) {
+              continue;
+            }
 
-          let shouldClose = false;
-          if (isBuyTrade) {
-            if (stopLoss && currentPrice <= stopLoss) shouldClose = true;
-            else if (takeProfit && currentPrice >= takeProfit) shouldClose = true;
-          } else { // Sell trade
-            if (stopLoss && currentPrice >= stopLoss) shouldClose = true;
-            else if (takeProfit && currentPrice <= takeProfit) shouldClose = true;
-          }
+            const tradeType = trade.type.toLowerCase();
+            const isBuyTrade = tradeType === 'compra' || tradeType === 'buy' || tradeType === 'long';
 
-          if (shouldClose) {
-            onAddToClosingTradeIds(trade.id);
-            closeMutation.mutate(trade.id);
-            break;
+            let shouldClose = false;
+            if (isBuyTrade) {
+              if (stopLoss && currentPrice <= stopLoss) shouldClose = true;
+              else if (takeProfit && currentPrice >= takeProfit) shouldClose = true;
+            } else { // Sell/Short trade
+              if (stopLoss && currentPrice >= stopLoss) shouldClose = true;
+              else if (takeProfit && currentPrice <= takeProfit) shouldClose = true;
+            }
+
+            if (shouldClose) {
+              onAddToClosingTradeIds(trade.id);
+              closeMutation.mutate(trade.id);
+              break; 
+            }
           }
         }
-      }
-    };
+      };
 
-    ws.onerror = (error) => {
-      console.error("[VIGILANTE] WebSocket Error:", error);
-    };
+      ws.onerror = (error) => {
+        console.error(`[GLOBAL_VIGILANTE] WebSocket Error for ${symbol}:`, error);
+      };
+
+      sockets.push(ws);
+    });
 
     return () => {
-      ws.close();
+      sockets.forEach(ws => ws.close());
     };
-  }, [symbol, interval, marketType, enabled, closeMutation, closingTradeIds, onAddToClosingTradeIds, openTrades]);
+  // IMPORTANT: We reduce dependency changes to avoid re-running this complex effect
+  // unnecessarily. We only need to re-run if the list of open trades *structurally* changes.
+  // A simple JSON.stringify is a pragmatic way to check for changes in the trades list.
+  }, [JSON.stringify(openTrades), enabled, closeMutation, closingTradeIds, onAddToClosingTradeIds]);
 
-  return { realtimeChartUpdate };
+  // This hook no longer returns anything as it's a background process
 };

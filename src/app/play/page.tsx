@@ -8,6 +8,7 @@ import { Rankings } from '@/components/simulator/Rankings';
 import { SimulatorChart } from '@/components/simulator/SimulatorChart/SimulatorChart';
 import { TradeRow } from '@/components/simulator/TradeRow/TradeRow';
 import { useVigilante } from '@/hooks/useVigilante';
+import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate'; // MOVIDO PARA O TOPO
 
 // Type definitions
 interface SimulatorProfile {
@@ -165,16 +166,24 @@ const PlayPage = () => {
     setClosingTradeIds(prev => new Set(prev).add(tradeId));
   };
 
-  // VIGILANTE HOOK
-  const { realtimeChartUpdate } = useVigilante({
-    symbol,
-    interval,
-    marketType,
+// ... (resto do arquivo)
+
+  // VIGILANTE HOOK (NOW IN 2 PARTS)
+  // 1. Global vigilante for closing simulator trades in the background
+  useVigilante({
     openTrades: profile?.openTrades,
     closeMutation,
     enabled: true,
     closingTradeIds,
     onAddToClosingTradeIds: handleAddToClosingTradeIds,
+  });
+
+  // 2. Real-time chart updates for the selected symbol
+  const { realtimeChartUpdate } = useRealtimeChartUpdate({
+    symbol,
+    interval,
+    marketType,
+    enabled: true,
   });
 
   // Handlers
@@ -183,6 +192,8 @@ const PlayPage = () => {
     setTakeProfit(newLevels.takeProfit);
     setIsConfiguring(true); // User is adjusting levels, so they are configuring
   };
+// ... (rest of the file is the same, find the old part to replace)
+
 
   const handleSymbolChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSymbol(e.target.value.toUpperCase());
