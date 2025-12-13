@@ -77,12 +77,17 @@ export const SimulatorChart = memo(({
     });
     seriesRef.current = series;
 
-    const handleResize = () => chart.applyOptions({ width: chartElement.clientWidth, height: chartElement.clientHeight });
-    window.addEventListener("resize", handleResize);
+    // --- Resize Observer ---
+    const resizeObserver = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      chart.applyOptions({ width, height });
+    });
+
+    resizeObserver.observe(chartElement);
     setIsChartReady(true);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;

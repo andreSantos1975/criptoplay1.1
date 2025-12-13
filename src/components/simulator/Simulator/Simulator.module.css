@@ -1,30 +1,19 @@
 /* --- Layout Styles --- */
-.analiseGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-}
-
-@media (min-width: 1024px) {
-  .analiseGrid {
-    grid-template-columns: 3fr 1fr; /* Main content takes 3/4, sidebar 1/4 */
-  }
-}
-
-.analiseMain {
+.simulatorContainer {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
+  width: 100%;
 }
 
-.analiseSidebar {
+.chartContainer {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
 .chartWrapper {
-  height: 500px; 
+  height: 500px;
   width: 100%;
 }
 
@@ -49,9 +38,18 @@
     gap: 1rem;
 }
 
+@media (min-width: 768px) {
+  .form {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+}
+
+
 .formGroup {
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
 }
 
 .label {
@@ -76,7 +74,6 @@
 
 .submitButton {
     padding: 0.85rem;
-    margin-top: 1rem;
     border-radius: 6px;
     background-color: hsl(var(--success));
     color: hsl(var(--success-foreground));
@@ -85,7 +82,7 @@
     border: none;
     cursor: pointer;
     transition: background-color 0.2s;
-    width: 100%;
+    height: fit-content; /* Align with inputs */
 }
 
 .submitButton:hover {

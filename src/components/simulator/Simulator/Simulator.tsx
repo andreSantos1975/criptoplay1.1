@@ -207,77 +207,78 @@ const Simulator = () => {
   const rewardAmount = entryPrice > 0 && takeProfit > 0 ? (takeProfit - entryPrice) * quantity : 0;
 
   return (
-    <div className={styles.analiseGrid}>
-        <div className={styles.analiseMain}>
-            <AssetHeader
+    <div className={styles.simulatorContainer}>
+      <div className={styles.chartContainer}>
+        <AssetHeader
+            symbol={selectedCrypto}
+            price={assetHeaderData.close}
+            open={assetHeaderData.open}
+            high={assetHeaderData.high}
+            low={assetHeaderData.low}
+        />
+        <div className={styles.chartWrapper}>
+            <SimulatorChart
                 symbol={selectedCrypto}
-                price={assetHeaderData.close}
-                open={assetHeaderData.open}
-                high={assetHeaderData.high}
-                low={assetHeaderData.low}
-            />
-            <div className={styles.chartWrapper}>
-                <SimulatorChart
-                    symbol={selectedCrypto}
-                    tradeLevels={tradeLevelsForChart}
-                    onLevelsChange={handleLevelsChange}
-                    tipoOperacao="compra"
-                    initialChartData={initialChartData}
-                    isChartLoading={isChartLoading}
-                    interval={interval}
-                    onIntervalChange={setInterval}
-                    realtimeChartUpdate={realtimeChartUpdate}
-                    openTrades={simulatorProfile?.openTrades}
-                />
-            </div>
-             <div className={styles.tradesContainer}>
-                <h2 className={styles.tradesTitle}>Operações Abertas (Simulador)</h2>
-                {isLoadingSimulator ? <p>Carregando...</p> : simulatorProfile && simulatorProfile.openTrades.length > 0 ? (
-                    <div className={styles.tableWrapper}>
-                    <table className={styles.table}>
-                        <thead><tr><th>Ativo</th><th>Qtd.</th><th>Preço Entrada</th><th>Valor</th><th>Lucro/Prejuízo</th><th>Data</th><th>Ações</th></tr></thead>
-                        <tbody>
-                        {simulatorProfile.openTrades.map((trade) => (
-                            <TradeRow key={trade.id} trade={trade} closeMutation={closeSimulatorTradeMutation} isClosing={closingTradeIds.has(trade.id)} />
-                        ))}
-                        </tbody>
-                    </table>
-                    </div>
-                ) : (
-                    <p>Nenhuma operação aberta no simulador.</p>
-                )}
-            </div>
-        </div>
-        <div className={styles.analiseSidebar}>
-            <div className={styles.formContainer}>
-                <h2 className={styles.formTitle}>Abrir Nova Operação</h2>
-                <form onSubmit={handleSimulatorSubmit} className={styles.form}>
-                    <div className={styles.formGroup}><label>Ativo: {selectedCrypto}</label></div>
-                    <div className={styles.formGroup}>
-                      <label htmlFor="quantity">Quantidade</label>
-                      <input id="quantity" type="number" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className={styles.input} step="0.001" min="0.001" required />
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label htmlFor="stopLoss">Stop Loss</label>
-                      <input id="stopLoss" type="number" value={stopLoss === 0 ? '' : stopLoss} onChange={(e) => setStopLoss(Number(e.target.value))} className={styles.input} step="0.01" />
-                       {riskAmount > 0 && <p className={styles.riskInfo}>Risco: {formatCurrency(riskAmount)}</p>}
-                    </div>
-                     <div className={styles.formGroup}>
-                      <label htmlFor="takeProfit">Take Profit</label>
-                      <input id="takeProfit" type="number" value={takeProfit === 0 ? '' : takeProfit} onChange={(e) => setTakeProfit(Number(e.target.value))} className={styles.input} step="0.01" />
-                      {rewardAmount > 0 && <p className={styles.rewardInfo}>Ganho Potencial: {formatCurrency(rewardAmount)}</p>}
-                    </div>
-                    <button type="submit" className={styles.submitButton} disabled={createSimulatorTradeMutation.isPending || !entryPrice}>
-                        {createSimulatorTradeMutation.isPending ? 'Enviando...' : 'Comprar'}
-                    </button>
-                    {createSimulatorTradeMutation.isError && <p style={{ color: 'red', marginTop: '1rem' }}>Erro: {createSimulatorTradeMutation.error.message}</p>}
-                </form>
-            </div>
-             <CryptoList
-                watchedSymbols={['BTCBRL', 'ETHBRL', 'SOLBRL', 'ADABRL', 'DOGEBRL', 'SHIBBRL', 'BNBBRL']}
-                onCryptoSelect={handleCryptoSelect}
+                tradeLevels={tradeLevelsForChart}
+                onLevelsChange={handleLevelsChange}
+                tipoOperacao="compra"
+                initialChartData={initialChartData}
+                isChartLoading={isChartLoading}
+                interval={interval}
+                onIntervalChange={setInterval}
+                realtimeChartUpdate={realtimeChartUpdate}
+                openTrades={simulatorProfile?.openTrades}
             />
         </div>
+      </div>
+
+      <div className={styles.tradesContainer}>
+          <h2 className={styles.tradesTitle}>Operações Abertas (Simulador)</h2>
+          {isLoadingSimulator ? <p>Carregando...</p> : simulatorProfile && simulatorProfile.openTrades.length > 0 ? (
+              <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                  <thead><tr><th>Ativo</th><th>Qtd.</th><th>Preço Entrada</th><th>Valor</th><th>Lucro/Prejuízo</th><th>Data</th><th>Ações</th></tr></thead>
+                  <tbody>
+                  {simulatorProfile.openTrades.map((trade) => (
+                      <TradeRow key={trade.id} trade={trade} closeMutation={closeSimulatorTradeMutation} isClosing={closingTradeIds.has(trade.id)} />
+                  ))}
+                  </tbody>
+              </table>
+              </div>
+          ) : (
+              <p>Nenhuma operação aberta no simulador.</p>
+          )}
+      </div>
+
+      <div className={styles.formContainer}>
+          <h2 className={styles.formTitle}>Abrir Nova Operação</h2>
+          <form onSubmit={handleSimulatorSubmit} className={styles.form}>
+              <div className={styles.formGroup}><label>Ativo: {selectedCrypto}</label></div>
+              <div className={styles.formGroup}>
+                <label htmlFor="quantity">Quantidade</label>
+                <input id="quantity" type="number" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className={styles.input} step="0.001" min="0.001" required />
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="stopLoss">Stop Loss</label>
+                <input id="stopLoss" type="number" value={stopLoss === 0 ? '' : stopLoss} onChange={(e) => setStopLoss(Number(e.target.value))} className={styles.input} step="0.01" />
+                  {riskAmount > 0 && <p className={styles.riskInfo}>Risco: {formatCurrency(riskAmount)}</p>}
+              </div>
+                <div className={styles.formGroup}>
+                <label htmlFor="takeProfit">Take Profit</label>
+                <input id="takeProfit" type="number" value={takeProfit === 0 ? '' : takeProfit} onChange={(e) => setTakeProfit(Number(e.target.value))} className={styles.input} step="0.01" />
+                {rewardAmount > 0 && <p className={styles.rewardInfo}>Ganho Potencial: {formatCurrency(rewardAmount)}</p>}
+              </div>
+              <button type="submit" className={styles.submitButton} disabled={createSimulatorTradeMutation.isPending || !entryPrice}>
+                  {createSimulatorTradeMutation.isPending ? 'Enviando...' : 'Comprar'}
+              </button>
+              {createSimulatorTradeMutation.isError && <p style={{ color: 'red', marginTop: '1rem' }}>Erro: {createSimulatorTradeMutation.error.message}</p>}
+          </form>
+      </div>
+
+      <CryptoList
+          watchedSymbols={['BTCBRL', 'ETHBRL', 'SOLBRL', 'ADABRL', 'DOGEBRL', 'SHIBBRL', 'BNBBRL']}
+          onCryptoSelect={handleCryptoSelect}
+      />
     </div>
   );
 };
