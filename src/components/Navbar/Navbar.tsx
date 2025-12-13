@@ -54,11 +54,11 @@ const Navbar = () => {
 
             </Link>
 
-            <Link href="/play" className={styles.navLink}>
+                        <Link href="/dashboard?tab=analise" className={styles.navLink}>
 
-              Play Game
+                          Simulador
 
-            </Link>
+                        </Link>
 
             <Link href="/#recursos" className={styles.navLink}>
 
@@ -120,11 +120,11 @@ const Navbar = () => {
                 Home
               </Link>
               <Link
-                href="/play"
+                href="/dashboard?tab=analise"
                 className={styles.mobileNavLink}
                 onClick={() => setIsMenuOpen(false)}
               >
-                Play
+                Simulador
               </Link>
               <Link
                 href="/#recursos"

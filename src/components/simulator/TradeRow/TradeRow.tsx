@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Trade } from '@prisma/client';
 import styles from './TradeRow.module.css';
-import parentStyles from '@/app/play/play.module.css'; // Re-using styles from play page
+import parentStyles from '@/app/dashboard/dashboard.module.css';
 
 // Tipagem para o preço atual
 interface CurrentPrice {
