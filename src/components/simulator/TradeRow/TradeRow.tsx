@@ -32,9 +32,10 @@ const formatCurrency = (value: number) => {
 interface TradeRowProps {
   trade: Trade;
   closeMutation: any; // Using 'any' for simplicity, could be more specific
+  isClosing: boolean;
 }
 
-export const TradeRow = ({ trade, closeMutation }: TradeRowProps) => {
+export const TradeRow = ({ trade, closeMutation, isClosing }: TradeRowProps) => {
   const { data: currentPriceData } = useQuery<CurrentPrice, Error>({
     queryKey: ['currentPrice', trade.symbol],
     queryFn: () => fetchCurrentPrice(trade.symbol),
@@ -72,10 +73,10 @@ export const TradeRow = ({ trade, closeMutation }: TradeRowProps) => {
       <td data-label="Ações" className={parentStyles.td}>
         <button
           onClick={() => closeMutation.mutate(trade.id)}
-          disabled={closeMutation.isPending && closeMutation.variables === trade.id}
+          disabled={isClosing}
           className={parentStyles.submitButton}
         >
-          {(closeMutation.isPending && closeMutation.variables === trade.id) ? '...' : 'Fechar'}
+          {isClosing ? '...' : 'Fechar'}
         </button>
       </td>
     </tr>

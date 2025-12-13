@@ -32,3 +32,11 @@ export interface Income {
   amount: number;
   date: Date;
 }
+
+export interface Category {
+  id: string;
+  name: string;
+  percentage: number;
+  amount: number;
+  actualSpending?: number;
+}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, memo, useState, useMemo } from "react";
+import React, { useEffect, useRef, memo, useState } from "react";
 import { createChart, ColorType, CrosshairMode, ISeriesApi, IChartApi, CandlestickSeries, BarData } from "lightweight-charts";
 import styles from "./TechnicalAnalysisChart.module.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,13 +6,16 @@ import { MarketData } from "@/components/dashboard/MarketData/MarketData";
 import { CryptoList } from "@/components/dashboard/CryptoList/CryptoList";
 import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
 import { useTradeLines } from "../../../hooks/useTradeLines";
-import { useVigilante } from "@/hooks/useVigilante";
 import { Trade } from "@prisma/client";
-import { UseMutationResult } from "@tanstack/react-query";
+
+// This is a presentational component. All data is passed in via props.
+// The complex data fetching and state management logic has been moved to the `useChartData` hook.
 
 interface TechnicalAnalysisChartProps {
-  initialChartData: BarData[] | undefined;
+  chartSeriesData: BarData[] | undefined;
+  headerData: BarData;
   isLoading: boolean;
+  realtimeChartUpdate: BarData | null;
   interval: string;
   onIntervalChange: (interval: string) => void;
   tradeLevels: { entry: number; takeProfit: number; stopLoss: number };
@@ -24,15 +27,14 @@ interface TechnicalAnalysisChartProps {
   onMarketTypeChange: (marketType: "spot" | "futures") => void;
   tipoOperacao: "compra" | "venda" | "";
   openTrades?: Trade[];
-  closeMutation?: UseMutationResult<Trade, Error, string, unknown>;
-  closingTradeIds: Set<string>;
-  onAddToClosingTradeIds: (tradeId: string) => void;
 }
 
 export const TechnicalAnalysisChart = memo(
   ({
-    initialChartData,
+    chartSeriesData,
+    headerData,
     isLoading,
+    realtimeChartUpdate,
     interval,
     onIntervalChange,
     tradeLevels,
@@ -44,9 +46,6 @@ export const TechnicalAnalysisChart = memo(
     onMarketTypeChange,
     tipoOperacao,
     openTrades,
-    closeMutation,
-    closingTradeIds,
-    onAddToClosingTradeIds,
   }: TechnicalAnalysisChartProps) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const chartRef = useRef<IChartApi | null>(null);
@@ -56,7 +55,7 @@ export const TechnicalAnalysisChart = memo(
     const [newSymbolInput, setNewSymbolInput] = useState("");
     const [watchedSymbols, setWatchedSymbols] = useState<string[]>([]);
 
-    // Use the custom hook for trade lines
+    // Hook for drawing trade entry/sl/tp lines
     useTradeLines({
       chartRef,
       seriesRef,
@@ -66,61 +65,11 @@ export const TechnicalAnalysisChart = memo(
       isChartReady,
       marketType,
       tipoOperacao,
-      isDraggable: true,
-    });
-    
-    // Use the Vigilante hook for monitoring trades
-    const { realtimeChartUpdate } = useVigilante({
-        symbol: selectedCrypto,
-        interval,
-        openTrades,
-        closeMutation: closeMutation!,
-        enabled: !!openTrades && openTrades.length > 0 && !!closeMutation && !closeMutation.isPending,
-        closingTradeIds,
-        onAddToClosingTradeIds,
+      openTrades,
+      symbol: selectedCrypto,
     });
 
-    // Update chart with real-time data from Vigilante
-    useEffect(() => {
-        if (realtimeChartUpdate) {
-            seriesRef.current?.update(realtimeChartUpdate);
-        }
-    }, [realtimeChartUpdate]);
-
-    const handleAddSymbol = () => {
-      if (newSymbolInput && !watchedSymbols.includes(newSymbolInput.toUpperCase())) {
-        setWatchedSymbols(prev => [...prev, newSymbolInput.toUpperCase()]);
-        setNewSymbolInput("");
-      }
-    };
-
-    useEffect(() => {
-        if (marketType === 'futures') {
-            setWatchedSymbols([
-                "BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT",
-                "ADAUSDT", "BNBUSDT", "DOGEUSDT", "SHIBUSDT",
-            ]);
-        } else { // spot
-            setWatchedSymbols([
-                "BTCBRL", "ETHBRL", "SOLBRL", "XRPBRL",
-                "ADABRL", "BNBBRL", "DOGEBRL", "SHIBBRL",
-            ]);
-        }
-    }, [marketType]);
-
-    const latestKlineForHeader = useMemo(() => {
-      if (!initialChartData || initialChartData.length === 0) return null;
-      const latestKline = initialChartData[initialChartData.length - 1];
-      return {
-        symbol: selectedCrypto,
-        price: latestKline.close,
-        open: latestKline.open,
-        high: latestKline.high,
-        low: latestKline.low,
-      };
-    }, [initialChartData, selectedCrypto]);
-
-    // Effect to create and cleanup the chart (runs only once)
+    // Effect to create and cleanup the chart object
     useEffect(() => {
       const chartElement = chartContainerRef.current;
       if (!chartElement) return;
@@ -135,8 +84,7 @@ export const TechnicalAnalysisChart = memo(
       const series = chart.addSeries(CandlestickSeries, {
         upColor: "#26a69a",
         downColor: "#ef5350",
-        borderUpColor: "#26a69a",
-        borderDownColor: "#ef5350",
+        borderVisible: false,
         wickUpColor: "#26a69a",
         wickDownColor: "#ef5350",
       });
@@ -155,100 +103,45 @@ export const TechnicalAnalysisChart = memo(
       };
     }, []);
 
-    // Load initial data
+    // Effect to load historical data into the chart
     useEffect(() => {
-      if (!isChartReady || !seriesRef.current || !initialChartData) return;
-      console.log(`Setting chart data for ${selectedCrypto}:`, initialChartData.slice(-5)); // Log last 5 data points
-      seriesRef.current.setData(initialChartData);
-    }, [isChartReady, initialChartData, selectedCrypto]);
+      if (!isChartReady || !seriesRef.current || !chartSeriesData) return;
+      seriesRef.current.setData(chartSeriesData);
+    }, [isChartReady, chartSeriesData]);
 
-    // Apply Dynamic Price Formatting
+    // Effect to update the chart with real-time ticks
     useEffect(() => {
-      const chart = chartRef.current;
-      const series = seriesRef.current;
-      if (!chart || !series || !initialChartData?.length) return;
-
-      const lastPrice = initialChartData[initialChartData.length - 1]?.close || 0;
-      
-      let precision = 2;
-      if (lastPrice > 0 && lastPrice < 0.1) {
-        const priceStr = lastPrice.toFixed(20);
-        const decimalPart = priceStr.split('.')[1];
-        if (decimalPart) {
-            const firstDigitIndex = decimalPart.search(/[1-9]/);
-            if (firstDigitIndex !== -1) {
-                precision = firstDigitIndex + 4; 
-            }
+        if (isChartReady && realtimeChartUpdate && seriesRef.current) {
+            seriesRef.current.update(realtimeChartUpdate);
         }
-      }
-      
-      if (precision > 8) precision = 8;
+    }, [isChartReady, realtimeChartUpdate]);
 
-      const minMove = 1 / Math.pow(10, precision);
-      
-      const currency = selectedCrypto.endsWith('USDT') ? 'USD' : 'BRL';
-      const locale = selectedCrypto.endsWith('USDT') ? 'en-US' : 'pt-BR';
-
-      series.applyOptions({
-        priceFormat: {
-          type: 'price',
-          precision: precision,
-          minMove: minMove,
-        },
-      });
-
-      chart.applyOptions({
-        localization: {
-          priceFormatter: (price: number) => {
-            return new Intl.NumberFormat(locale, {
-              style: 'currency',
-              currency: currency,
-              minimumFractionDigits: precision,
-              maximumFractionDigits: precision,
-            }).format(price);
-          },
-        },
-      });
-    }, [isChartReady, initialChartData, selectedCrypto]);
-
-    // NOTE: The WebSocket connection is now handled by the useVigilante hook
-    // when open trades are present. We can add a fallback for when there are no trades.
+    // Effect to handle watched symbols based on market type
     useEffect(() => {
-      if (!isChartReady || !seriesRef.current || !selectedCrypto || (openTrades && openTrades.length > 0)) {
-        return; // Vigilante is handling the WebSocket
-      }
-
-      let wsUrl;
-      if (marketType === 'spot') {
-        wsUrl = `wss://stream.binance.com:9443/ws/${selectedCrypto.toLowerCase()}@kline_${interval}`;
-      } else {
-        wsUrl = `wss://fstream.binance.com/ws/${selectedCrypto.toLowerCase()}@kline_${interval}`;
-      }
-
-      const ws = new WebSocket(wsUrl);
-      ws.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        const kline = message.k;
-        if (kline) {
-          seriesRef.current?.update({ time: kline.t / 1000, open: parseFloat(kline.o), high: parseFloat(kline.h), low: parseFloat(kline.l), close: parseFloat(kline.c) } as BarData);
+        if (marketType === 'futures') {
+            setWatchedSymbols(["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "ADAUSDT", "BNBUSDT", "DOGEUSDT", "SHIBUSDT"]);
+        } else { // spot
+            setWatchedSymbols(["BTCBRL", "ETHBRL", "SOLBRL", "XRPBRL", "ADABRL", "BNBBRL", "DOGEBRL", "SHIBBRL"]);
         }
-      };
-
-      return () => {
-        ws.close();
-      };
-    }, [isChartReady, selectedCrypto, interval, marketType, openTrades]);
+    }, [marketType]);
     
+    const handleAddSymbol = () => {
+      if (newSymbolInput && !watchedSymbols.includes(newSymbolInput.toUpperCase())) {
+        setWatchedSymbols(prev => [...prev, newSymbolInput.toUpperCase()]);
+        setNewSymbolInput("");
+      }
+    };
+
     return (
       <Card>
         <CardHeader>
-          {latestKlineForHeader && (
+          {headerData && (
               <AssetHeader
-                symbol={latestKlineForHeader.symbol}
-                price={latestKlineForHeader.price}
-                open={latestKlineForHeader.open}
-                high={latestKlineForHeader.high}
-                low={latestKlineForHeader.low}
+                symbol={selectedCrypto}
+                price={headerData.close}
+                open={headerData.open}
+                high={headerData.high}
+                low={headerData.low}
               />
             )}
           <CardTitle>Análise Técnica - {selectedCrypto} (Binance)</CardTitle>
@@ -273,7 +166,7 @@ export const TechnicalAnalysisChart = memo(
               onChange={(e) => setNewSymbolInput(e.target.value)}
               className={styles.symbolInput}
             />
-            <button onClick={() => handleAddSymbol()} className={styles.addSymbolButton}>
+            <button onClick={handleAddSymbol} className={styles.addSymbolButton}>
               Add Crypto
             </button>
           </div>

@@ -21,7 +21,7 @@ interface UseTradeLinesProps {
 const createLineOptions = (price: number, color: string, title: string, isDashed: boolean = false) => ({
   price,
   color,
-  lineWidth: 2,
+  lineWidth: 2 as any,
   lineStyle: isDashed ? LineStyle.Dashed : LineStyle.Solid,
   axisLabelVisible: true,
   title,
@@ -76,8 +76,6 @@ export const useTradeLines = ({
     const currentActiveTradeIds = new Set<string>();
     openTrades?.forEach(trade => {
       // Check if the trade's symbol matches the current chart symbol
-      // Assuming series.chart().options().rightPriceScale.mode can give the symbol
-      // For more robust checking, might need to pass symbol to the hook
       if (trade.symbol === symbol) { // Basic symbol check
         currentActiveTradeIds.add(trade.id);
 
@@ -139,11 +137,11 @@ export const useTradeLines = ({
 
     return () => {
       // Cleanup on unmount or when dependencies change significantly
-      if (!seriesRef.current) { // Only remove if series was active, otherwise avoid error
+      if (!series) { // Use the captured series variable
         removeAllActiveTradeLines();
       }
     };
-  }, [isChartReady, openTrades, seriesRef, removeAllActiveTradeLines]);
+  }, [isChartReady, openTrades, removeAllActiveTradeLines, symbol, seriesRef]);
 
   // Effect to setup drag-and-drop listeners for PROSPECTIVE lines
   useEffect(() => {

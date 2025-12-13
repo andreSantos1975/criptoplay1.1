@@ -56,6 +56,20 @@ const formatCurrency = (value: number | null | undefined, currencyCode: string =
   return new Intl.NumberFormat(locale, options).format(value);
 };
 
+// Helper para formatar totais em moeda (sempre 2 casas decimais)
+const formatTotalCurrency = (value: number | null | undefined, currencyCode: string = "BRL", locale: string = "pt-BR") => {
+  if (value === null || value === undefined) return "N/A";
+
+  const options: Intl.NumberFormatOptions = {
+    style: "currency",
+    currency: currencyCode,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2, // Sempre 2 para totais
+  };
+
+  return new Intl.NumberFormat(locale, options).format(value);
+};
+
 // Helper para formatar data e hora
 const formatDate = (dateString: string | undefined): string => {
   if (!dateString) return "N/A";
@@ -192,9 +206,9 @@ export const RecentOperationsTable = () => {
 
   const renderTableContent = () => {
     const isLoading = isLoadingTrades || isLoadingCryptoData;
-    if (isLoading) return <TableRow><TableCell colSpan={activeTab === 'open' ? 10 : 9} className="text-center">Carregando...</TableCell></TableRow>;
-    if (errorTrades) return <TableRow><TableCell colSpan={activeTab === 'open' ? 10 : 9} className="text-center text-red-500">Erro: {errorTrades.message}</TableCell></TableRow>;
-    if (!trades || trades.length === 0) return <TableRow><TableCell colSpan={activeTab === 'open' ? 10 : 9} className="text-center">Nenhuma operação encontrada.</TableCell></TableRow>;
+    if (isLoading) return <TableRow><TableCell colSpan={activeTab === 'open' ? 12 : 9} className="text-center">Carregando...</TableCell></TableRow>;
+    if (errorTrades) return <TableRow><TableCell colSpan={activeTab === 'open' ? 12 : 9} className="text-center text-red-500">Erro: {errorTrades.message}</TableCell></TableRow>;
+    if (!trades || trades.length === 0) return <TableRow><TableCell colSpan={activeTab === 'open' ? 12 : 9} className="text-center">Nenhuma operação encontrada.</TableCell></TableRow>;
 
     const filteredTrades = trades.filter(trade => {
       if (activeTab === 'open') {
@@ -204,7 +218,7 @@ export const RecentOperationsTable = () => {
       }
     });
 
-    if (filteredTrades.length === 0) return <TableRow><TableCell colSpan={activeTab === 'open' ? 10 : 9} className="text-center">Nenhuma operação encontrada para esta categoria.</TableCell></TableRow>;
+    if (filteredTrades.length === 0) return <TableRow><TableCell colSpan={activeTab === 'open' ? 12 : 9} className="text-center">Nenhuma operação encontrada para esta categoria.</TableCell></TableRow>;
 
     return filteredTrades.map((trade) => {
       const { currencyCode, locale } = getCurrencyDetails(trade);
@@ -227,6 +241,9 @@ export const RecentOperationsTable = () => {
 
       const isProfit = pnl != null && pnl >= 0;
 
+      const stopValue = trade.stopLoss ? Math.abs(trade.entryPrice - trade.stopLoss) * trade.quantity : null;
+      const takeValue = trade.takeProfit ? Math.abs(trade.takeProfit - trade.entryPrice) * trade.quantity : null;
+
       return (
         <TableRow key={trade.id} onClick={() => handleRowClick(trade)} className={styles.clickableRow}>
           <TableCell>{trade.symbol.replace("USDT", "")}</TableCell>
@@ -235,11 +252,13 @@ export const RecentOperationsTable = () => {
           <TableCell>{formatCurrency(trade.entryPrice, currencyCode, locale)}</TableCell>
           <TableCell>{formatCurrency(trade.exitPrice, currencyCode, locale)}</TableCell>
           <TableCell className={pnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
-            {formatCurrency(pnl, currencyCode, locale)}
+            {formatTotalCurrency(pnl, currencyCode, locale)}
           </TableCell>
           <TableCell className={pnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
             {calculatePnlPercent(trade, currentPriceInOriginalCurrency)}
           </TableCell>
+          <TableCell className={styles.loss}>{formatTotalCurrency(stopValue, currencyCode, locale)}</TableCell>
+          <TableCell className={styles.profit}>{formatTotalCurrency(takeValue, currencyCode, locale)}</TableCell>
           <TableCell>
             <span className={`${styles.status} ${trade.status === 'CLOSED' ? styles.statusPaid : styles.statusPending}`}>
               {trade.status === 'CLOSED' ? 'Fechada' : 'Aberta'}
@@ -303,6 +322,8 @@ export const RecentOperationsTable = () => {
               <TableHead>Valor Saída</TableHead>
               <TableHead>Resultado</TableHead>
               <TableHead>Resultado (%)</TableHead>
+              <TableHead>Stop (R$)</TableHead>
+              <TableHead>Take (R$)</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Data/Hora</TableHead>
               {activeTab === 'open' && <TableHead>Ações</TableHead>}

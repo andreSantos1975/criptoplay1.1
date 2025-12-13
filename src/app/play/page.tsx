@@ -86,6 +86,7 @@ const PlayPage = () => {
   const [stopLoss, setStopLoss] = useState(0);
   const [takeProfit, setTakeProfit] = useState(0);
   const [interval, setInterval] = useState("1m");
+  const [marketType, setMarketType] = useState<'spot' | 'futures'>('spot');
   const [closingTradeIds, setClosingTradeIds] = useState(new Set<string>());
   const [isConfiguring, setIsConfiguring] = useState(true); // Control prospective lines
 
@@ -108,7 +109,7 @@ const PlayPage = () => {
       if (!response.ok) throw new Error("Network response was not ok");
       const data: BinanceKlineData[] = await response.json();
       const historicalData = data.slice(0, -1);
-      return historicalData.map(k => ({ time: k[0] / 1000, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
+      return historicalData.map(k => ({ time: (k[0] / 1000) as any, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
     },
     staleTime: 60000,
     refetchOnWindowFocus: false,
@@ -130,7 +131,7 @@ const PlayPage = () => {
       setStopLoss(defaultStopLoss);
       setTakeProfit(defaultTakeProfit);
     }
-  }, [isConfiguring, entryPrice]);
+  }, [isConfiguring, entryPrice, stopLoss, takeProfit]);
 
   // Mutations
   const createMutation = useMutation({
@@ -168,6 +169,7 @@ const PlayPage = () => {
   const { realtimeChartUpdate } = useVigilante({
     symbol,
     interval,
+    marketType,
     openTrades: profile?.openTrades,
     closeMutation,
     enabled: true,

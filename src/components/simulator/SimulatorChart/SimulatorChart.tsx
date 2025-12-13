@@ -7,6 +7,7 @@ import {
 } from "lightweight-charts";
 import styles from "./SimulatorChart.module.css";
 import { useTradeLines } from "../../../hooks/useTradeLines";
+import { Trade } from '@prisma/client';
 
 interface SimulatorChartProps {
   symbol: string;

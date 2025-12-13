@@ -18,7 +18,7 @@ import { Edit, Trash2, Search, Plus, Loader } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import styles from "./PersonalFinanceTable.module.css";
-import { Category } from "../CategoryAllocation/CategoryAllocation";
+import { Category } from "@/types/personal-finance";
 
 
 

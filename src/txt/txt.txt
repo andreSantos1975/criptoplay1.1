@@ -443,6 +443,12 @@ O comprador já está quente — conversão alta.
 04 de dezembro 2025 
 
 TESTE DO FECHAMENTO DA OPERAÇÃO PELAS LINHAS DE MARCAÇÃO STOP E TAKE PROFIT
+Concluí a simplificação e estabilização. O useVigilante.ts agora monitora um único
+  ativo, mas com a URL WebSocket correta baseada no marketType, evitando erros de
+  conexão e tipo de dado. O TechnicalAnalysisChart.tsx força a verificação a cada
+  minuto, mesmo em gráficos de "1d". Embora o monitoramento em segundo plano tenha sido
+  sacrificado, a funcionalidade principal agora deve ser confiável e o problema
+  resolvido.
 
  
 

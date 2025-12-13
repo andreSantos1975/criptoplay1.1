@@ -4,7 +4,8 @@ import React from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Download } from 'lucide-react';
-import { CategoryAllocation, Category } from '../CategoryAllocation/CategoryAllocation';
+import { CategoryAllocation } from '../CategoryAllocation/CategoryAllocation';
+import { Category } from '@/types/personal-finance';
 import { BudgetSummary } from '../BudgetSummary/BudgetSummary';
 import styles from './OrcamentoPage.module.css';
 

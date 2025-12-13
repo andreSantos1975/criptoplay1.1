@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrendingUp, Target, AlertTriangle } from 'lucide-react';
 import styles from './BudgetSummary.module.css';
-import { Category } from '../CategoryAllocation/CategoryAllocation';
+import { Category } from '@/types/personal-finance';
 
 interface BudgetSummaryProps {
   categories: Category[];

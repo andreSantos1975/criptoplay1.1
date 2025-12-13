@@ -1,14 +1,8 @@
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import styles from './CategoryAllocation.module.css';
+import { Category } from '@/types/personal-finance';
 
-export interface Category {
-  id: string;
-  name: string;
-  percentage: number;
-  amount: number;
-  actualSpending?: number;
-}
 
 interface CategoryAllocationProps {
   categories: Category[];

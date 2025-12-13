@@ -1,25 +1,29 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react"; // Ensure useMemo is imported
 import { useSearchParams } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"; // Ensure useQueryClient is imported
 import toast from 'react-hot-toast';
+import dynamic from "next/dynamic"; // Re-adding the missing import
 
+import { Trade } from "@prisma/client";
+import { Income, Expense, Category } from "@/types/personal-finance";
+
+import styles from "./dashboard.module.css";
 import { NavigationTabs } from "@/components/dashboard/NavigationTabs/NavigationTabs";
-import { PersonalFinanceTable } from "@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable";
+import { DashboardOverview } from "@/components/dashboard/DashboardOverview/DashboardOverview";
 import { RecentOperationsTable } from "@/components/dashboard/RecentOperationsTable/RecentOperationsTable";
-import { IncomeTable } from "@/components/dashboard/IncomeTable/IncomeTable";
-import { PersonalFinanceDialog } from "@/components/dashboard/PersonalFinanceDialog/PersonalFinanceDialog";
-import { Expense, Income } from "@/types/personal-finance";
-import dynamic from "next/dynamic";
 import TradeJournal from "@/components/dashboard/TradeJournal/TradeJournal";
-import AssetHeader from "@/components/dashboard/AssetHeader/AssetHeader";
-import Sidebar from "@/components/dashboard/Sidebar/Sidebar";
-import { PersonalFinanceNav } from "@/components/dashboard/PersonalFinanceNav/PersonalFinanceNav";
-import { OrcamentoPage } from "@/components/dashboard/OrcamentoPage/OrcamentoPage";
-import { Category } from "@/components/dashboard/CategoryAllocation/CategoryAllocation";
-import MonthSelector from "@/components/dashboard/MonthSelector/MonthSelector";
-
+import { useVigilante } from "@/hooks/useVigilante";
+import { useChartData } from '@/hooks/useChartData';
+import MonthSelector from '@/components/dashboard/MonthSelector/MonthSelector';
+import { PersonalFinanceNav } from '@/components/dashboard/PersonalFinanceNav/PersonalFinanceNav';
+import { OrcamentoPage } from '@/components/dashboard/OrcamentoPage/OrcamentoPage';
+import Sidebar from '@/components/dashboard/Sidebar/Sidebar';
+import { IncomeTable } from '@/components/dashboard/IncomeTable/IncomeTable';
+import { PersonalFinanceTable } from '@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable';
+import { PersonalFinanceDialog } from '@/components/dashboard/PersonalFinanceDialog/PersonalFinanceDialog';
+import { ReportsSection } from '@/components/dashboard/ReportsSection/ReportsSection';
 
 const TechnicalAnalysisChart = dynamic(
   () =>
@@ -28,10 +32,7 @@ const TechnicalAnalysisChart = dynamic(
     ),
   { ssr: false }
 );
-import { ReportsSection } from "@/components/dashboard/ReportsSection/ReportsSection";
-import { DashboardOverview } from "@/components/dashboard/DashboardOverview/DashboardOverview";
-import styles from "./dashboard.module.css";
-import { Trade } from "@prisma/client";
+
 
 const DEFAULT_ALLOCATION_PERCENTAGES: { [key: string]: number } = {
   "Investimento": 15,
@@ -61,6 +62,22 @@ interface BudgetCategoryFromApi {
   name: string;
   type: "INCOME" | "EXPENSE";
 }
+
+interface CurrentPrice {
+  symbol: string;
+  price: string;
+}
+
+// COPIED FROM /play PAGE - START
+const fetchCurrentPrice = async (symbol: string): Promise<CurrentPrice> => {
+  const res = await fetch(`/api/binance/price?symbol=${symbol}`);
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.error || 'Falha ao buscar preço atual.');
+  }
+  return res.json();
+};
+// COPIED FROM /play PAGE - END
 
 // REAL TRADES API
 const fetchOpenRealTrades = async (): Promise<Trade[]> => {
@@ -156,82 +173,75 @@ const DashboardPage = () => {
   const [marketType, setMarketType] = useState<'spot' | 'futures'>('spot');
   const [tipoOperacao, setTipoOperacao] = useState<'compra' | 'venda' | ''>('compra');
   const [interval, setInterval] = useState("1d");
+  const [isConfiguring, setIsConfiguring] = useState(true);
+  const [stopLoss, setStopLoss] = useState(0);
+  const [takeProfit, setTakeProfit] = useState(0);
 
-  const isQueryEnabled = !(marketType === 'futures' && selectedCrypto.endsWith('BRL'));
-
-  const { data: initialChartData, isLoading: isChartDataLoading } = useQuery({
-      queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
-      queryFn: async () => {
-        const apiPath = marketType === "futures" ? "futures-klines" : "klines";
-        const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}`);
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Network response was not ok");
-        }
-        const data: BinanceKline[] = await response.json();
-        return data.map(k => ({ time: (k[0] / 1000) as any, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
-      },
-      enabled: isQueryEnabled,
-      staleTime: 1000 * 60, // 1 minute
-      refetchOnWindowFocus: false,
+  // Mutation for closing a real trade (needed by useChartData)
+  const closeRealTradeMutation = useMutation<Trade, Error, string>({
+    mutationFn: closeRealTrade,
+    onSuccess: (data) => {
+      toast.success(`Ordem para ${data.symbol} fechada com sucesso!`);
+      queryClient.invalidateQueries({ queryKey: ['openRealTrades'] });
+    },
+    onError: (error) => {
+      toast.error(`Erro ao fechar ordem: ${error.message}`);
+    }
   });
 
-    // Fetch open real trades data
-    const { data: openRealTrades } = useQuery<Trade[]>({
-      queryKey: ['openRealTrades'],
-      queryFn: fetchOpenRealTrades,
-      staleTime: 1000 * 30, // 30 seconds
-    });
+  // Fetch open real trades data (needed by useChartData)
+  const { data: openRealTrades } = useQuery<Trade[]>({
+    queryKey: ['openRealTrades'],
+    queryFn: fetchOpenRealTrades,
+    staleTime: 1000 * 30, // 30 seconds
+  });
+
+  const [closingTradeIds, setClosingTradeIds] = useState(new Set<string>());
+
+  const handleAddToClosingTradeIds = (tradeId: string) => {
+    setClosingTradeIds(prev => new Set(prev).add(tradeId));
+  };
   
-    // Mutation for closing a real trade
-    const closeRealTradeMutation = useMutation<Trade, Error, string>({
-      mutationFn: closeRealTrade,
-      onSuccess: (data) => {
-        toast.success(`Ordem para ${data.symbol} fechada com sucesso!`);
-        queryClient.invalidateQueries({ queryKey: ['openRealTrades'] });
-      },
-      onError: (error) => {
-        toast.error(`Erro ao fechar ordem: ${error.message}`);
-      }
-    });
-
-    // State for tracking trades being closed by the Vigilante, lifted up to survive re-mounts
-    const [closingTradeIds, setClosingTradeIds] = useState(new Set<string>());
-
-    const handleAddToClosingTradeIds = (tradeId: string) => {
-      setClosingTradeIds(prev => new Set(prev).add(tradeId));
-    };
-
-    // Effect to clean up closingTradeIds when the list of open trades is updated
-    useEffect(() => {
-      if (!openRealTrades) return;
-      const openTradeIds = new Set(openRealTrades.map(t => t.id));
-      
-      setClosingTradeIds(prevClosingIds => {
-        const newClosingIds = new Set(prevClosingIds);
-        let hasChanged = false;
-        newClosingIds.forEach(id => {
-          if (!openTradeIds.has(id)) {
-            newClosingIds.delete(id);
-            hasChanged = true;
-          }
-        });
-        return hasChanged ? newClosingIds : prevClosingIds;
-      });
-    }, [openRealTrades]);
-
+  // Effect to clean up closingTradeIds when the list of open trades is updated
   useEffect(() => {
-    if (initialChartData && initialChartData.length > 0) {
-      const lastPrice = initialChartData[initialChartData.length - 1].close;
-      const newLevels = {
-        entry: lastPrice,
-        takeProfit: lastPrice * 1.02,
-        stopLoss: lastPrice * 0.98,
-      };
-      setTradeLevels(newLevels);
-    }
-  }, [initialChartData]);
+    if (!openRealTrades) return;
+    const openTradeIds = new Set(openRealTrades.map(t => t.id));
+    
+    setClosingTradeIds(prevClosingIds => {
+      const newClosingIds = new Set(prevClosingIds);
+      let hasChanged = false;
+      newClosingIds.forEach(id => {
+        if (!openTradeIds.has(id)) {
+          newClosingIds.delete(id);
+          hasChanged = true;
+        }
+      });
+      return hasChanged ? newClosingIds : prevClosingIds;
+    });
+  }, [openRealTrades]);
 
+  // *** NEW: Centralized data fetching with custom hook ***
+  const {
+    isChartLoading,
+    chartSeriesData,
+    headerData,
+    realtimeChartUpdate,
+  } = useChartData(
+    selectedCrypto,
+    marketType,
+    interval,
+    closeRealTradeMutation,
+    openRealTrades,
+    closingTradeIds,
+    handleAddToClosingTradeIds
+  );
+
+  const { data: currentPriceData } = useQuery<CurrentPrice, Error>({
+      queryKey: ['currentPrice', selectedCrypto],
+      queryFn: () => fetchCurrentPrice(selectedCrypto),
+      refetchInterval: 5000,
+      enabled: !(marketType === 'futures' && selectedCrypto.endsWith('BRL')),
+    });
 
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
@@ -323,14 +333,11 @@ const DashboardPage = () => {
 
     const totalBudgeted = categoriesWithAmounts.reduce((sum, c) => sum + c.amount, 0);
     
-    // Find the specific budget for the "Despesas" category
     const despesasCategory = categoriesWithAmounts.find(c => c.name === "Despesas");
     const allocatedTotalExpenses = despesasCategory ? despesasCategory.amount : 0;
     
     const remainingTotalExpenses = allocatedTotalExpenses - totalExpenses;
 
-
-    // New logic here
     const essentialCategory = categoriesWithSpending.find(c => c.name === 'Despesas Essenciais');
     const budgetedEssential = essentialCategory ? essentialCategory.amount : 0;
     const actualEssential = essentialCategory ? essentialCategory.actualSpending || 0 : 0;
@@ -383,7 +390,6 @@ const DashboardPage = () => {
     mutationFn: addIncome,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incomes', year, month] });
-
       setIsIncomeDialogOpen(false);
     },
   });
@@ -392,7 +398,6 @@ const DashboardPage = () => {
     mutationFn: updateIncome,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incomes', year, month] });
-
       setIsIncomeDialogOpen(false);
     },
   });
@@ -401,7 +406,6 @@ const DashboardPage = () => {
     mutationFn: deleteIncome,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incomes', year, month] });
-
       toast.success('Renda deletada com sucesso!');
     },
     onError: () => {
@@ -413,7 +417,6 @@ const DashboardPage = () => {
     mutationFn: addExpense,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses', year, month] });
-
       setIsExpenseDialogOpen(false);
     },
   });
@@ -422,45 +425,21 @@ const DashboardPage = () => {
     mutationFn: updateExpense,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses', year, month] });
-
       setIsExpenseDialogOpen(false);
     },
   });
 
-
-
-  const [tradeLevels, setTradeLevels] = useState(() => {
-    const savedLevels = typeof window !== 'undefined' ? localStorage.getItem('tradeLevels') : null;
-    return savedLevels ? JSON.parse(savedLevels) : {
-      entry: 65500,
-      takeProfit: 68000,
-      stopLoss: 64000,
-    };
-  });
-
   useEffect(() => {
-    localStorage.setItem('tradeLevels', JSON.stringify(tradeLevels));
-  }, [tradeLevels]);
-
-  useEffect(() => {
-    const entry = tradeLevels.entry;
-    if (!entry) return;
-
-    // Apenas troca se a ordem estiver incorreta para o tipo de operação atual
-    if (tipoOperacao === 'venda' && tradeLevels.takeProfit > entry && tradeLevels.stopLoss < entry) {
-        setTradeLevels((currentLevels: typeof tradeLevels) => ({
-            ...currentLevels,
-            takeProfit: currentLevels.stopLoss,
-            stopLoss: currentLevels.takeProfit
-        }));
-    } else if (tipoOperacao === 'compra' && tradeLevels.takeProfit < entry && tradeLevels.stopLoss > entry) {
-        setTradeLevels((currentLevels: typeof tradeLevels) => ({
-            ...currentLevels,
-            takeProfit: currentLevels.stopLoss,
-            stopLoss: currentLevels.takeProfit
-        }));
+    // COPIED FROM /play PAGE
+    // Set default SL/TP when starting to configure a new trade based on a new entry price
+    const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
+    if (isConfiguring && entryPrice > 0 && stopLoss === 0 && takeProfit === 0) {
+      const defaultStopLoss = entryPrice * (tipoOperacao === 'compra' ? 0.98 : 1.02);
+      const defaultTakeProfit = entryPrice * (tipoOperacao === 'compra' ? 1.02 : 0.98);
+      setStopLoss(defaultStopLoss);
+      setTakeProfit(defaultTakeProfit);
     }
-  }, [tipoOperacao, tradeLevels.entry, tradeLevels.stopLoss, tradeLevels.takeProfit]);
+  }, [isConfiguring, currentPriceData, tipoOperacao, stopLoss, takeProfit]);
 
   const handleMarketTypeChange = (newMarketType: 'spot' | 'futures') => {
     setMarketType(newMarketType);
@@ -469,10 +448,16 @@ const DashboardPage = () => {
       toast(`Símbolo alterado para ${newSymbol} para ser compatível com o mercado de Futuros.`);
       setSelectedCrypto(newSymbol);
     }
+    setStopLoss(0);
+    setTakeProfit(0);
+    setIsConfiguring(true);
   };
 
   const handleCryptoSelect = (symbol: string) => {
     setSelectedCrypto(symbol);
+    setStopLoss(0);
+    setTakeProfit(0);
+    setIsConfiguring(true);
   };
 
   const handleAddExpense = () => {
@@ -499,7 +484,7 @@ const DashboardPage = () => {
     deleteIncomeMutation.mutate(id);
   };
 
-  const handleSaveItem = (item: Omit<Expense, "id"> | Omit<Income, "id">, type: "expense" | "income") => {
+    const handleSaveItem = (item: Omit<Expense, "id"> | Omit<Income, "id">, type: "expense" | "income") => {
     console.log("DashboardPage: Recebido para salvar.", { item, type });
 
     if (type === 'income') {
@@ -588,31 +573,47 @@ const DashboardPage = () => {
           </>
         );
       case "analise":
+        const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
+        const tradeLevelsForChart = isConfiguring
+          ? { entry: entryPrice, stopLoss, takeProfit }
+          : { entry: 0, stopLoss: 0, takeProfit: 0 };
+        
+        const handleLevelsChange = (newLevels: { entry: number, stopLoss: number, takeProfit: number }) => {
+          setStopLoss(newLevels.stopLoss);
+          setTakeProfit(newLevels.takeProfit);
+          setIsConfiguring(true); 
+        };
+
         return (
           <>
             <TechnicalAnalysisChart
-              initialChartData={initialChartData}
-              isLoading={isChartDataLoading}
+              chartSeriesData={chartSeriesData}
+              headerData={headerData}
+              isLoading={isChartLoading}
               interval={interval}
               onIntervalChange={setInterval}
-              tradeLevels={tradeLevels}
-              onLevelsChange={setTradeLevels}
+              tradeLevels={tradeLevelsForChart}
+              onLevelsChange={handleLevelsChange}
               selectedCrypto={selectedCrypto}
               onCryptoSelect={handleCryptoSelect}
               marketType={marketType}
               onMarketTypeChange={handleMarketTypeChange}
               tipoOperacao={tipoOperacao}
               openTrades={openRealTrades}
-              closeMutation={closeRealTradeMutation}
-              closingTradeIds={closingTradeIds}
-              onAddToClosingTradeIds={handleAddToClosingTradeIds}
+              realtimeChartUpdate={realtimeChartUpdate}
             >
               <TradeJournal 
-                tradeLevels={tradeLevels} 
-                onLevelsChange={setTradeLevels}
+                tradeLevels={tradeLevelsForChart} 
+                onLevelsChange={handleLevelsChange}
                 selectedCrypto={selectedCrypto}
                 tipoOperacao={tipoOperacao}
-                onTipoOperacaoChange={setTipoOperacao}
+                onTipoOperacaoChange={(op) => {
+                  setTipoOperacao(op);
+                  // Reset levels when changing operation type
+                  setStopLoss(0);
+                  setTakeProfit(0);
+                  setIsConfiguring(true);
+                }}
                 marketType={marketType}
               />
             </TechnicalAnalysisChart>
