@@ -1,0 +1,52 @@
+.openTradesContainer {
+    background-color: #2c2c2c;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+  }
+  
+  .tradesTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  
+  .tradesTable th,
+  .tradesTable td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+  }
+  
+  .tradesTable th {
+    background-color: #333;
+    font-weight: bold;
+    color: #fff;
+  }
+  
+  .tradesTable tbody tr:hover {
+    background-color: #383838;
+  }
+  
+  .profit {
+    color: #4caf50;
+  }
+  
+  .loss {
+    color: #f44336;
+  }
+
+  .closeButton {
+    background-color: #f44336;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+  }
+
+  .closeButton:hover {
+    background-color: #e53935;
+  }

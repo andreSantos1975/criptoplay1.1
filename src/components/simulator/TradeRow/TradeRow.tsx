@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Trade } from '@prisma/client';
 import styles from './TradeRow.module.css';
-import parentStyles from '@/app/dashboard/dashboard.module.css';
+import simStyles from '../Simulator/Simulator.module.css';
 
 // Tipagem para o preço atual
 interface CurrentPrice {
@@ -56,11 +56,11 @@ export const TradeRow = ({ trade, closeMutation, isClosing }: TradeRowProps) => 
 
   return (
     <tr key={trade.id}>
-      <td data-label="Ativo" className={parentStyles.td}>{trade.symbol}</td>
-      <td data-label="Qtd." className={parentStyles.td}>{Number(trade.quantity)}</td>
-      <td data-label="Preço Entrada" className={parentStyles.td}>{formatCurrency(Number(trade.entryPrice))}</td>
-      <td data-label="Valor" className={parentStyles.td}>{formatCurrency(Number(trade.quantity) * Number(trade.entryPrice))}</td>
-      <td data-label="Lucro/Prejuízo" className={parentStyles.td}>
+      <td data-label="Ativo" className={simStyles.td}>{trade.symbol}</td>
+      <td data-label="Qtd." className={simStyles.td}>{Number(trade.quantity)}</td>
+      <td data-label="Preço Entrada" className={simStyles.td}>{formatCurrency(Number(trade.entryPrice))}</td>
+      <td data-label="Valor" className={simStyles.td}>{formatCurrency(Number(trade.quantity) * Number(trade.entryPrice))}</td>
+      <td data-label="Lucro/Prejuízo" className={simStyles.td}>
         {pl !== null ? (
           <span className={pl >= 0 ? styles.textProfit : styles.textLoss}>
             {formatCurrency(pl)}
@@ -69,12 +69,12 @@ export const TradeRow = ({ trade, closeMutation, isClosing }: TradeRowProps) => 
           'Calculando...'
         )}
       </td>
-      <td data-label="Data" className={parentStyles.td}>{new Date(trade.entryDate).toLocaleDateString('pt-BR')}</td>
-      <td data-label="Ações" className={parentStyles.td}>
+      <td data-label="Data" className={simStyles.td}>{new Date(trade.entryDate).toLocaleDateString('pt-BR')}</td>
+      <td data-label="Ações" className={simStyles.td}>
         <button
           onClick={() => closeMutation.mutate(trade.id)}
           disabled={isClosing}
-          className={parentStyles.submitButton}
+          className={simStyles.submitButton}
         >
           {isClosing ? '...' : 'Fechar'}
         </button>
