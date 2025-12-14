@@ -10,6 +10,7 @@ datasource db {
 model User {
   id               String            @id @default(cuid())
   name             String?
+  username         String?           @unique // Novo campo para o apelido
   email            String?           @unique
   emailVerified    DateTime?
   image            String?
@@ -124,6 +125,7 @@ model Expense {
   valor          Decimal  @db.Decimal(18, 2)
   originalValor  Decimal? @db.Decimal(18, 2)
   savedAmount    Decimal? @db.Decimal(18, 2)
+  applySavingsCalculation Boolean  @default(false)
   dataVencimento DateTime
   status         String
   createdAt      DateTime @default(now())

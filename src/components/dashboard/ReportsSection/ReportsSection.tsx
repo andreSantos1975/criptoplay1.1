@@ -50,7 +50,7 @@ interface BinanceTicker {
 
 // Data Fetching
 const fetchTrades = async (): Promise<Trade[]> => {
-  const res = await fetch("/api/trades");
+  const res = await fetch("/api/simulator/trades");
   if (!res.ok) throw new Error("Falha ao buscar trades.");
   return res.json();
 };

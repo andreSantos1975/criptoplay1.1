@@ -1,3 +1,4 @@
+// Forçando recompilação para resolver possível problema de cache de rota.
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';

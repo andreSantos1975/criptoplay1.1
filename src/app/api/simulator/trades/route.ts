@@ -5,6 +5,38 @@ import { authOptions } from '@/lib/auth';
 import { Decimal } from '@prisma/client/runtime/library';
 import { getCurrentPrice } from '@/lib/binance';
 
+
+// Rota para BUSCAR todas as operações de simulação de um usuário
+export async function GET(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return new NextResponse(JSON.stringify({ message: 'Não autorizado' }), { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    const trades = await prisma.trade.findMany({
+      where: {
+        userId: userId,
+        marketType: 'SIMULATOR', // Garante que estamos pegando apenas do simulador
+      },
+      orderBy: {
+        entryDate: 'desc', // Ordena pelas mais recentes primeiro
+      },
+    });
+
+    return NextResponse.json(trades);
+
+  } catch (error) {
+    console.error('Erro ao buscar operações de simulação:', error);
+    if (error instanceof Error) {
+      return new NextResponse(JSON.stringify({ message: 'Erro no servidor', error: error.message }), { status: 500 });
+    }
+    return new NextResponse(JSON.stringify({ message: 'Erro desconhecido no servidor' }), { status: 500 });
+  }
+}
+
 // Rota para ABRIR uma nova operação no simulador
 export async function POST(request: Request) {
   try {

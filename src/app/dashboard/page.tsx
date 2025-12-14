@@ -133,7 +133,38 @@ const DashboardPage = () => {
   const totalIncome = useMemo(() => incomes.reduce((sum, i) => sum + i.amount, 0), [incomes]);
   const categoriesWithAmounts = useMemo(() => budgetCategories.map(category => ({ ...category, amount: (totalIncome * (Number(category.percentage) || 0)) / 100 })), [totalIncome, budgetCategories]);
   const categoriesWithSpending = useMemo(() => categoriesWithAmounts.map(category => { const categoryExpenses = expenses.filter(expense => expense.categoria === category.name); const actualSpending = categoryExpenses.reduce((sum, expense) => sum + expense.valor, 0); return { ...category, actualSpending }; }), [categoriesWithAmounts, expenses]);
-  const summary = useMemo(() => { const pendentes = expenses.filter(e => e.status === 'Pendente'); const pagos = expenses.filter(e => e.status === 'Pago'); const totalExpenses = expenses.reduce((sum, e) => sum + e.valor, 0); return { totalPendentes: pendentes.reduce((sum, e) => sum + e.valor, 0), totalPagos: pagos.reduce((sum, e) => sum + e.valor, 0), totalGeral: totalExpenses, countPendentes: pendentes.length, countPagos: pagos.length, totalIncome: totalIncome, balance: totalIncome - totalExpenses, expenses, }; }, [expenses, totalIncome]);
+  const summary = useMemo(() => {
+    const pendentes = expenses.filter(e => e.status === 'Pendente');
+    const pagos = expenses.filter(e => e.status === 'Pago');
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.valor, 0);
+
+    // Encontrar os valores alocados para as categorias específicas
+    const expenseCategory = categoriesWithSpending.find(c => c.name === 'Despesas');
+    const investmentCategory = categoriesWithSpending.find(c => c.name === 'Investimento');
+    const savingsReserveCategory = categoriesWithSpending.find(c => c.name === 'Reserva Financeira');
+
+    const allocatedTotalExpenses = expenseCategory ? expenseCategory.amount : 0;
+    const remainingTotalExpenses = allocatedTotalExpenses - totalExpenses;
+
+    // A economia é a soma de todos os 'savedAmount' das despesas onde a economia foi aplicada
+    const totalSavings = expenses
+      .filter(e => e.applySavingsCalculation && e.savedAmount)
+      .reduce((sum, e) => sum + (e.savedAmount || 0), 0);
+
+    return {
+      totalPendentes: pendentes.reduce((sum, e) => sum + e.valor, 0),
+      totalPagos: pagos.reduce((sum, e) => sum + e.valor, 0),
+      totalGeral: totalExpenses,
+      countPendentes: pendentes.length,
+      countPagos: pagos.length,
+      totalIncome: totalIncome,
+      balance: totalIncome - totalExpenses,
+      expenses,
+      allocatedTotalExpenses,
+      remainingTotalExpenses,
+      totalSavings,
+    };
+  }, [expenses, totalIncome, categoriesWithSpending]);
   
 
   // --- HANDLER FUNCTIONS (PERSONAL FINANCE ONLY) ---

@@ -15,7 +15,16 @@ export async function PUT(
   }
 
   const data = await request.json();
-  const { categoria, valor, dataVencimento, status, originalValor } = data;
+  // Destructure all expected fields, including the new ones
+  const { 
+    categoria, 
+    valor, 
+    dataVencimento, 
+    status, 
+    originalValor, 
+    savedAmount, 
+    applySavingsCalculation 
+  } = data;
 
   if (!categoria || !valor || !dataVencimento) {
     return NextResponse.json(
@@ -32,28 +41,18 @@ export async function PUT(
     return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateData: any = {
-    categoria,
-    valor,
-    dataVencimento: new Date(dataVencimento),
-    status,
-  };
-
-  // Only update economy-related fields if originalValor is explicitly provided.
-  // This prevents accidental erasure of savedAmount when just changing the status.
-  if (originalValor !== null && originalValor !== undefined) {
-    updateData.originalValor = originalValor;
-    updateData.savedAmount = originalValor - valor;
-  } else if (data.hasOwnProperty('originalValor') && originalValor === null) {
-    // If the frontend explicitly sends originalValor as null, it means the user wants to remove the economy calculation.
-    updateData.originalValor = null;
-    updateData.savedAmount = null;
-  }
-
   const updatedExpense = await prisma.expense.update({
     where: { id },
-    data: updateData,
+    data: {
+      categoria,
+      valor,
+      dataVencimento: new Date(dataVencimento),
+      status,
+      // Directly pass the new values from the request
+      applySavingsCalculation,
+      originalValor,
+      savedAmount,
+    },
   });
 
   const response = {

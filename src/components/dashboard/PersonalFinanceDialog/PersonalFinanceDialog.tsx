@@ -27,7 +27,7 @@ export function PersonalFinanceDialog({
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<"Pendente" | "Pago">("Pendente");
-  const [applyEconomy, setApplyEconomy] = useState(false); // New state for the checkbox
+  const [applySavingsCalculation, setApplySavingsCalculation] = useState(false); // Renamed state
 
   useEffect(() => {
     if (isOpen && item) {
@@ -41,15 +41,15 @@ export function PersonalFinanceDialog({
             : undefined
         );
         setStatus(expenseItem.status as "Pendente" | "Pago");
-        // Correctly initialize the checkbox based on the item's state
-        setApplyEconomy(expenseItem.originalValor != null);
+        // Initialize checkbox based on the new field
+        setApplySavingsCalculation(expenseItem.applySavingsCalculation ?? false);
       } else if (type === "income") {
         const incomeItem = item as Income;
         setDescription(incomeItem.description || "");
         setAmount(incomeItem.amount ? incomeItem.amount.toString() : "");
         setDate(incomeItem.date ? new Date(incomeItem.date) : undefined);
         setStatus("Pendente");
-        setApplyEconomy(false);
+        setApplySavingsCalculation(false);
       }
     } else {
       // Reset fields for a new item
@@ -57,7 +57,7 @@ export function PersonalFinanceDialog({
       setAmount("");
       setDate(undefined);
       setStatus("Pendente");
-      setApplyEconomy(false);
+      setApplySavingsCalculation(false);
     }
   }, [item, isOpen, type]);
 
@@ -75,25 +75,30 @@ export function PersonalFinanceDialog({
         valor: number;
         dataVencimento: Date;
         status: string;
+        applySavingsCalculation: boolean; // Add to payload type
       } = {
         categoria: description,
         valor: numericAmount,
         dataVencimento: date,
         status,
+        applySavingsCalculation: applySavingsCalculation, // Pass state to payload
       };
 
       const existingExpense = item as Expense;
 
-      if (item && existingExpense.id) {
-        if (applyEconomy) {
-          expenseData.originalValor =
-            existingExpense.originalValor ?? existingExpense.valor;
-        } else {
+      // New logic for saving economy fields
+      if (applySavingsCalculation && item) {
+          // If it's an existing item and we are applying savings
+          expenseData.originalValor = existingExpense.originalValor ?? existingExpense.valor;
+          expenseData.savedAmount = expenseData.originalValor - numericAmount;
+      } else {
+          // If we are not applying savings, clear the fields
           expenseData.originalValor = undefined;
           expenseData.savedAmount = undefined;
-        }
       }
+      
       payload = expenseData;
+
     } else if (type === "income") {
       payload = {
         description,
@@ -102,7 +107,6 @@ export function PersonalFinanceDialog({
       };
     }
 
-    console.log("Dialog: Salvando item...", { type, payload });
     onSave(payload as Omit<Expense, "id"> | Omit<Income, "id">, type);
     onClose();
   };
@@ -183,12 +187,12 @@ export function PersonalFinanceDialog({
               <div className={styles.formGroup}>
                 <input
                   type="checkbox"
-                  id="applyEconomy"
-                  checked={applyEconomy}
-                  onChange={(e) => setApplyEconomy(e.target.checked)}
+                  id="applySavingsCalculation"
+                  checked={applySavingsCalculation}
+                  onChange={(e) => setApplySavingsCalculation(e.target.checked)}
                   className={styles.checkbox} // You might need to define this style
                 />
-                <Label htmlFor="applyEconomy">
+                <Label htmlFor="applySavingsCalculation">
                   Aplicar cálculo de economia
                 </Label>
               </div>

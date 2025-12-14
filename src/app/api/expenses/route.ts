@@ -57,7 +57,16 @@ export async function POST(request: Request) {
 
   const data = await request.json();
 
-  const { categoria, valor, dataVencimento, status } = data;
+  // Updated to include new economy-related fields
+  const { 
+    categoria, 
+    valor, 
+    dataVencimento, 
+    status, 
+    originalValor, 
+    savedAmount, 
+    applySavingsCalculation 
+  } = data;
 
   if (!categoria || !valor || !dataVencimento) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -70,12 +79,18 @@ export async function POST(request: Request) {
       dataVencimento: new Date(dataVencimento),
       status,
       userId: session.user.id,
+      // Add new fields to the create payload
+      originalValor,
+      savedAmount,
+      applySavingsCalculation,
     },
   });
 
   const response = {
     ...newExpense,
     valor: Number(newExpense.valor),
+    originalValor: newExpense.originalValor ? Number(newExpense.originalValor) : null,
+    savedAmount: newExpense.savedAmount ? Number(newExpense.savedAmount) : null,
   };
 
   return NextResponse.json(response, { status: 201 });

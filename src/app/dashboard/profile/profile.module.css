@@ -1,0 +1,70 @@
+/* src/app/dashboard/profile/profile.module.css */
+.container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: var(--card-background); /* Usar variáveis CSS do tema */
+  border-radius: 8px;
+  box-shadow: var(--shadow-medium);
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: var(--foreground);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.inputGroup label {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.inputGroup input {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background-color: var(--input-background);
+  color: var(--foreground);
+  font-size: 1rem;
+}
+
+.disabledInput {
+  background-color: var(--muted);
+  cursor: not-allowed;
+}
+
+.button {
+  padding: 0.85rem;
+  border-radius: 6px;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-weight: bold;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.button:hover:not(:disabled) {
+  background-color: hsl(var(--primary) / 0.9);
+}
+
+.button:disabled {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  cursor: not-allowed;
+}

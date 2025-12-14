@@ -36,7 +36,7 @@ interface Trade {
 
 // Função para buscar os trades
 const fetchTrades = async (): Promise<Trade[]> => {
-  const response = await fetch("/api/trades");
+  const response = await fetch("/api/simulator/trades");
   if (!response.ok) throw new Error("Falha ao buscar as operações.");
   const data = await response.json();
   return data;
@@ -139,7 +139,7 @@ export const RecentOperationsTable = () => {
 
   const closeTradeMutation = useMutation({
     mutationFn: (tradeId: string) => {
-      return fetch(`/api/trades/${tradeId}`, {
+      return fetch(`/api/simulator/trades/${tradeId}`, {
         method: 'PUT',
       }).then(res => {
         if (!res.ok) throw new Error('Falha ao fechar a operação.');

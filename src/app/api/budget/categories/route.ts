@@ -7,14 +7,25 @@ import { Prisma } from "@prisma/client";
 // GET: Fetch all budget categories for the logged-in user
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  if (!session?.user?.id || typeof session.user.id !== 'string') {
+    return NextResponse.json({ error: "Não autorizado ou ID de usuário inválido" }, { status: 401 });
   }
 
+  const userId = session.user.id;
+
   try {
+    // Verificação adicional para garantir que o usuário existe no banco de dados
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!userExists) {
+      return NextResponse.json({ error: "Usuário da sessão não encontrado no banco de dados." }, { status: 404 });
+    }
+
     let categories = await prisma.budgetCategory.findMany({
       where: {
-        userId: session.user.id,
+        userId: userId,
       },
       orderBy: {
         name: "asc",
@@ -24,11 +35,11 @@ export async function GET() {
     if (categories.length === 0) {
       // Create default categories if none exist for the user
       const defaultCategories = [
-        { name: "Investimento", type: "EXPENSE", userId: session.user.id },
-        { name: "Reserva Financeira", type: "EXPENSE", userId: session.user.id },
-        { name: "Despesas", type: "EXPENSE", userId: session.user.id },
-        { name: "Lazer", type: "EXPENSE", userId: session.user.id },
-        { name: "Outros", type: "EXPENSE", userId: session.user.id },
+        { name: "Investimento", type: "EXPENSE", userId: userId },
+        { name: "Reserva Financeira", type: "EXPENSE", userId: userId },
+        { name: "Despesas", type: "EXPENSE", userId: userId },
+        { name: "Lazer", type: "EXPENSE", userId: userId },
+        { name: "Outros", type: "EXPENSE", userId: userId },
       ];
 
       await prisma.budgetCategory.createMany({
@@ -39,7 +50,7 @@ export async function GET() {
       // Fetch them again to include the newly created ones
       categories = await prisma.budgetCategory.findMany({
         where: {
-          userId: session.user.id,
+          userId: userId,
         },
         orderBy: {
           name: "asc",
@@ -50,6 +61,10 @@ export async function GET() {
     return NextResponse.json(categories);
   } catch (error) {
     console.error("Erro ao buscar categorias do orçamento:", error);
+    // Verificar se o erro é o P2003 que estávamos vendo.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+       return NextResponse.json({ error: "Violação de chave estrangeira: o usuário pode não existir mais." }, { status: 400 });
+    }
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }

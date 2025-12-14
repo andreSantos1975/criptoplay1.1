@@ -10,6 +10,7 @@ declare module 'next-auth' {
     user: {
       /** The user's unique identifier. */
       id: string;
+      username?: string | null; // Adicionado username
     } & DefaultSession['user']; // Merge with default user properties
   }
 }
@@ -19,5 +20,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     /** The user's unique identifier. */
     id: string;
+    username?: string | null; // Adicionado username
   }
 }

@@ -43,7 +43,7 @@ interface CapitalMovement {
 
 // Function to fetch trades
 const fetchTrades = async (): Promise<Trade[]> => {
-  const response = await fetch("/api/trades");
+  const response = await fetch("/api/simulator/trades");
   if (!response.ok) {
     throw new Error("Falha ao buscar as operações.");
   }

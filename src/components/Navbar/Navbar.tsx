@@ -48,11 +48,17 @@ const Navbar = () => {
 
           <nav className={styles.desktopNav}>
 
-            <Link href="/" className={styles.navLink}>
+                        <Link href="/" className={styles.navLink}>
 
-              Home
+                          Home
 
-            </Link>
+                        </Link>
+
+                        <Link href="/ranking" className={styles.navLink}>
+
+                          Ranking
+
+                        </Link>
 
                                     
 
@@ -114,6 +120,13 @@ const Navbar = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Home
+              </Link>
+              <Link
+                href="/ranking"
+                className={styles.mobileNavLink}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Ranking
               </Link>
               
               <Link

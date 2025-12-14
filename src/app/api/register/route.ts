@@ -3,35 +3,75 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/prisma'
 
+// Função para gerar um username único
+async function generateUniqueUsername(): Promise<string> {
+  let uniqueUsername: string;
+  let isUnique = false;
+  while (!isUnique) {
+    const randomNumber = Math.floor(1000 + Math.random() * 9000); // 4 dígitos
+    uniqueUsername = `Trader-${randomNumber}`;
+    const existingUser = await prisma.user.findUnique({
+      where: { username: uniqueUsername },
+    });
+    if (!existingUser) {
+      isUnique = true;
+    }
+  }
+  return uniqueUsername;
+}
+
 export async function POST(request: Request) {
   try {
-    const { name, email, password } = await request.json()
+    const { name, email, password, username } = await request.json();
 
     if (!name || !email || !password) {
-      return NextResponse.json({ message: 'Todos os campos são obrigatórios.' }, { status: 400 })
+      return NextResponse.json({ message: 'Todos os campos obrigatórios (nome, email, senha) devem ser preenchidos.' }, { status: 400 });
     }
 
-    const existingUser = await prisma.user.findUnique({
+    // Validar formato e tamanho do username se fornecido
+    if (username) {
+      if (username.length < 3 || username.length > 20) {
+        return NextResponse.json({ message: 'O apelido deve ter entre 3 e 20 caracteres.' }, { status: 400 });
+      }
+      if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+        return NextResponse.json({ message: 'O apelido só pode conter letras, números, hífens e underscores.' }, { status: 400 });
+      }
+    }
+
+    const existingUserByEmail = await prisma.user.findUnique({
       where: { email },
-    })
+    });
 
-    if (existingUser) {
-      return NextResponse.json({ message: 'Este e-mail já está em uso.' }, { status: 409 })
+    if (existingUserByEmail) {
+      return NextResponse.json({ message: 'Este e-mail já está em uso.' }, { status: 409 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
+    let finalUsername = username;
+    if (finalUsername) {
+      const existingUserByUsername = await prisma.user.findUnique({
+        where: { username: finalUsername },
+      });
+      if (existingUserByUsername) {
+        return NextResponse.json({ message: 'Este apelido já está em uso.' }, { status: 409 });
+      }
+    } else {
+      finalUsername = await generateUniqueUsername();
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        username: finalUsername, // Salvar o username (fornecido ou gerado)
       },
-    })
+    });
 
-    return NextResponse.json({ message: 'Usuário criado com sucesso!', user }, { status: 201 })
+    return NextResponse.json({ message: 'Usuário criado com sucesso!', user }, { status: 201 });
   } catch (error) {
-    console.error('Erro ao criar usuário:', error)
-    return NextResponse.json({ message: 'Ocorreu um erro no servidor.' }, { status: 500 })
+    console.error('Erro ao criar usuário:', error);
+    return NextResponse.json({ message: 'Ocorreu um erro no servidor.' }, { status: 500 });
   }
 }

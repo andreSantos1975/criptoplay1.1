@@ -6,6 +6,7 @@ export interface Expense {
   status: "Pendente" | "Pago";
   originalValor?: number; // Campo para armazenar o valor original da despesa
   savedAmount?: number; // Campo para armazenar a economia calculada para esta despesa
+  applySavingsCalculation?: boolean;
 }
 
 export interface ExpenseSummary {

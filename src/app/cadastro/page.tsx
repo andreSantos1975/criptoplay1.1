@@ -9,6 +9,7 @@ export default function CadastroPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('') // Novo estado para username
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -20,8 +21,8 @@ export default function CadastroPage() {
     setSuccess('')
     setIsLoading(true)
 
-    if (!name || !email || !password) {
-      setError('Por favor, preencha todos os campos.')
+    if (!name || !email || !password) { // Removida a obrigatoriedade do username aqui. Será tratada na API.
+      setError('Por favor, preencha todos os campos obrigatórios: Nome, Email e Senha.')
       setIsLoading(false)
       return
     }
@@ -32,7 +33,7 @@ export default function CadastroPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, username }), // Incluir username
       })
 
       const data = await res.json()
@@ -64,6 +65,16 @@ export default function CadastroPage() {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className={styles.inputGroup}>
+          <label htmlFor="username">Apelido (opcional)</label>
+          <input
+            type="text"
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="Será gerado se deixado em branco"
           />
         </div>
         <div className={styles.inputGroup}>
