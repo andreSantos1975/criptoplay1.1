@@ -54,11 +54,7 @@ const Navbar = () => {
 
             </Link>
 
-                        <Link href="/dashboard?tab=analise" className={styles.navLink}>
-
-                          Simulador
-
-                        </Link>
+                                    
 
             <Link href="/#recursos" className={styles.navLink}>
 
@@ -119,13 +115,7 @@ const Navbar = () => {
               >
                 Home
               </Link>
-              <Link
-                href="/dashboard?tab=analise"
-                className={styles.mobileNavLink}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Simulador
-              </Link>
+              
               <Link
                 href="/#recursos"
                 className={styles.mobileNavLink}

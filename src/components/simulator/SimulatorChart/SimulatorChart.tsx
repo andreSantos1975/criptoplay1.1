@@ -97,12 +97,13 @@ export const SimulatorChart = memo(({
 
   // Load initial data
   useEffect(() => {
-    if (!seriesRef.current) return;
+    if (!seriesRef.current || !chartRef.current) return;
 
     if (isChartLoading) {
       seriesRef.current.setData([]); // Clear chart data while fetching
     } else if (isChartReady && initialChartData) {
       seriesRef.current.setData(initialChartData);
+      chartRef.current.timeScale().fitContent();
     }
   }, [isChartReady, initialChartData, isChartLoading]);
 
