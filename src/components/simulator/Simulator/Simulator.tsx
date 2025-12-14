@@ -13,6 +13,7 @@ import { TradeRow } from '@/components/simulator/TradeRow/TradeRow';
 import { CryptoList } from "@/components/dashboard/CryptoList/CryptoList";
 
 import styles from './Simulator.module.css';
+import { Button } from "@/components/ui/button";
 
 // --- TYPE DEFINITIONS ---
 interface SimulatorProfile {
@@ -87,6 +88,9 @@ const Simulator = () => {
   const [takeProfit, setTakeProfit] = useState(0);
   const [quantity, setQuantity] = useState(0.01);
   const [closingTradeIds, setClosingTradeIds] = useState(new Set<string>());
+  const [watchedSymbols, setWatchedSymbols] = useState(['BTCBRL', 'ETHBRL', 'SOLBRL', 'ADABRL', 'DOGEBRL', 'SHIBBRL', 'BNBBRL']);
+  const [newSymbol, setNewSymbol] = useState('');
+
 
   // --- DATA FETCHING & MUTATIONS ---
   const { data: simulatorProfile, isLoading: isLoadingSimulator } = useQuery<SimulatorProfile, Error>({
@@ -218,6 +222,42 @@ const Simulator = () => {
     if (!entryPrice) return;
     createSimulatorTradeMutation.mutate({ symbol: selectedCrypto, quantity, type: 'BUY', entryPrice, stopLoss, takeProfit });
   };
+
+  const handleAddSymbol = async () => {
+    if (!newSymbol) return;
+    
+    const symbol = newSymbol.trim().toUpperCase();
+    const formattedSymbol = symbol.endsWith('BRL') ? symbol : `${symbol}BRL`;
+
+    if (watchedSymbols.includes(formattedSymbol)) {
+        toast.error('Ativo já está na lista.');
+        setNewSymbol('');
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/binance/price?symbol=${formattedSymbol}`);
+        if (!res.ok) {
+            throw new Error('Ativo não encontrado na Binance.');
+        }
+        
+        setWatchedSymbols(prev => [...prev, formattedSymbol]);
+        toast.success(`${formattedSymbol} adicionado à lista!`);
+
+    } catch (error) {
+        if (error instanceof Error) {
+            toast.error(error.message);
+        } else {
+            toast.error('Ocorreu um erro ao adicionar o ativo.');
+        }
+    } finally {
+        setNewSymbol('');
+    }
+  };
+
+  const handleDeleteSymbol = (symbolToDelete: string) => {
+    setWatchedSymbols(prev => prev.filter(symbol => symbol !== symbolToDelete));
+  };
   
   // --- RENDER LOGIC ---
   const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -292,10 +332,26 @@ const Simulator = () => {
               {createSimulatorTradeMutation.isError && <p style={{ color: 'red', marginTop: '1rem' }}>Erro: {createSimulatorTradeMutation.error.message}</p>}
           </form>
       </div>
+      
+      <div className={styles.formContainer} style={{ gridColumn: 'span 2' }}>
+        <h3 className={styles.formTitle}>Adicionar Ativo à Lista</h3>
+        <div className={styles.addSymbolForm}>
+            <input 
+                type="text" 
+                value={newSymbol} 
+                onChange={(e) => setNewSymbol(e.target.value)} 
+                placeholder="Ex: XRP"
+                className={styles.input}
+            />
+            <Button onClick={handleAddSymbol} className={styles.submitButton}>Adicionar</Button>
+        </div>
+
+      </div>
 
       <CryptoList
-          watchedSymbols={['BTCBRL', 'ETHBRL', 'SOLBRL', 'ADABRL', 'DOGEBRL', 'SHIBBRL', 'BNBBRL']}
+          watchedSymbols={watchedSymbols}
           onCryptoSelect={handleCryptoSelect}
+          onDeleteSymbol={handleDeleteSymbol}
       />
     </div>
   );

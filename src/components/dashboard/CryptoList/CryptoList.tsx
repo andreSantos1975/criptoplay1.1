@@ -1,9 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, XCircle } from "lucide-react";
 import CryptoIcon from "../../ui/CryptoIcon/CryptoIcon";
 import styles from "./CryptoList.module.css";
+import { Button } from "@/components/ui/button";
+
 
 interface CryptoData {
   id: string;
@@ -81,9 +83,10 @@ const formatCurrency = (value: number, symbol: string): string => {
 interface CryptoListProps {
   watchedSymbols: string[];
   onCryptoSelect: (symbol: string) => void;
+  onDeleteSymbol: (symbol: string) => void; // New prop for deleting a symbol
 }
 
-export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) => {
+export const CryptoList = ({ watchedSymbols, onCryptoSelect, onDeleteSymbol }: CryptoListProps) => {
   const { data: cryptos, isLoading, error } = useQuery<CryptoData[]>({
     queryKey: ["cryptos", watchedSymbols],
     queryFn: () => fetchCryptoData(watchedSymbols),
@@ -109,6 +112,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) 
               <th className={styles.th}>Price</th>
               <th className={styles.th}>24h Change</th>
               <th className={styles.th}>Volume (24h)</th>
+              <th className={styles.th}>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -152,6 +156,18 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect }: CryptoListProps) 
                 </td>
                 <td className={styles.td}>
                   {formatCurrency(crypto.quote_volume, crypto.symbol)}
+                </td>
+                <td className={styles.td}>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={(e) => {
+                            e.stopPropagation(); // Prevent row click
+                            onDeleteSymbol(crypto.symbol);
+                        }}
+                    >
+                        <XCircle className="h-4 w-4" />
+                    </Button>
                 </td>
               </tr>
             ))}
