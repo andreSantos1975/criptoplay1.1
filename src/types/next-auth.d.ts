@@ -10,16 +10,16 @@ declare module 'next-auth' {
     user: {
       /** The user's unique identifier. */
       id: string;
-      username?: string | null; // Adicionado username
-    } & DefaultSession['user']; // Merge with default user properties
+      username?: string | null;
+      subscriptionStatus?: string | null; // Adicionado status da assinatura
+    } & DefaultSession['user'];
   }
 }
 
 declare module 'next-auth/jwt' {
-  /** Returned by the `jwt` callback and `getToken`, when using JWT sessions */
   interface JWT {
-    /** The user's unique identifier. */
     id: string;
-    username?: string | null; // Adicionado username
+    username?: string | null;
+    subscriptionStatus?: string | null; // Adicionado status da assinatura
   }
 }

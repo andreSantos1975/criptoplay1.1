@@ -8,28 +8,46 @@ datasource db {
 }
 
 model User {
-  id               String            @id @default(cuid())
-  name             String?
-  username         String?           @unique // Novo campo para o apelido
-  email            String?           @unique
-  emailVerified    DateTime?
-  image            String?
-  password         String?
-  isAdmin          Boolean           @default(false)
-  virtualBalance   Decimal           @default(10000) @db.Decimal(12, 2)
-  dailyPerformances DailyPerformance[]
-  oauthAccounts    OAuthAccount[]
-  bankAccounts     BankAccount[]
-  creditCards      CreditCard[]
-  budgets          Budget[]
-  BudgetCategory   BudgetCategory[]
-  capitalMovements CapitalMovement[]
-  Contact          Contact[]
-  expenses         Expense[]
-  incomes          Income[]
-  sessions         Session[]
-  trades           Trade[]
-  userProgress     UserProgress[]
+  id                  String            @id @default(cuid())
+  name                String?
+  username            String?           @unique
+  email               String?           @unique
+  emailVerified       DateTime?
+  image               String?
+  password            String?
+  isAdmin             Boolean           @default(false)
+  virtualBalance      Decimal           @default(10000) @db.Decimal(12, 2)
+  dailyPerformances   DailyPerformance[]
+  oauthAccounts       OAuthAccount[]
+  bankAccounts        BankAccount[]
+  creditCards         CreditCard[]
+  budgets             Budget[]
+  BudgetCategory      BudgetCategory[]
+  capitalMovements    CapitalMovement[]
+  Contact             Contact[]
+  expenses            Expense[]
+  incomes             Income[]
+  sessions            Session[]
+  trades              Trade[]
+  userProgress        UserProgress[]
+  subscriptionStatus  String?           // e.g., "none", "active", "pending", "cancelled"
+  subscriptions       Subscription[]
+}
+
+model Subscription {
+  id                      String    @id @default(cuid())
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mercadoPagoSubscriptionId String    @unique
+  status                  String    // e.g., "active", "pending", "paused", "cancelled"
+  planId                  String    // ID do plano de assinatura no Mercado Pago
+  planName                String    // Nome do plano (ex: "Premium Mensal")
+  amount                  Decimal   @db.Decimal(12, 2)
+  currency                String    @default("BRL")
+  startDate               DateTime  @default(now())
+  endDate                 DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 }
 
 model OAuthAccount {

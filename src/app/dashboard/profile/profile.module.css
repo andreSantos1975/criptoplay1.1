@@ -1,70 +1,110 @@
 /* src/app/dashboard/profile/profile.module.css */
+
 .container {
-  max-width: 600px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: var(--card-background); /* Usar variáveis CSS do tema */
-  border-radius: 8px;
-  box-shadow: var(--shadow-medium);
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .title {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  color: var(--foreground);
+    font-size: 2.5rem;
+    color: #333;
+    text-align: center;
+    margin-bottom: 2rem;
 }
 
 .form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .inputGroup {
-  display: flex;
-  flex-direction: column;
+    display: flex;
+    flex-direction: column;
 }
 
 .inputGroup label {
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: var(--muted-foreground);
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    color: #555;
 }
 
 .inputGroup input {
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background-color: var(--input-background);
-  color: var(--foreground);
-  font-size: 1rem;
+    padding: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
 }
 
 .disabledInput {
-  background-color: var(--muted);
-  cursor: not-allowed;
+    background-color: #e9ecef;
+    color: #6c757d;
 }
 
 .button {
-  padding: 0.85rem;
-  border-radius: 6px;
-  background-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  font-weight: bold;
-  font-size: 1rem;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
+    padding: 0.8rem 1.5rem;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
 }
 
-.button:hover:not(:disabled) {
-  background-color: hsl(var(--primary) / 0.9);
+.button:hover {
+    background-color: #0056b3;
 }
 
 .button:disabled {
-  background-color: hsl(var(--muted));
-  color: hsl(var(--muted-foreground));
-  cursor: not-allowed;
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+.subscriptionSection {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #eee;
+}
+
+.subscriptionSection h2 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 1.5rem;
+}
+
+.subscriptionStatus {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.subscriptionStatus span {
+    font-weight: bold;
+}
+
+.manageSubscriptionButton {
+    background-color: #6c757d; /* Gray color for manage button */
+    color: #fff;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    text-decoration: none; /* For anchor tags */
+    display: inline-block; /* For anchor tags */
+}
+
+.manageSubscriptionButton:hover {
+    background-color: #5a6268;
+}
+
+@media (max-width: 768px) {
+    .title {
+        font-size: 2rem;
+    }
 }

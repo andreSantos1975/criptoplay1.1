@@ -54,21 +54,26 @@ export const authOptions: AuthOptions = {
         if ('username' in user && user.username) {
           token.username = user.username;
         }
+        if ('subscriptionStatus' in user && user.subscriptionStatus) {
+          token.subscriptionStatus = user.subscriptionStatus;
+        }
       }
 
       if (token.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
-          select: { id: true, email: true, username: true }, // Incluir username
+          select: { id: true, email: true, username: true, subscriptionStatus: true },
         });
 
         if (!dbUser) {
-          delete token.username; // Se o usuário não for encontrado, remove o username do token
+          delete token.username;
+          delete token.subscriptionStatus;
           return token;
         }
 
         token.id = dbUser.id;
         token.username = dbUser.username;
+        token.subscriptionStatus = dbUser.subscriptionStatus;
       }
 
       return token;
@@ -76,7 +81,8 @@ export const authOptions: AuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.username = token.username as string | null | undefined; // Adicionar username
+        session.user.username = token.username as string | null | undefined;
+        session.user.subscriptionStatus = token.subscriptionStatus as string | null | undefined;
       }
       return session;
     },

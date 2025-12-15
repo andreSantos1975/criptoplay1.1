@@ -75,9 +75,7 @@ export default function ProfilePage() {
         throw new Error(data.message || 'Erro ao atualizar o apelido.');
       }
 
-      // Atualiza a sessão do NextAuth com o novo username
-      // Isso é importante para que o UI reflita a mudança sem precisar de refresh completo
-      await update({ username: newUsername }); // Isso pode precisar de um ajuste na tipagem da sessão, vou adicionar depois
+      await update({ username: newUsername });
 
       setCurrentUsername(newUsername);
       toast.success('Apelido atualizado com sucesso!');
@@ -89,16 +87,17 @@ export default function ProfilePage() {
     }
   };
 
+  const subscriptionStatus = session?.user?.subscriptionStatus || 'none';
+  const isSubscriptionActive = subscriptionStatus === 'authorized'; // Mercado Pago status for active
+  const manageSubscriptionUrl = 'https://www.mercadopago.com.br/subscriptions/management'; // URL genérica para gerenciar assinaturas no MP
+
   if (status === 'loading') {
     return <p>Carregando perfil...</p>;
   }
 
-  // Se o usuário não estiver logado, o useEffect já redirecionou
-  // Caso session.user esteja disponível, mas username não, aguardamos a chamada fetch
   if (!session?.user?.username && !currentUsername) {
       return <p>Buscando dados do usuário...</p>;
   }
-
 
   return (
     <div className={styles.container}>
@@ -128,6 +127,19 @@ export default function ProfilePage() {
           {isLoading ? 'Atualizando...' : 'Atualizar Apelido'}
         </button>
       </form>
+
+      <div className={styles.subscriptionSection}>
+        <h2>Minha Assinatura</h2>
+        <p className={styles.subscriptionStatus}>Status: <span>{subscriptionStatus === 'authorized' ? 'Ativa' : subscriptionStatus}</span></p>
+        {!isSubscriptionActive && (
+          <p>Você não possui uma assinatura ativa. <a href="/assinatura">Assine agora</a> para desbloquear todos os recursos!</p>
+        )}
+        {isSubscriptionActive && (
+          <a href={manageSubscriptionUrl} target="_blank" rel="noopener noreferrer" className={styles.manageSubscriptionButton}>
+            Gerenciar Assinatura
+          </a>
+        )}
+      </div>
     </div>
   );
 }

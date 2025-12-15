@@ -138,3 +138,44 @@
 .rewardInfo {
   color: hsl(var(--success));
 }
+
+.premiumRequiredContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px; /* Garante que o container tenha uma altura mínima */
+  text-align: center;
+  padding: 2rem;
+  background-color: var(--card-background);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  gap: 1.5rem;
+}
+
+.premiumRequiredContainer h2 {
+  font-size: 2rem;
+  color: var(--text-color);
+}
+
+.premiumRequiredContainer p {
+  font-size: 1.1rem;
+  color: var(--muted-foreground);
+  max-width: 500px;
+}
+
+.premiumSubscribeButton {
+  background-color: #007bff; /* Cor primária ou de destaque */
+  color: #fff;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  text-decoration: none; /* Remover sublinhado de link */
+}
+
+.premiumSubscribeButton:hover {
+  background-color: #0056b3;
+}
