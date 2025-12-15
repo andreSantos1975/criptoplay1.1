@@ -1,4 +1,6 @@
+ngrok http 3000
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Mercado Pago Teste
 
 TESTUSER4990136881583821796@testuser.com
