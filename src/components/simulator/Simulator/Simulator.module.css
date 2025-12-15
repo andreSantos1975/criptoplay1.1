@@ -61,10 +61,20 @@
 .input {
     padding: 0.75rem;
     border-radius: 6px;
-    background-color: var(--input-background);
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
+    background-color: #FFFFFF; /* Forçar fundo branco */
+    border: 1px solid #ced4da; /* Borda mais escura para contraste */
+    color: #495057; /* Cor de texto escura para contraste */
     font-size: 1rem;
+    -webkit-appearance: textfield; /* Garante a aparência de campo de texto, mas mantém spinners */
+    -moz-appearance: textfield;
+}
+
+/* Garante que os spinners sejam sempre visíveis e tenham cor */
+.input::-webkit-outer-spin-button,
+.input::-webkit-inner-spin-button {
+  -webkit-appearance: inner-spin-button !important; /* Força a exibição */
+  opacity: 1 !important; /* Garante que não sejam transparentes */
+  margin: 0; /* Remove margem padrão */
 }
 
 .input:focus {

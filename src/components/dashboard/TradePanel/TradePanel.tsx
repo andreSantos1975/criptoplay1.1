@@ -85,30 +85,33 @@ export const TradePanel = ({ tradeLevels, onLevelsChange, marketType }: TradePan
       <div className={styles.inputGroup}>
         <label htmlFor="entry">Entrada</label>
         <input
-          type="text"
+          type="number"
           id="entry"
           name="entry"
-          value={tradeLevels.entry !== undefined ? formatNumber(tradeLevels.entry) : ''}
+          step="0.01"
+          value={tradeLevels.entry !== undefined ? tradeLevels.entry : ''}
           onChange={handleChange}
         />
       </div>
       <div className={styles.inputGroup}>
         <label htmlFor="takeProfit">Take Profit</label>
         <input
-          type="text"
+          type="number"
           id="takeProfit"
           name="takeProfit"
-          value={tradeLevels.takeProfit !== undefined ? formatNumber(tradeLevels.takeProfit) : ''}
+          step="0.01"
+          value={tradeLevels.takeProfit !== undefined ? tradeLevels.takeProfit : ''}
           onChange={handleChange}
         />
       </div>
       <div className={styles.inputGroup}>
         <label htmlFor="stopLoss">Stop Loss</label>
         <input
-          type="text"
+          type="number"
           id="stopLoss"
           name="stopLoss"
-          value={tradeLevels.stopLoss !== undefined ? formatNumber(tradeLevels.stopLoss) : ''}
+          step="0.01"
+          value={tradeLevels.stopLoss !== undefined ? tradeLevels.stopLoss : ''}
           onChange={handleChange}
         />
       </div>

@@ -20,7 +20,12 @@
 }
 
 .inputGroup input {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
   border-radius: 4px;
+  background-color: #ffffff; /* Fundo branco para os inputs */
+  border: 1px solid #dcdcdc; /* Borda mais visível */
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
+
+.inputGroup input:focus {
+  border-color: #007bff; /* Cor da borda ao focar */
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Sombra ao focar */
