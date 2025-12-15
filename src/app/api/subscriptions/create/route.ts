@@ -4,12 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import mercadopago from 'mercadopago';
-
-// Configurar Mercado Pago
-mercadopago.configure({
-  access_token: process.env.MERCADOPAGO_ACCESS_TOKEN!,
-});
+import { MercadoPagoConfig, PreApproval } from 'mercadopago';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -26,15 +21,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    // 1. Criar ou verificar o plano de pre-aprovação no Mercado Pago
-    // Para simplificar, vamos assumir que o planId é uma representação interna
-    // e criaremos ou buscaremos o plano do Mercado Pago com base nele.
-    // Em um cenário real, você buscaria o plan_id do MP que corresponde ao seu planId interno.
-
-    // Neste exemplo, vamos criar uma nova pre-aprovação para cada usuário,
-    // o que é mais comum para assinaturas avulsas onde o usuário inicia o processo.
-    // Se você tiver planos fixos e quiser que o MP gerencie o plano recorrente,
-    // você criaria um 'preapproval_plan' uma única vez e referenciaria ele aqui.
+    // 1. Inicializar o cliente do Mercado Pago com a nova sintaxe
+    const client = new MercadoPagoConfig({
+      accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
+    });
+    const preapproval = new PreApproval(client);
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -46,29 +37,28 @@ export async function POST(req: Request) {
     }
 
     const preapprovalData = {
-      reason: planName, // Nome ou descrição do plano
-      external_reference: userId, // ID do usuário para referência externa
+      reason: planName,
+      external_reference: userId,
       payer_email: user.email,
       auto_recurring: {
-        frequency: frequency, // Ex: 1 (mensal)
+        frequency: frequency,
         frequency_type: "months",
         transaction_amount: amount,
         currency_id: "BRL",
       },
-      back_url: `${process.env.NEXTAUTH_URL}/dashboard?subscription=success`, // URL de retorno após o pagamento
-      // notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`, // Será configurado depois
+      back_url: `${process.env.NEXTAUTH_URL}/dashboard?subscription=success`,
+      auto_return: 'approved',
     };
 
-    const response = await mercadopago.preapproval.create(preapprovalData);
-    const preapproval = response.body;
+    const response = await preapproval.create({ body: preapprovalData });
 
-    if (preapproval.init_point) {
+    if (response.init_point) {
       // Salvar a assinatura no nosso banco de dados
       await prisma.subscription.create({
         data: {
           userId: userId,
-          mercadoPagoSubscriptionId: preapproval.id,
-          status: preapproval.status, // pending, authorized, etc.
+          mercadoPagoSubscriptionId: String(response.id), // Garantir que seja string
+          status: response.status || 'pending', // Usar 'pending' como padrão se o status for nulo
           planId: planId,
           planName: planName,
           amount: new Prisma.Decimal(amount),
@@ -80,12 +70,12 @@ export async function POST(req: Request) {
       // Atualizar o status de assinatura do usuário
       await prisma.user.update({
         where: { id: userId },
-        data: { subscriptionStatus: preapproval.status },
+        data: { subscriptionStatus: response.status || 'pending' },
       });
 
-      return NextResponse.json({ init_point: preapproval.init_point }, { status: 200 });
+      return NextResponse.json({ init_point: response.init_point }, { status: 200 });
     } else {
-      console.error('Erro ao criar pre-aprovação:', preapproval);
+      console.error('Erro ao criar pre-aprovação:', response);
       return NextResponse.json({ message: 'Erro ao iniciar assinatura com Mercado Pago' }, { status: 500 });
     }
 

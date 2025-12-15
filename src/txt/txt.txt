@@ -1,3 +1,17 @@
+
+Mercado Pago Teste
+
+TESTUSER4990136881583821796@testuser.com
+5hDgmb17ij
+
+numero do cartao de teste
+5031 4332 1540 6351
+codigo de segurança 
+123
+data de vencimento
+11/30
+-----------------------------------------
+
 START 11/08/2025 criptoplay
 sudo /opt/lampp/lampp start 
 npm run dev 
@@ -50,6 +64,10 @@ const candlestickSeries = chart.addCandlestickSeries({
   wickUpColor: '#26a69a',
   wickDownColor: '#ef5350',
 });
+
+
+Tuneo para a Internet
+ngrok http 3000
   -------------------------------------------------------------------------------------------------
 COMANO PARA EXCLUI BANCO DE DADOS 
 DROP DATABASE <nome do banco de dados>
@@ -94,6 +112,7 @@ INICIAR A INTERFACE DO PRISMA CLIENTE
 npx prisma studio
 ----------------------------------------------------------------------
 npx prisma migrate reset --force
+ npx dotenv -e .env.local -- npx prisma migrate reset --force
   ------------------------------------------------------------------------------
 (Gerando o cliente Prisma para refletir as novas configurações no banco de dados
   npx prisma generate 
