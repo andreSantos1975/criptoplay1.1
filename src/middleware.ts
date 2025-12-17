@@ -6,32 +6,31 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Obter o token da sessão
-  // O 'secret' é necessário para descriptografar o JWT.
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  // Lista de rotas que exigem autenticação e assinatura
+  const protectedRoutes = ['/dashboard', '/curso'];
 
-  // Proteger todas as rotas do dashboard
-  if (pathname.startsWith('/dashboard')) {
-    // Se não houver token (usuário não logado) ou a assinatura não estiver ativa...
-    // O status 'authorized' do Mercado Pago indica uma assinatura ativa.
-    if (!token || token.subscriptionStatus !== 'authorized') {
-      
-      // Criar a URL de redirecionamento para a página de assinatura.
+  // Verifica se a rota atual está na lista de rotas protegidas
+  if (protectedRoutes.some(route => pathname.startsWith(route))) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+    // Critérios de acesso
+    const isDeveloper = token?.isAdmin === true;
+    const hasRecurringSubscription = token?.subscriptionStatus === 'authorized';
+    const hasLifetimePlan = token?.subscriptionStatus === 'lifetime';
+
+    // Se não houver token ou se o usuário não atender a nenhum dos critérios de acesso
+    if (!token || (!isDeveloper && !hasRecurringSubscription && !hasLifetimePlan)) {
       const url = req.nextUrl.clone();
       url.pathname = '/assinatura';
-      
-      // Redireciona o usuário.
       return NextResponse.redirect(url);
     }
   }
 
-  // Se o usuário for um assinante ativo, ou se a rota não for do dashboard,
-  // permite que a requisição continue.
+  // Se o usuário estiver autorizado ou a rota não for protegida, continua
   return NextResponse.next();
 }
 
 // Configuração do matcher para definir em quais rotas este middleware deve ser executado.
-// '/dashboard/:path*' cobre a página principal do dashboard e todas as suas sub-páginas.
 export const config = {
-  matcher: '/dashboard/:path*',
+  matcher: ['/dashboard/:path*', '/curso/:path*'],
 };

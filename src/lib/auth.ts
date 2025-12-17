@@ -49,36 +49,35 @@ export const authOptions: AuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
+      // On initial sign-in, add user properties to the token
       if (user) {
         token.id = user.id;
-        if ('username' in user && user.username) {
-          token.username = user.username;
-        }
-        if ('subscriptionStatus' in user && user.subscriptionStatus) {
-          token.subscriptionStatus = user.subscriptionStatus;
-        }
+        token.isAdmin = (user as any).isAdmin || false;
+        token.subscriptionStatus = (user as any).subscriptionStatus || null;
       }
 
-      if (token.email) {
+      // On subsequent requests, refresh token data from the database
+      if (token.id) {
         const dbUser = await prisma.user.findUnique({
-          where: { email: token.email },
-          select: { id: true, email: true, username: true, subscriptionStatus: true },
+          where: { id: token.id as string },
+          select: { id: true, isAdmin: true, subscriptionStatus: true },
         });
 
-        if (!dbUser) {
-          delete token.username;
-          delete token.subscriptionStatus;
-          return token;
+        if (dbUser) {
+          token.isAdmin = dbUser.isAdmin;
+          token.subscriptionStatus = dbUser.subscriptionStatus;
         }
-
-        token.id = dbUser.id;
-        token.username = dbUser.username;
-        token.subscriptionStatus = dbUser.subscriptionStatus;
+      }
+      
+      // Allow dev user to bypass subscription checks
+      if (process.env.NODE_ENV === 'development' && token.email === process.env.DEV_USER_EMAIL) {
+        token.isAdmin = true;
+        token.subscriptionStatus = 'authorized';
       }
 
-      // Adicionado para pular a autenticação em ambiente de desenvolvimento
-      if (process.env.NODE_ENV === 'development' && token.email === process.env.DEV_USER_EMAIL) {
-        token.subscriptionStatus = 'authorized';
+      // Allow lifetime user to bypass subscription checks
+      if (token.email === process.env.LIFETIME_USER_EMAIL) {
+        token.subscriptionStatus = 'lifetime';
       }
 
       return token;
@@ -86,8 +85,8 @@ export const authOptions: AuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.username = token.username as string | null | undefined;
-        session.user.subscriptionStatus = token.subscriptionStatus as string | null | undefined;
+        session.user.isAdmin = token.isAdmin as boolean;
+        session.user.subscriptionStatus = token.subscriptionStatus as string | null;
       }
       return session;
     },
