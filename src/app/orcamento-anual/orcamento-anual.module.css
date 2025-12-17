@@ -187,6 +187,14 @@ tr:hover .categoryActions {
     background-color: #e5e7eb;
 }
 
+.greyRowBackground td {
+    background-color: #f3f4f6; /* Cor cinza clara */
+}
+
+.whiteRowBackground td {
+    background-color: #ffffff; /* Cor branca */
+}
+
 .positive {
     color: #059669;
 }

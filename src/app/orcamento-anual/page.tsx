@@ -289,39 +289,58 @@ export default function OrcamentoAnualPage() {
               <tr className={styles.sectionHeader}><td colSpan={14}>Despesas</td></tr>
               {renderCategoryRows("EXPENSE")}
             </tbody>
-            <tfoot>
-                <tr className={styles.footerRow}>
-                    <td className={styles.footerHeader}>Total Receitas</td>
-                    {monthlyTotals.map((total, i) => <td key={i}>{total.income.toFixed(2)}</td>)}
-                    <td>{monthlyTotals.reduce((acc, t) => acc + t.income, 0).toFixed(2)}</td>
-                </tr>
-                
-                {expenseCategories.map(category => {
-                  const categoryTotal = monthlyTotals.reduce((acc, month) => acc + (month.expensesByCategory[category.id] || 0), 0);
-                  return (
-                    <tr key={category.id} className={styles.footerRow}>
-                      <td className={styles.footerHeader}>{category.name}</td>
-                      {monthlyTotals.map((total, i) => <td key={i}>{(total.expensesByCategory[category.id] || 0).toFixed(2)}</td>)}
-                      <td>{categoryTotal.toFixed(2)}</td>
-                    </tr>
-                  )
-                })}
-
-                <tr className={styles.balanceRow}>
-                    <td className={styles.footerHeader}>Saldo Mensal</td>
-                    {monthlyTotals.map((total, i) => (
-                        <td key={i} className={total.balance < 0 ? styles.negative : styles.positive}>
-                            {total.balance.toFixed(2)}
-                        </td>
-                    ))}
-                    <td className={monthlyTotals.reduce((acc, t) => acc + t.balance, 0) < 0 ? styles.negative : styles.positive}>
-                        {monthlyTotals.reduce((acc, t) => acc + t.balance, 0).toFixed(2)}
-                    </td>
-                </tr>
-            </tfoot>
+            <FooterRows 
+              monthlyTotals={monthlyTotals} 
+              expenseCategories={expenseCategories}
+              styles={styles}
+            />
           </table>
         </div>
       </div>
     </>
   );
 }
+
+const FooterRows = ({ monthlyTotals, expenseCategories, styles }: any) => {
+  let rowIndex = 0;
+  const getRowClass = () => {
+    rowIndex++;
+    return rowIndex % 2 === 1 ? styles.greyRowBackground : styles.whiteRowBackground;
+  };
+
+  const totalIncomeGrandTotal = monthlyTotals.reduce((acc: number, t: any) => acc + t.income, 0);
+  const totalBalanceGrandTotal = monthlyTotals.reduce((acc: number, t: any) => acc + t.balance, 0);
+
+  return (
+    <tfoot>
+      <tr className={`${styles.footerRow} ${getRowClass()}`}>
+        <td className={styles.footerHeader}>Total Receitas</td>
+        {monthlyTotals.map((total: any, i: number) => <td key={i}>{total.income.toFixed(2)}</td>)}
+        <td>{totalIncomeGrandTotal.toFixed(2)}</td>
+      </tr>
+      
+      {expenseCategories.map((category: any) => {
+        const categoryTotal = monthlyTotals.reduce((acc: number, month: any) => acc + (month.expensesByCategory[category.id] || 0), 0);
+        return (
+          <tr key={category.id} className={`${styles.footerRow} ${getRowClass()}`}>
+            <td className={styles.footerHeader}>{category.name}</td>
+            {monthlyTotals.map((total: any, i: number) => <td key={i}>{(total.expensesByCategory[category.id] || 0).toFixed(2)}</td>)}
+            <td>{categoryTotal.toFixed(2)}</td>
+          </tr>
+        )
+      })}
+
+      <tr className={`${styles.balanceRow} ${getRowClass()}`}>
+        <td className={styles.footerHeader}>Saldo Mensal</td>
+        {monthlyTotals.map((total: any, i: number) => (
+          <td key={i} className={total.balance < 0 ? styles.negative : styles.positive}>
+            {total.balance.toFixed(2)}
+          </td>
+        ))}
+        <td className={totalBalanceGrandTotal < 0 ? styles.negative : styles.positive}>
+          {totalBalanceGrandTotal.toFixed(2)}
+        </td>
+      </tr>
+    </tfoot>
+  );
+};
