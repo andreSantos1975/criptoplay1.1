@@ -12,10 +12,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import styles from "./DashboardOverview.module.css";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useDashboardOverview } from "@/hooks/useDashboard";
+import type { Decimal } from "@prisma/client/runtime/library";
 
-// Interface for a Trade
+// These interfaces are for type-checking the data that comes from the API
 interface Trade {
   id: string;
   symbol: string;
@@ -23,108 +24,65 @@ interface Trade {
   status: 'OPEN' | 'CLOSED';
   entryDate: string;
   exitDate?: string;
-  entryPrice: number;
-  exitPrice?: number;
-  quantity: number;
-  pnl?: number;
+  entryPrice: Decimal;
+  exitPrice?: Decimal;
+  quantity: Decimal;
+  pnl?: Decimal;
 }
 
-// Interface for CapitalMovement
 interface CapitalMovement {
   id: string;
   userId: string;
-  amount: number;
+  amount: Decimal;
   type: 'DEPOSIT' | 'WITHDRAWAL';
   date: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
-// Function to fetch trades
-const fetchTrades = async (): Promise<Trade[]> => {
-  const response = await fetch("/api/simulator/trades");
-  if (!response.ok) {
-    throw new Error("Falha ao buscar as operações.");
-  }
-  return response.json();
-};
-
-// Function to fetch capital movements
-const fetchCapitalMovements = async (): Promise<CapitalMovement[]> => {
-  const response = await fetch("/api/capital-movements");
-  if (!response.ok) {
-    throw new Error("Falha ao buscar movimentos de capital.");
-  }
-  return response.json();
-};
-
-// Helper to format currency
+// Helper to format currency remains the same
 const formatCurrency = (value: number | null | undefined) => {
   if (value === null || value === undefined) return "N/A";
-  const options: Intl.NumberFormatOptions = {
+  return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2, // Corrected for BRL
-  };
-  return new Intl.NumberFormat("pt-BR", options).format(value);
+  }).format(value);
 };
 
-// Function to generate portfolio data
+// REWRITTEN LOGIC for generating portfolio data
 const generatePortfolioData = (
   trades: Trade[],
   capitalMovements: CapitalMovement[],
   granularity: 'weekly' | 'monthly',
-  usdtToBrlRate: number, // New parameter for exchange rate
-  defaultInitialCapital: number = 0
+  usdtToBrlRate: number
 ) => {
-  console.log(`--- generatePortfolioData START (Granularity: ${granularity}) ---`);
+  const BASE_BALANCE = 10000; // The true initial balance of the simulator
 
-  let calculatedInitialCapital = defaultInitialCapital;
+  const events: { date: Date; amount: number }[] = [];
+
   capitalMovements.forEach(movement => {
-    if (movement.type === 'DEPOSIT') {
-      calculatedInitialCapital += Number(movement.amount);
-    } else if (movement.type === 'WITHDRAWAL') {
-      calculatedInitialCapital -= Number(movement.amount);
-    }
+    events.push({
+      date: new Date(movement.date),
+      amount: Number(movement.amount) * (movement.type === 'DEPOSIT' ? 1 : -1)
+    });
   });
 
-  const closedTrades = trades.filter(t => t.status === 'CLOSED' && t.pnl != null && t.exitDate != null);
+  const closedTrades = trades.filter(t => t.status === 'CLOSED' && t.pnl != null && t.exitDate);
+  closedTrades.forEach(trade => {
+    events.push({
+      date: new Date(trade.exitDate!),
+      amount: Number(trade.pnl) * usdtToBrlRate
+    });
+  });
 
-  if (closedTrades.length === 0) {
-    console.log("No closed trades, returning default data based on capital.");
-    const defaultData = [
-      { date: "Início", portfolio: calculatedInitialCapital },
-    ];
-    return defaultData;
-  }
+  events.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  const chartData: { date: string; portfolio: number }[] = [];
-  let currentPortfolioValue = calculatedInitialCapital;
+  const aggregatedEvents: { [key: string]: number } = {};
 
   if (granularity === 'monthly') {
-    const monthlyPnl: { [key: string]: number } = {};
-    closedTrades.forEach(trade => {
-      const exitDate = new Date(trade.exitDate!);
-      if (isNaN(exitDate.getTime())) return;
-      const yearMonth = `${exitDate.getFullYear()}-${(exitDate.getMonth() + 1).toString().padStart(2, '0')}`;
-      
-      // Convert PnL from USDT to BRL
-      const pnlInBRL = Number(trade.pnl) * usdtToBrlRate;
-      monthlyPnl[yearMonth] = (monthlyPnl[yearMonth] || 0) + pnlInBRL;
+    events.forEach(event => {
+      const yearMonth = `${event.date.getFullYear()}-${(event.date.getMonth() + 1).toString().padStart(2, '0')}`;
+      aggregatedEvents[yearMonth] = (aggregatedEvents[yearMonth] || 0) + event.amount;
     });
-
-    const sortedMonths = Object.keys(monthlyPnl).sort();
-    sortedMonths.forEach(yearMonth => {
-      currentPortfolioValue += monthlyPnl[yearMonth];
-      const [year, month] = yearMonth.split('-');
-      const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleString('pt-BR', { month: 'short' });
-      chartData.push({ date: `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`, portfolio: currentPortfolioValue });
-    });
-
   } else { // weekly
-    const weeklyPnl: { [key: string]: number } = {};
     const getMonday = (d: Date) => {
       const date = new Date(d);
       const day = date.getDay();
@@ -133,81 +91,52 @@ const generatePortfolioData = (
       monday.setHours(0, 0, 0, 0);
       return monday;
     };
-
-    closedTrades.forEach(trade => {
-      const exitDate = new Date(trade.exitDate!);
-      if (isNaN(exitDate.getTime())) return;
-      const monday = getMonday(exitDate);
+    events.forEach(event => {
+      const monday = getMonday(event.date);
       const weekKey = monday.toISOString().split('T')[0];
-
-      // Convert PnL from USDT to BRL
-      const pnlInBRL = Number(trade.pnl) * usdtToBrlRate;
-      weeklyPnl[weekKey] = (weeklyPnl[weekKey] || 0) + pnlInBRL;
+      aggregatedEvents[weekKey] = (aggregatedEvents[weekKey] || 0) + event.amount;
     });
+  }
+  
+  const chartData: { date: string; portfolio: number }[] = [];
+  let currentPortfolioValue = BASE_BALANCE;
+  chartData.push({ date: "Início", portfolio: currentPortfolioValue });
 
-    const sortedWeeks = Object.keys(weeklyPnl).sort();
-    sortedWeeks.forEach(weekKey => {
-      currentPortfolioValue += weeklyPnl[weekKey];
-      const date = new Date(weekKey);
+  const sortedKeys = Object.keys(aggregatedEvents).sort();
+
+  sortedKeys.forEach(key => {
+    currentPortfolioValue += aggregatedEvents[key];
+    let label = key;
+    if (granularity === 'monthly') {
+      const [year, month] = key.split('-');
+      const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleString('pt-BR', { month: 'short' });
+      label = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+    } else {
+      const date = new Date(key);
       const monthName = date.toLocaleString('pt-BR', { month: 'short' });
       const day = date.getDate();
-      const label = `${day} ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
-      chartData.push({ date: label, portfolio: currentPortfolioValue });
-    });
-  }
-
-  console.log("Final Chart Data:", chartData);
-  console.log("--- generatePortfolioData END ---");
-
-  if (chartData.length === 0) {
-    return [{ date: "Início", portfolio: calculatedInitialCapital }];
-  }
+      label = `${day} ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+    }
+    chartData.push({ date: label, portfolio: currentPortfolioValue });
+  });
 
   return chartData;
 };
 
-
 export const DashboardOverview = () => {
   const [chartGranularity, setChartGranularity] = useState<'weekly' | 'monthly'>('monthly');
+  const { data, isLoading, error } = useDashboardOverview();
 
-  const { data: trades, isLoading: isLoadingTrades, error: errorTrades } = useQuery<Trade[]>({
-    queryKey: ['trades'],
-    queryFn: fetchTrades,
-  });
-
-  const { data: capitalMovements, isLoading: isLoadingCapital, error: errorCapital } = useQuery<CapitalMovement[]>({
-    queryKey: ['capitalMovements'],
-    queryFn: fetchCapitalMovements,
-  });
-
-  // Fetch USDT to BRL exchange rate
-  const { data: usdtToBrlData, isLoading: isLoadingUsdtToBrl, error: errorUsdtToBrl } = useQuery({
-    queryKey: ['usdtToBrlRate'],
-    queryFn: async () => {
-      const response = await fetch('/api/exchange-rate');
-      if (!response.ok) {
-        throw new Error('Failed to fetch USDT to BRL rate');
-      }
-      const data = await response.json();
-      return data.usdtToBrl;
-    },
-    staleTime: 5 * 60 * 1000, // Data is considered fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Data stays in cache for 10 minutes
-    refetchOnWindowFocus: false, // Do not refetch on window focus
-  });
-
-  const isLoading = isLoadingTrades || isLoadingCapital || isLoadingUsdtToBrl;
-  const error = errorTrades || errorCapital || errorUsdtToBrl;
-
-  // Default to 1 if rate is not available to prevent division by zero or NaN issues
-  const usdtToBrlRate = usdtToBrlData || 1;
+  const trades = data?.trades || [];
+  const capitalMovements = data?.capitalMovements || [];
+  const usdtToBrlRate = data?.usdtToBrlRate || 1;
 
   const portfolioData = useMemo(() => {
-    if (trades && capitalMovements) {
+    if (data) {
       return generatePortfolioData(trades, capitalMovements, chartGranularity, usdtToBrlRate);
     }
     return [];
-  }, [trades, capitalMovements, chartGranularity, usdtToBrlRate]);
+  }, [data, trades, capitalMovements, chartGranularity, usdtToBrlRate]);
 
   if (isLoading) {
     return (
@@ -222,7 +151,7 @@ export const DashboardOverview = () => {
     return (
       <Card>
         <CardHeader><CardTitle>Evolução do Portfólio</CardTitle></CardHeader>
-        <CardContent><div className={styles.chartContainer} style={{ color: 'red' }}>Erro ao carregar dados do portfólio: {error.message}</div></CardContent>
+        <CardContent><div className={styles.chartContainer} style={{ color: 'red' }}>Erro ao carregar dados: {error.message}</div></CardContent>
       </Card>
     );
   }
@@ -240,7 +169,6 @@ export const DashboardOverview = () => {
               variant={chartGranularity === 'weekly' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setChartGranularity('weekly')}
-              className={styles.toggleButton}
             >
               Semanal
             </Button>
@@ -248,7 +176,6 @@ export const DashboardOverview = () => {
               variant={chartGranularity === 'monthly' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setChartGranularity('monthly')}
-              className={styles.toggleButton}
             >
               Mensal
             </Button>
@@ -284,7 +211,6 @@ export const DashboardOverview = () => {
                     backgroundColor: "hsl(var(--background))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "var(--radius)",
-                    color: "hsl(var(--foreground))",
                   }}
                   formatter={(value: number) => [
                     formatCurrency(value),

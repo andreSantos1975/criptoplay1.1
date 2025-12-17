@@ -227,3 +227,34 @@ SITEMA DE RECORRENCIA DE PAGAMENTO IMPLEMENTAÇÃO
 
   Essas funções tornam a plataforma proativa, ajudando o usuário a controlar suas finanças e
   a não perder oportunidades de investimento.
+
+  Finalizei a fase 2 da implementação do frontend. Resumo: Notificações visuais com
+  react-hot-toast foram integradas aos hooks do useAlerts. A funcionalidade de edição de
+  alertas foi implementada, incluindo a adaptação do AlertForm para o modo de edição. O
+  suporte para "Budget" alerts foi adicionado, com busca de categorias e campos adequados, e
+  a AlertList exibe corretamente as condições. O placeholder para "Bill" alerts permanece,
+  por falta de um endpoint de API claro. O CRUD para alertas de preço e orçamento está
+  funcional. Informarei o usuário sobre a conclusão e perguntarei os próximos passos.A
+  segunda fase da implementação do front-end para os Alertas foi concluída.
+
+  Resumo das Funcionalidades Adicionadas:
+
+   1. Notificações Visuais: O sistema agora exibe notificações de sucesso e erro para todas
+      as ações (criar, editar e excluir alertas), utilizando a biblioteca react-hot-toast
+      que já estava no projeto.
+   2. Edição de Alertas: A funcionalidade de edição está totalmente implementada. Ao clicar
+      em "Editar", o formulário é preenchido com os dados do alerta selecionado, permitindo
+      a sua atualização.
+   3. Suporte a Alertas de Orçamento: O formulário de criação/edição de alertas agora
+      suporta o tipo "Orçamento". Ele busca dinamicamente suas categorias de orçamento e
+      permite que você defina um alerta para quando seus gastos em uma categoria atingirem
+      uma determinada porcentagem.
+  A funcionalidade de alertas de "Contas a Pagar" ainda está como um placeholder, pois
+  exigirá uma investigação adicional para determinar a melhor forma de buscar os dados das
+  contas a serem pagas.
+
+  Com isso, o sistema de alertas está funcional para os tipos "Preço de Cripto" e
+  "Orçamento", com criação, listagem, edição e exclusão.
+
+  Gostaria de prosseguir com a implementação dos alertas para "Contas a Pagar" ou há outra
+  tarefa em que prefere que eu trabalhe?

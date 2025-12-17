@@ -1,0 +1,67 @@
+.container {
+  padding: 2rem;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  position: relative; /* Adicionado para posicionamento do backLink */
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: #333;
+  flex-grow: 1; /* Permite que o h1 ocupe o espaço restante */
+  text-align: center; /* Centraliza o título */
+  margin: 0;
+}
+
+.backLink {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #0070f3;
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  white-space: nowrap; /* Evita quebra de linha */
+}
+
+.backLink:hover {
+  background-color: #e0f0ff;
+}
+
+.addButton {
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.addButton:hover {
+  background-color: #005bb5;
+}
+
+.mainContent {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.placeholder {
+  text-align: center;
+  padding: 3rem;
+  color: #777;
+}

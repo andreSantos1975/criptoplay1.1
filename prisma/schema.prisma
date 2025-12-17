@@ -32,6 +32,7 @@ model User {
   userProgress        UserProgress[]
   subscriptionStatus  String?           // e.g., "none", "active", "pending", "cancelled"
   subscriptions       Subscription[]
+  alerts              Alert[]
 }
 
 model Subscription {
@@ -272,4 +273,31 @@ enum CardFlag {
   ELO
   HIPERCARD
   OTHER
+}
+
+model Alert {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         AlertType
+  config       Json
+  status       AlertStatus @default(ACTIVE)
+  triggeredAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([userId, status])
+}
+
+enum AlertType {
+  PRICE
+  BUDGET
+  BILL
+}
+
+enum AlertStatus {
+  ACTIVE
+  TRIGGERED
+  ACKNOWLEDGED
+  DELETED
 }
