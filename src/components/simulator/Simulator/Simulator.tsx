@@ -1,14 +1,107 @@
-// ... (imports)
-import { useSession } from 'next-auth/react';
+"use client";
 
-// ... (type definitions e api fetching functions)
+import { useState, useMemo, useEffect, FormEvent } from 'react';
+import { useSession } from 'next-auth/react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
+import { useVigilante } from '@/hooks/useVigilante';
+import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
+
+// Componentes do simulador e dashboard
+import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
+import SimulatorChart from '@/components/simulator/SimulatorChart/SimulatorChart';
+import { TradeRow } from '@/components/simulator/TradeRow/TradeRow';
+import { CryptoList } from '@/components/dashboard/CryptoList/CryptoList';
+
+import styles from './Simulator.module.css';
+
+// --- DEFINIÇÕES DE TIPO ---
+interface Trade {
+  id: string;
+  symbol: string;
+  quantity: number;
+  entryPrice: number;
+  exitPrice?: number;
+  openDate: string;
+  closeDate?: string;
+  status: 'OPEN' | 'CLOSED';
+  marketType?: 'spot' | 'futures';
+}
+
+interface SimulatorProfile {
+  balance: number;
+  openTrades: Trade[];
+}
+
+interface CurrentPrice {
+  price: string;
+}
+
+interface BinanceKlineData {
+  0: number; // Open time
+  1: string; // Open
+  2: string; // High
+  3: string; // Low
+  4: string; // Close
+}
+
+interface TradeLevels {
+  entry: number;
+  stopLoss: number;
+  takeProfit: number;
+}
+
+
+// --- FUNÇÕES DE BUSCA DE API ---
+const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
+  const response = await fetch('/api/simulator/profile');
+  if (!response.ok) {
+    throw new Error('Falha ao buscar perfil do simulador');
+  }
+  return response.json();
+};
+
+const fetchCurrentPrice = async (symbol: string): Promise<CurrentPrice> => {
+  if (!symbol) throw new Error("Símbolo é necessário");
+  const response = await fetch(`/api/binance/price?symbol=${symbol}`);
+  if (!response.ok) {
+    throw new Error('Falha ao buscar preço atual');
+  }
+  return response.json();
+};
+
+const createSimulatorTrade = async (tradeData: { symbol: string, quantity: number, type: 'BUY' | 'SELL', entryPrice: number, stopLoss?: number, takeProfit?: number, marketType: 'spot' | 'futures' }): Promise<Trade> => {
+    const response = await fetch('/api/simulator/trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tradeData),
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Falha ao criar ordem de simulação');
+    }
+    return response.json();
+};
+
+const closeSimulatorTrade = async (tradeId: string): Promise<Trade> => {
+    const response = await fetch(`/api/simulator/trades/${tradeId}/close`, {
+        method: 'POST',
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Falha ao fechar ordem de simulação');
+    }
+    return response.json();
+};
+
 
 const Simulator = () => {
   const queryClient = useQueryClient();
   const { data: session, status } = useSession();
   const isPremiumUser = session?.user?.subscriptionStatus === 'authorized';
 
-  // --- STATE MANAGEMENT ---
+  // --- GERENCIAMENTO DE ESTADO ---
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCBRL');
   const [marketType, setMarketType] = useState<'spot' | 'futures'>('spot');
   const [interval, setInterval] = useState("1m");
@@ -20,7 +113,7 @@ const Simulator = () => {
   const [watchedSymbols, setWatchedSymbols] = useState(['BTCBRL', 'ETHBRL', 'SOLBRL', 'ADABRL', 'DOGEBRL', 'SHIBBRL', 'BNBBRL']);
   const [newSymbol, setNewSymbol] = useState('');
 
-  // --- DATA FETCHING & MUTATIONS ---
+  // --- BUSCA DE DADOS E MUTAÇÕES ---
   const { data: simulatorProfile, isLoading: isLoadingSimulator } = useQuery<SimulatorProfile, Error>({
     queryKey: ['simulatorProfile'],
     queryFn: fetchSimulatorProfile,
@@ -31,7 +124,7 @@ const Simulator = () => {
       queryKey: ['currentPrice', selectedCrypto],
       queryFn: () => fetchCurrentPrice(selectedCrypto),
       refetchInterval: 5000,
-      enabled: isPremiumUser && !(marketType === 'futures' && selectedCrypto.endsWith('BRL')),
+      enabled: isPremiumUser && !!selectedCrypto,
   });
 
    const { data: initialChartData, isFetching: isChartLoading } = useQuery({
@@ -39,7 +132,7 @@ const Simulator = () => {
     queryFn: async () => {
       const apiPath = marketType === 'futures' ? 'futures-klines' : 'klines';
       const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}`);
-      if (!response.ok) throw new Error("Network response was not ok");
+      if (!response.ok) throw new Error("A resposta da rede não foi ok");
       const data: BinanceKlineData[] = await response.json();
       return data.map(k => ({ time: (k[0] / 1000) as any, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
     },
@@ -92,7 +185,7 @@ const Simulator = () => {
     enabled: isPremiumUser,
   });
 
-  // --- MEMOIZED CALCULATIONS & EFFECTS ---
+  // --- CÁLCULOS MEMOIZADOS E EFEITOS ---
   const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
   const tradeLevelsForChart: TradeLevels = isConfiguring ? { entry: entryPrice, stopLoss, takeProfit } : { entry: 0, stopLoss: 0, takeProfit: 0 };
   
@@ -125,7 +218,7 @@ const Simulator = () => {
     }
   }, [simulatorProfile?.openTrades, selectedCrypto, isConfiguring]);
 
-  // --- HANDLERS ---
+  // --- MANIPULADORES ---
   const handleCryptoSelect = (symbol: string) => {
     setSelectedCrypto(symbol);
     setStopLoss(0);
@@ -139,10 +232,10 @@ const Simulator = () => {
     setIsConfiguring(true);
   };
   
-  const handleSimulatorSubmit = (e: React.FormEvent) => {
+  const handleSimulatorSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!entryPrice) return;
-    createSimulatorTradeMutation.mutate({ symbol: selectedCrypto, quantity, type: 'BUY', entryPrice, stopLoss, takeProfit });
+    createSimulatorTradeMutation.mutate({ symbol: selectedCrypto, quantity, type: 'BUY', entryPrice, stopLoss, takeProfit, marketType });
   };
 
   const handleAddSymbol = async () => {
@@ -171,7 +264,7 @@ const Simulator = () => {
     setWatchedSymbols(prev => prev.filter(symbol => symbol !== symbolToDelete));
   };
   
-  // --- RENDER LOGIC ---
+  // --- LÓGICA DE RENDERIZAÇÃO ---
   if (status === 'loading') {
     return <p>Carregando simulador...</p>;
   }

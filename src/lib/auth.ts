@@ -76,6 +76,11 @@ export const authOptions: AuthOptions = {
         token.subscriptionStatus = dbUser.subscriptionStatus;
       }
 
+      // Adicionado para pular a autenticação em ambiente de desenvolvimento
+      if (process.env.NODE_ENV === 'development' && token.email === process.env.DEV_USER_EMAIL) {
+        token.subscriptionStatus = 'authorized';
+      }
+
       return token;
     },
     async session({ session, token }) {

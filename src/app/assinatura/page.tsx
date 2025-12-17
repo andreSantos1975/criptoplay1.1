@@ -11,26 +11,23 @@ interface Plan {
   id: string;
   name: string;
   amount: number;
-  frequency: number; // 1 for monthly
   description: string;
   features: string[];
 }
 
 const plans: Plan[] = [
   {
-    id: 'premium_mensal',
-    name: 'Plano Premium Mensal',
-    amount: 29.90,
-    frequency: 1,
-    description: 'Acesso completo a todas as ferramentas de análise e simulação.',
+    id: 'premium_vitalicio',
+    name: 'Plano Vitalício',
+    amount: 99.00,
+    description: 'Pagamento único para acesso completo e vitalício a todas as ferramentas.',
     features: [
-      'Acesso ilimitado ao simulador de trading',
+      'Acesso vitalício e ilimitado ao simulador de trading',
       'Relatórios financeiros avançados',
       'Alertas de mercado em tempo real',
       'Suporte prioritário',
     ],
   },
-  // Add more plans here if needed
 ];
 
 const AssinaturaPage = () => {
@@ -55,7 +52,7 @@ const AssinaturaPage = () => {
           planId: plan.id,
           planName: plan.name,
           amount: plan.amount,
-          frequency: plan.frequency,
+          planType: 'LIFETIME',
           description: plan.description,
         }),
       });
@@ -87,7 +84,7 @@ const AssinaturaPage = () => {
         {plans.map((plan) => (
           <div key={plan.id} className={styles.planCard}>
             <h2 className={styles.planName}>{plan.name}</h2>
-            <p className={styles.planAmount}>R$ {plan.amount.toFixed(2)} / mês</p>
+            <p className={styles.planAmount}>R$ {plan.amount.toFixed(2)}</p>
             <p className={styles.planDescription}>{plan.description}</p>
             <ul className={styles.planFeatures}>
               {plan.features.map((feature, index) => (
@@ -99,7 +96,7 @@ const AssinaturaPage = () => {
               onClick={() => handleSubscribe(plan)}
               disabled={loading}
             >
-              {loading ? 'Processando...' : 'Assinar Agora'}
+              {loading ? 'Processando...' : 'Acessar Agora'}
             </button>
           </div>
         ))}

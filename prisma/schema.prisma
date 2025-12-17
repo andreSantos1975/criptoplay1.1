@@ -38,7 +38,7 @@ model Subscription {
   id                      String    @id @default(cuid())
   userId                  String
   user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mercadoPagoSubscriptionId String    @unique
+  mercadoPagoSubscriptionId String? @unique
   status                  String    // e.g., "active", "pending", "paused", "cancelled"
   planId                  String    // ID do plano de assinatura no Mercado Pago
   planName                String    // Nome do plano (ex: "Premium Mensal")
@@ -46,8 +46,11 @@ model Subscription {
   currency                String    @default("BRL")
   startDate               DateTime  @default(now())
   endDate                 DateTime?
+  type                    String    @default("RECURRING")
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
+
+  @@unique([userId, planId])
 }
 
 model OAuthAccount {
