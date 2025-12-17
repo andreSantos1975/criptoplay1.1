@@ -281,6 +281,10 @@ export const ReportsSection = () => {
   );
 
   const kpiData = useMemo(() => {
+    // FIXME: The initial balance should come from a single source of truth, not be hardcoded.
+    // This is a temporary fix for consistency with the portfolio evolution chart.
+    const initialBalance = 1000; 
+
     const totalDeposits = capitalMovements
       .filter((m) => m.type === 'DEPOSIT')
       .reduce((acc, m) => acc + Number(m.amount), 0);
@@ -298,10 +302,12 @@ export const ReportsSection = () => {
         return acc + pnlInBrl;
       }, 0);
 
-    const patrimonioAtual = totalDeposits - totalWithdrawals + totalPnl;
+    // Correctly include the initial balance in the total deposits and current equity
+    const totalAportes = initialBalance + totalDeposits;
+    const patrimonioAtual = totalAportes - totalWithdrawals + totalPnl;
 
     return {
-      totalDeposits,
+      totalDeposits: totalAportes, // Renamed for clarity in the return object
       totalWithdrawals,
       totalPnl,
       patrimonioAtual,

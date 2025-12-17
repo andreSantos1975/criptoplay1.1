@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { Income, Expense } from "@prisma/client";
+import { generatePortfolioData } from "@/lib/portfolio-calculator";
+import { getCurrentPrice } from "@/lib/binance";
+import { Trade, CapitalMovement } from "@/lib/portfolio-calculator";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -13,45 +15,41 @@ export async function GET() {
     });
   }
 
+  const { searchParams } = new URL(request.url);
+  const granularity = (searchParams.get("granularity") || "monthly") as "weekly" | "monthly";
+
+
   try {
     const userId = session.user.id;
 
-    const incomes = await prisma.income.findMany({ where: { userId } });
-    const expenses = await prisma.expense.findMany({ where: { userId } });
+    // 1. Fetch all necessary data
+    const trades = await prisma.trade.findMany({ where: { userId } });
+    const capitalMovements = await prisma.capitalMovement.findMany({ where: { userId } });
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
-    const transactionsByMonth: { [key: string]: { income: number; expense: number } } = {};
+    // 2. Fetch the current USDT to BRL exchange rate
+    const usdtToBrlRate = await getCurrentPrice("USDTBRL");
 
-    const processTransactions = (items: (Income | Expense)[], type: "income" | "expense") => {
-      items.forEach((item) => {
-        const isIncome = "date" in item;
-        const date = isIncome ? item.date : item.dataVencimento;
-        const value = isIncome ? item.amount : item.valor;
+    // 3. Get the user's initial balance or default to 1000
+    const initialBalance = user?.simulatorInitialBalance ? user.simulatorInitialBalance.toNumber() : 1000;
 
-        const month = new Date(date).toISOString().slice(0, 7);
-        if (!transactionsByMonth[month]) {
-          transactionsByMonth[month] = { income: 0, expense: 0 };
-        }
-        transactionsByMonth[month][type] += parseFloat(value.toString());
-      });
-    };
 
-    processTransactions(incomes, 'income');
-    processTransactions(expenses, 'expense');
+    // 4. Call the centralized portfolio calculator
+    const portfolioData = generatePortfolioData(
+      trades as unknown as Trade[],
+      capitalMovements as unknown as CapitalMovement[],
+      granularity,
+      usdtToBrlRate.toNumber(),
+      initialBalance
+    );
 
-    const sortedMonths = Object.keys(transactionsByMonth).sort();
-    
-    let cumulativeNetWorth = 0;
-    const netWorthData = sortedMonths.map(month => {
-      const { income, expense } = transactionsByMonth[month];
-      const netChange = income - expense;
-      cumulativeNetWorth += netChange;
-      return {
-        date: month,
-        "Patrimônio Líquido": cumulativeNetWorth,
-      };
-    });
+    // 5. Format the data for the frontend chart
+    const chartData = portfolioData.map(dataPoint => ({
+      date: dataPoint.date,
+      "Patrimônio Líquido": dataPoint.portfolio,
+    }));
 
-    return NextResponse.json(netWorthData);
+    return NextResponse.json(chartData);
   } catch (error) {
     console.error("Erro ao buscar evolução do patrimônio líquido:", error);
     return new NextResponse(

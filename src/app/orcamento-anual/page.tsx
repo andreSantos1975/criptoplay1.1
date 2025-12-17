@@ -124,27 +124,35 @@ export default function OrcamentoAnualPage() {
     return data;
   }, [items]);
 
+  const { expenseCategories, incomeCategories } = useMemo(() => {
+    const expenseCats = categories.filter(c => c.type === 'EXPENSE');
+    const incomeCats = categories.filter(c => c.type === 'INCOME');
+    return { expenseCategories: expenseCats, incomeCategories: incomeCats };
+  }, [categories]);
+
   const monthlyTotals = useMemo(() => {
     const totals = Array(12).fill(null).map(() => ({
-        income: 0,
-        expense: 0,
-        balance: 0,
+      income: 0,
+      totalExpense: 0,
+      balance: 0,
+      expensesByCategory: {} as { [categoryId: string]: number },
     }));
 
     items.forEach(item => {
-        const category = categories.find(c => c.id === item.categoryId);
-        if (category) {
-            const monthIndex = item.month - 1;
-            if (category.type === 'INCOME') {
-                totals[monthIndex].income += item.amount;
-            } else {
-                totals[monthIndex].expense += item.amount;
-            }
+      const category = categories.find(c => c.id === item.categoryId);
+      if (category) {
+        const monthIndex = item.month - 1;
+        if (category.type === 'INCOME') {
+          totals[monthIndex].income += item.amount;
+        } else { // EXPENSE
+          totals[monthIndex].totalExpense += item.amount;
+          totals[monthIndex].expensesByCategory[category.id] = (totals[monthIndex].expensesByCategory[category.id] || 0) + item.amount;
         }
+      }
     });
 
     totals.forEach(monthTotal => {
-        monthTotal.balance = monthTotal.income - monthTotal.expense;
+      monthTotal.balance = monthTotal.income - monthTotal.totalExpense;
     });
 
     return totals;
@@ -188,7 +196,7 @@ export default function OrcamentoAnualPage() {
   ];
 
   const renderCategoryRows = (type: "INCOME" | "EXPENSE") => {
-    const filteredCategories = categories.filter((c) => c.type === type);
+    const filteredCategories = type === 'INCOME' ? incomeCategories : expenseCategories;
     
     if (filteredCategories.length === 0) {
         return (
@@ -287,11 +295,18 @@ export default function OrcamentoAnualPage() {
                     {monthlyTotals.map((total, i) => <td key={i}>{total.income.toFixed(2)}</td>)}
                     <td>{monthlyTotals.reduce((acc, t) => acc + t.income, 0).toFixed(2)}</td>
                 </tr>
-                <tr className={styles.footerRow}>
-                    <td className={styles.footerHeader}>Total Despesas</td>
-                    {monthlyTotals.map((total, i) => <td key={i}>{total.expense.toFixed(2)}</td>)}
-                    <td>{monthlyTotals.reduce((acc, t) => acc + t.expense, 0).toFixed(2)}</td>
-                </tr>
+                
+                {expenseCategories.map(category => {
+                  const categoryTotal = monthlyTotals.reduce((acc, month) => acc + (month.expensesByCategory[category.id] || 0), 0);
+                  return (
+                    <tr key={category.id} className={styles.footerRow}>
+                      <td className={styles.footerHeader}>{category.name}</td>
+                      {monthlyTotals.map((total, i) => <td key={i}>{(total.expensesByCategory[category.id] || 0).toFixed(2)}</td>)}
+                      <td>{categoryTotal.toFixed(2)}</td>
+                    </tr>
+                  )
+                })}
+
                 <tr className={styles.balanceRow}>
                     <td className={styles.footerHeader}>Saldo Mensal</td>
                     {monthlyTotals.map((total, i) => (

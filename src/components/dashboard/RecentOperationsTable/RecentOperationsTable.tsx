@@ -139,15 +139,18 @@ export const RecentOperationsTable = () => {
 
   const closeTradeMutation = useMutation({
     mutationFn: (tradeId: string) => {
-      return fetch(`/api/simulator/trades/${tradeId}`, {
-        method: 'PUT',
+      return fetch(`/api/simulator/trades/${tradeId}/close`, {
+        method: 'POST',
       }).then(res => {
         if (!res.ok) throw new Error('Falha ao fechar a operação.');
         return res.json();
       });
     },
     onSuccess: () => {
+      // Invalida a lista de trades para atualizar a tabela
       queryClient.invalidateQueries({ queryKey: ['trades'] });
+      // Invalida o gráfico de evolução do portfólio para atualizar o chart
+      queryClient.invalidateQueries({ queryKey: ['portfolioEvolution'] });
       toast.success("Operação fechada com sucesso!");
     },
     onError: (error: Error) => {
