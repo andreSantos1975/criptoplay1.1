@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { useVigilante } from '@/hooks/useVigilante';
 import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
+import { Alert } from '@prisma/client';
 
 // Componentes do simulador e dashboard
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
@@ -62,6 +63,28 @@ const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
   return response.json();
 };
 
+const fetchAlerts = async (): Promise<Alert[]> => {
+    const response = await fetch('/api/alerts');
+    if (!response.ok) {
+        throw new Error('Falha ao buscar alertas');
+    }
+    return response.json();
+};
+
+const createAlert = async (alertData: Partial<Alert>): Promise<Alert> => {
+    const response = await fetch('/api/alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(alertData),
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Falha ao criar alerta');
+    }
+    return response.json();
+};
+
+
 const fetchCurrentPrice = async (symbol: string): Promise<CurrentPrice> => {
   if (!symbol) throw new Error("Símbolo é necessário");
   const response = await fetch(`/api/binance/price?symbol=${symbol}`);
@@ -112,6 +135,7 @@ const Simulator = () => {
   const [closingTradeIds, setClosingTradeIds] = useState(new Set<string>());
   const [watchedSymbols, setWatchedSymbols] = useState(['BTCBRL', 'ETHBRL', 'SOLBRL', 'ADABRL', 'DOGEBRL', 'SHIBBRL', 'BNBBRL']);
   const [newSymbol, setNewSymbol] = useState('');
+  const [prospectiveAlert, setProspectiveAlert] = useState<{ price: number } | null>(null);
 
   // --- BUSCA DE DADOS E MUTAÇÕES ---
   const { data: simulatorProfile, isLoading: isLoadingSimulator } = useQuery<SimulatorProfile, Error>({
@@ -119,6 +143,12 @@ const Simulator = () => {
     queryFn: fetchSimulatorProfile,
     enabled: isPremiumUser,
   });
+
+    const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[], Error>({
+        queryKey: ['alerts'],
+        queryFn: fetchAlerts,
+        enabled: isPremiumUser,
+    });
 
   const { data: currentPriceData } = useQuery<CurrentPrice, Error>({
       queryKey: ['currentPrice', selectedCrypto],
@@ -153,6 +183,16 @@ const Simulator = () => {
     },
     onError: (error) => toast.error(`Erro ao abrir ordem: ${error.message}`),
   });
+
+  const createAlertMutation = useMutation<Alert, Error, Partial<Alert>>({
+    mutationFn: createAlert,
+    onSuccess: () => {
+        toast.success('Alerta criado com sucesso!');
+        queryClient.invalidateQueries({ queryKey: ['alerts'] });
+        setProspectiveAlert(null); // Clear prospective alert on success
+    },
+    onError: (error) => toast.error(`Erro ao criar alerta: ${error.message}`),
+    });
 
   const closeSimulatorTradeMutation = useMutation<Trade, Error, string>({
     mutationFn: closeSimulatorTrade,
@@ -224,12 +264,33 @@ const Simulator = () => {
     setStopLoss(0);
     setTakeProfit(0);
     setIsConfiguring(true);
+    setProspectiveAlert(null); // Clear prospective alert when changing crypto
   };
 
   const handleLevelsChange = (newLevels: TradeLevels) => {
     setStopLoss(newLevels.stopLoss);
     setTakeProfit(newLevels.takeProfit);
     setIsConfiguring(true);
+  };
+
+  const handleStartCreateAlert = () => {
+    if (entryPrice > 0) {
+      setProspectiveAlert({ price: entryPrice });
+    }
+  };
+
+  const handleSaveAlert = () => {
+    if (prospectiveAlert) {
+      createAlertMutation.mutate({
+        symbol: selectedCrypto,
+        price: prospectiveAlert.price,
+        condition: 'above', // Or determine condition based on price difference
+      });
+    }
+  };
+
+  const handleCancelCreateAlert = () => {
+    setProspectiveAlert(null);
   };
   
   const handleSimulatorSubmit = (e: FormEvent) => {
@@ -305,6 +366,12 @@ const Simulator = () => {
                 onIntervalChange={setInterval}
                 realtimeChartUpdate={realtimeChartUpdate}
                 openTrades={simulatorProfile?.openTrades}
+                alerts={alerts}
+                prospectiveAlert={prospectiveAlert}
+                onProspectiveAlertChange={setProspectiveAlert}
+                onStartCreateAlert={handleStartCreateAlert}
+                onSaveAlert={handleSaveAlert}
+                onCancelCreateAlert={handleCancelCreateAlert}
             />
         </div>
       </div>

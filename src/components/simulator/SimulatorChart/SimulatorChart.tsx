@@ -5,22 +5,31 @@ import {
   createChart, ColorType, CrosshairMode, ISeriesApi,
   IChartApi, BarData, CandlestickSeries
 } from "lightweight-charts";
+import { UseMutationResult } from "@tanstack/react-query"; // This import is no longer needed here but leaving it won't hurt
 import styles from "./SimulatorChart.module.css";
 import { useTradeLines } from "../../../hooks/useTradeLines";
-import { Trade } from '@prisma/client';
+import { useAlertLines } from "../../../hooks/useAlertLines";
+import { Trade, Alert } from '@prisma/client';
+import { Button } from '@/components/ui/button';
 
 interface SimulatorChartProps {
   symbol: string;
   tradeLevels: { entry: number; takeProfit: number; stopLoss: number };
   onLevelsChange: (levels: { entry: number; takeProfit: number; stopLoss: number; }) => void;
   tipoOperacao: 'compra' | 'venda' | '';
-  // New props for lifted state
   initialChartData: BarData[] | undefined;
   isChartLoading: boolean;
   interval: string;
   onIntervalChange: (interval: string) => void;
   realtimeChartUpdate: BarData | null;
-  openTrades: Trade[] | undefined; // Added
+  openTrades: Trade[] | undefined;
+  alerts: Alert[] | undefined;
+  // New props for better UX
+  prospectiveAlert: { price: number } | null;
+  onProspectiveAlertChange: (newAlert: { price: number }) => void;
+  onStartCreateAlert: () => void;
+  onSaveAlert: () => void;
+  onCancelCreateAlert: () => void;
 }
 
 export const SimulatorChart = memo(({ 
@@ -33,7 +42,13 @@ export const SimulatorChart = memo(({
   interval,
   onIntervalChange,
   realtimeChartUpdate,
-  openTrades // Added
+  openTrades,
+  alerts,
+  prospectiveAlert,
+  onProspectiveAlertChange,
+  onStartCreateAlert,
+  onSaveAlert,
+  onCancelCreateAlert,
 }: SimulatorChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -48,10 +63,22 @@ export const SimulatorChart = memo(({
     tradeLevels,
     onLevelsChange,
     isChartReady,
-    marketType: 'spot', // Simulator is always spot
+    marketType: 'spot',
     tipoOperacao: tipoOperacao,
-    openTrades, // Passed to hook
-    symbol, // Pass symbol to the hook
+    openTrades,
+    symbol,
+  });
+
+  // Use the custom hook to draw and manage alert lines
+  useAlertLines({
+    chartRef,
+    seriesRef,
+    chartContainerRef,
+    isChartReady,
+    staticAlerts: alerts,
+    symbol,
+    prospectiveAlert,
+    onProspectiveAlertChange,
   });
 
   // Effect to create and cleanup the chart
@@ -151,6 +178,22 @@ export const SimulatorChart = memo(({
               {int}
             </button>
           ))}
+        </div>
+        <div className={styles.alertControls}>
+          {prospectiveAlert ? (
+            <>
+              <Button onClick={onSaveAlert} variant="default" size="sm">
+                Salvar Alerta
+              </Button>
+              <Button onClick={onCancelCreateAlert} variant="ghost" size="sm">
+                Cancelar
+              </Button>
+            </>
+          ) : (
+            <Button onClick={onStartCreateAlert} variant="outline" size="sm">
+              Criar Alerta
+            </Button>
+          )}
         </div>
       </div>
       <div ref={chartContainerRef} className={styles.chartContainer} />

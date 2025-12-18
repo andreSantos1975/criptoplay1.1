@@ -33,11 +33,21 @@ const AlertList = ({ alerts, budgetCategories, onEdit }: AlertListProps) => {
     }, {} as Record<string, string>);
   }, [budgetCategories]);
 
+  const priceFormatter = useMemo(() => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2, // Always show at least 2 decimal places
+      maximumFractionDigits: 8, // Max 8 for crypto, will adjust automatically
+    });
+  }, []);
+
   const getAlertConditionText = (alert: Alert) => {
     const config = alert.config as any;
     switch (alert.type) {
       case AlertType.PRICE:
-        return `${config.symbol} ${config.operator === 'gt' ? '>' : '<'} ${config.targetPrice}`;
+        const formattedPrice = priceFormatter.format(config.price);
+        return `${config.symbol} ${config.condition === 'above' ? '>' : '<'} ${formattedPrice}`;
       case AlertType.BUDGET:
         const categoryName = categoryMap[config.categoryId] || 'Categoria desconhecida';
         return `${categoryName} > ${config.percentage}%`;

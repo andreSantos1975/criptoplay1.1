@@ -37,13 +37,24 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { type, config } = body;
+    const { symbol, price, condition } = body;
+
+    if (!symbol || price === undefined || !condition) {
+      return NextResponse.json(
+        { message: 'Missing required fields for price alert (symbol, price, condition)' },
+        { status: 400 }
+      );
+    }
 
     const newAlert = await prisma.alert.create({
       data: {
         userId: session.user.id,
-        type,
-        config,
+        type: 'PRICE',
+        config: {
+          symbol,
+          price,
+          condition,
+        },
         status: AlertStatus.ACTIVE,
       },
     });
