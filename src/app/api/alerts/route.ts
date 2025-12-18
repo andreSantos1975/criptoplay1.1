@@ -37,28 +37,50 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { symbol, price, condition } = body;
+    console.log('POST /api/alerts received body:', body);
 
-    if (!symbol || price === undefined || !condition) {
-      return NextResponse.json(
-        { message: 'Missing required fields for price alert (symbol, price, condition)' },
-        { status: 400 }
-      );
+    let dataForDb: any;
+
+    // --- Handle new alert creation from different frontends ---
+
+    // Scenario 1: Data from the main AlertForm (already structured as { type, config })
+    // Example: { type: 'PRICE', config: { symbol: 'BTCBRL', operator: 'gt', targetPrice: 50000 }, status: 'ACTIVE' }
+    if (body.type && body.config) {
+      dataForDb = {
+        userId: session.user.id,
+        type: body.type, // Expects 'PRICE', 'BUDGET', etc.
+        config: body.config,
+        status: AlertStatus.ACTIVE, // Ensure new alerts are active
+      };
+      // Add validation for config based on type if necessary
+      if (body.type === 'PRICE' && (!body.config.symbol || body.config.targetPrice === undefined || !body.config.operator)) {
+          return NextResponse.json({ message: 'Missing required config fields for PRICE alert' }, { status: 400 });
+      }
+    }
+    // Scenario 2: Data from chart-based alert creation ({ symbol, price, condition })
+    // Example: { symbol: 'BTCBRL', price: 486639, condition: 'above' }
+    else if (body.symbol && body.price !== undefined && body.condition) {
+        // Convert to standard internal structure
+        const operator = body.condition === 'above' ? 'gt' : 'lt';
+        dataForDb = {
+            userId: session.user.id,
+            type: 'PRICE', // Chart alerts are always PRICE type
+            config: {
+                symbol: body.symbol,
+                targetPrice: parseFloat(body.price), // Ensure price is parsed as number
+                operator: operator,
+            },
+            status: AlertStatus.ACTIVE, // Ensure new alerts are active
+        };
+    }
+    // If neither shape matches
+    else {
+      return NextResponse.json({ message: 'Invalid alert data structure. Missing type/config or symbol/price/condition.' }, { status: 400 });
     }
 
-    const newAlert = await prisma.alert.create({
-      data: {
-        userId: session.user.id,
-        type: 'PRICE',
-        config: {
-          symbol,
-          price,
-          condition,
-        },
-        status: AlertStatus.ACTIVE,
-      },
-    });
+    const newAlert = await prisma.alert.create({ data: dataForDb });
     return NextResponse.json(newAlert, { status: 201 });
+
   } catch (error) {
     console.error('Error creating alert:', error);
     return NextResponse.json({ message: 'Error creating alert' }, { status: 500 });
@@ -81,7 +103,11 @@ export async function PUT(request: Request) {
 
     const updatedAlert = await prisma.alert.update({
       where: { id },
-      data: dataToUpdate,
+      data: {
+        ...dataToUpdate,
+        status: AlertStatus.ACTIVE,
+        triggeredAt: null,
+      },
     });
     return NextResponse.json(updatedAlert);
   } catch (error) {

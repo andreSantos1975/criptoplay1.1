@@ -66,17 +66,28 @@ export const useTradeLines = ({
 
   // Effect to manage active trade lines (static)
   useEffect(() => {
+    // GUARD: If a prospective line is being dragged, prevent updating/redrawing active lines
+    // This prevents interference with the drag operation.
+    if (draggingLine) { // Use the correct state variable name
+      return;
+    }
+
     const series = seriesRef.current;
+
+    // --- NEW CLEANUP LOGIC ---
+    activeTradeLinesRef.current.forEach(tradeLineSet => {
+      Object.values(tradeLineSet).forEach(line => series?.removePriceLine(line));
+    });
+    activeTradeLinesRef.current.clear();
+    // --- END NEW CLEANUP LOGIC ---
+
     if (!isChartReady || !series) {
-      // Clean up all active lines if chart is not ready or series is null
-      removeAllActiveTradeLines();
       return;
     }
 
     const currentActiveTradeIds = new Set<string>();
     openTrades?.forEach(trade => {
-      // Check if the trade's symbol matches the current chart symbol
-      if (trade.symbol === symbol) { // Basic symbol check
+      if (trade.symbol === symbol) {
         currentActiveTradeIds.add(trade.id);
 
         const tradeLineSet = activeTradeLinesRef.current.get(trade.id) || {};
@@ -85,7 +96,7 @@ export const useTradeLines = ({
         const entryPrice = parseFloat(trade.entryPrice as any);
         if (entryPrice > 0) {
           if (!tradeLineSet.entryLine) {
-            tradeLineSet.entryLine = series.createPriceLine(createLineOptions(entryPrice, '#4CAF50', `Entrada (${trade.id.substring(0, 4)})`, false)); // Green
+            tradeLineSet.entryLine = series.createPriceLine(createLineOptions(entryPrice, '#4CAF50', `Entrada (${trade.id.substring(0, 4)})`, false));
           } else {
             tradeLineSet.entryLine.applyOptions(createLineOptions(entryPrice, '#4CAF50', `Entrada (${trade.id.substring(0, 4)})`, false));
           }
@@ -98,7 +109,7 @@ export const useTradeLines = ({
         const takeProfitPrice = trade.takeProfit ? parseFloat(trade.takeProfit as any) : null;
         if (takeProfitPrice && takeProfitPrice > 0) {
           if (!tradeLineSet.tpLine) {
-            tradeLineSet.tpLine = series.createPriceLine(createLineOptions(takeProfitPrice, '#00C853', `TP (${trade.id.substring(0, 4)})`, true)); // Light Green
+            tradeLineSet.tpLine = series.createPriceLine(createLineOptions(takeProfitPrice, '#00C853', `TP (${trade.id.substring(0, 4)})`, true));
           } else {
             tradeLineSet.tpLine.applyOptions(createLineOptions(takeProfitPrice, '#00C853', `TP (${trade.id.substring(0, 4)})`, true));
           }
@@ -111,7 +122,7 @@ export const useTradeLines = ({
         const stopLossPrice = trade.stopLoss ? parseFloat(trade.stopLoss as any) : null;
         if (stopLossPrice && stopLossPrice > 0) {
           if (!tradeLineSet.slLine) {
-            tradeLineSet.slLine = series.createPriceLine(createLineOptions(stopLossPrice, '#D32F2F', `SL (${trade.id.substring(0, 4)})`, true)); // Red
+            tradeLineSet.slLine = series.createPriceLine(createLineOptions(stopLossPrice, '#D32F2F', `SL (${trade.id.substring(0, 4)})`, true));
           } else {
             tradeLineSet.slLine.applyOptions(createLineOptions(stopLossPrice, '#D32F2F', `SL (${trade.id.substring(0, 4)})`, true));
           }
@@ -124,24 +135,21 @@ export const useTradeLines = ({
       }
     });
 
-    // Remove lines for trades that are no longer open
+    // Remove lines for trades that are no longer open (this part remains as it handles trade-specific removal)
     activeTradeLinesRef.current.forEach((_, tradeId) => {
       if (!currentActiveTradeIds.has(tradeId)) {
         const tradeLineSet = activeTradeLinesRef.current.get(tradeId);
         if (tradeLineSet) {
-          Object.values(tradeLineSet).forEach(line => series.removePriceLine(line));
+          Object.values(tradeLineSet).forEach(line => series?.removePriceLine(line));
         }
         activeTradeLinesRef.current.delete(tradeId);
       }
     });
 
     return () => {
-      // Cleanup on unmount or when dependencies change significantly
-      if (!series) { // Use the captured series variable
-        removeAllActiveTradeLines();
-      }
+      removeAllActiveTradeLines();
     };
-  }, [isChartReady, openTrades, removeAllActiveTradeLines, symbol, seriesRef]);
+  }, [isChartReady, openTrades, symbol, seriesRef, removeAllActiveTradeLines, draggingLine]);
 
   // Effect to setup drag-and-drop listeners for PROSPECTIVE lines
   useEffect(() => {
@@ -151,7 +159,7 @@ export const useTradeLines = ({
 
     if (!isChartReady || !chartElement || !chart || !series) return;
 
-    let currentDraggingLine: PriceLineKey | null = null;
+    // let currentDraggingLine: PriceLineKey | null = null; // REMOVED
 
     const isNearPriceLine = (priceLine: IPriceLine, y: number) => {
       const priceY = series.priceToCoordinate(priceLine.options().price);
@@ -165,7 +173,7 @@ export const useTradeLines = ({
       for (const key of ['takeProfit', 'stopLoss'] as PriceLineKey[]) { // Only TP and SL for prospective
         const priceLine = prospectivePriceLinesRef.current[key];
         if (priceLine && isNearPriceLine(priceLine, y)) {
-          currentDraggingLine = key;
+          setDraggingLine(key); // Set state here
           chart.applyOptions({ handleScroll: false, handleScale: false });
           chartElement.style.cursor = 'ns-resize';
           return;
@@ -174,7 +182,7 @@ export const useTradeLines = ({
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!currentDraggingLine) return;
+      if (!draggingLine) return; // Use state here
 
       const rect = chartElement.getBoundingClientRect();
       const y = e.clientY - rect.top;
@@ -183,15 +191,15 @@ export const useTradeLines = ({
       if (newPrice !== null) {
         onLevelsChangeRef.current({
           ...tradeLevelsRef.current,
-          [currentDraggingLine]: newPrice,
+          [draggingLine]: newPrice, // Use state here
         });
       }
     };
 
     const handleMouseUp = () => {
-      if (!currentDraggingLine) return;
+      if (!draggingLine) return; // Use state here
 
-      currentDraggingLine = null;
+      setDraggingLine(null); // Reset state here
       chart.applyOptions({ handleScroll: true, handleScale: true });
       chartElement.style.cursor = 'default';
     };
@@ -205,7 +213,7 @@ export const useTradeLines = ({
       chartElement.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isChartReady, chartRef, seriesRef, chartContainerRef]);
+  }, [isChartReady, chartRef, seriesRef, chartContainerRef, setDraggingLine, draggingLine]);
 
   // Effect to update or create PROSPECTIVE price lines
   useEffect(() => {

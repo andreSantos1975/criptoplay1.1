@@ -14,6 +14,11 @@ export async function processAlerts() {
     },
   });
 
+  // --- DETAILED LOGGING FOR DEBUGGING ---
+  console.log(`[AlertProcessor] Found ${activeAlerts.length} active alerts.`);
+  console.log('[AlertProcessor] Active alerts data:', JSON.stringify(activeAlerts, null, 2));
+  // --- END DETAILED LOGGING ---
+
   if (activeAlerts.length === 0) {
     console.log('[AlertProcessor] No active alerts to process.');
     return;
@@ -30,6 +35,9 @@ export async function processAlerts() {
     const symbolsToMonitor = [...new Set(priceAlerts.map(alert => (alert.config as any).symbol))];
     const prices: { [key: string]: number } = {};
 
+    // Track symbols that failed to fetch price
+    const failedSymbols: Set<string> = new Set();
+
     try {
       // Fetch current prices for all symbols in parallel using getCurrentPrice
       const pricePromises = symbolsToMonitor.map(async (symbol) => {
@@ -38,6 +46,7 @@ export async function processAlerts() {
           prices[symbol] = parseFloat(priceDecimal.toString());
         } catch (error) {
           console.error(`[AlertProcessor] Error fetching price for ${symbol}:`, error);
+          failedSymbols.add(symbol); // Mark symbol as failed
         }
       });
       await Promise.all(pricePromises);
@@ -47,20 +56,73 @@ export async function processAlerts() {
       // Decide whether to proceed without prices or stop
     }
 
+    // Process failed symbols: update associated active alerts to ERROR status
+    if (failedSymbols.size > 0) {
+      console.log(`[AlertProcessor] Handling failed price fetches for symbols: ${Array.from(failedSymbols).join(', ')}`);
+      await prisma.alert.updateMany({
+        where: {
+          type: AlertType.PRICE,
+          status: AlertStatus.ACTIVE,
+          // Find alerts where the symbol in config matches a failed symbol
+          OR: Array.from(failedSymbols).map(symbol => ({
+            config: {
+              path: ['symbol'],
+              equals: symbol,
+            },
+          })),
+        },
+        data: {
+          status: AlertStatus.ERROR,
+          triggeredAt: new Date(), // Use triggeredAt to mark when error occurred
+        },
+      });
+    }
 
     for (const alert of priceAlerts) {
       const config = alert.config as any;
-      const { symbol, targetPrice, operator } = config; // operator could be 'gt' (greater than), 'lt' (less than)
+      const { symbol, targetPrice: rawTargetPrice, operator } = config;
 
-      if (!prices[symbol]) {
-        console.warn(`[AlertProcessor] Skipping price alert for ${symbol} due to missing price data.`);
+      // Skip processing for alerts whose symbol failed to fetch price (handled by failedSymbols logic)
+      if (failedSymbols.has(symbol)) {
+        console.warn(`[AlertProcessor] Skipping price alert for ${symbol} (ID: ${alert.id}) as its price fetch failed.`);
         continue;
+      }
+      
+      // Explicitly check for missing or invalid targetPrice in config
+      if (rawTargetPrice === undefined || rawTargetPrice === null || rawTargetPrice === '') {
+        console.error(`[AlertProcessor] Skipping alert for ${symbol} (ID: ${alert.id}) due to missing or empty targetPrice in config.`);
+        // Update this specific alert to ERROR status
+        await prisma.alert.update({
+          where: { id: alert.id },
+          data: {
+            status: AlertStatus.ERROR,
+            triggeredAt: new Date(), // Mark when error occurred
+          },
+        });
+        continue; // Skip to next alert
       }
 
       const currentPrice = prices[symbol];
+      const targetPrice = parseFloat(rawTargetPrice); // Ensure targetPrice is a number
       let shouldTrigger = false;
 
-      // Basic price comparison logic
+      // --- DETAILED LOGGING FOR DEBUGGING ---
+      console.log(`[AlertProcessor] Checking Alert ID: ${alert.id} | Condition: ${currentPrice} ${operator} ${targetPrice} ?`);
+      // --- END DETAILED LOGGING ---
+
+      // Check if targetPrice is NaN after parsing (e.g., if rawTargetPrice was non-numeric string)
+      if (Number.isNaN(targetPrice)) {
+        console.error(`[AlertProcessor] Skipping alert for ${symbol} (ID: ${alert.id}) due to non-numeric targetPrice: ${rawTargetPrice}`);
+        await prisma.alert.update({
+          where: { id: alert.id },
+          data: {
+            status: AlertStatus.ERROR,
+            triggeredAt: new Date(), // Mark when error occurred
+          },
+        });
+        continue; // Skip to next alert
+      }
+
       if (operator === 'gt' && currentPrice > targetPrice) {
         shouldTrigger = true;
       } else if (operator === 'lt' && currentPrice < targetPrice) {

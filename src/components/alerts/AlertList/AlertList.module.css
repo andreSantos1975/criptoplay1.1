@@ -51,6 +51,17 @@
     background-color: #6c757d;
 }
 
+.error {
+  background-color: #dc3545; /* Red color for error */
+}
+
+.errorMessage {
+  color: #dc3545; /* Red text for error message */
+  font-size: 0.85rem;
+  margin-left: 1rem;
+  font-weight: 500;
+}
+
 .alertActions {
   display: flex;
   gap: 1rem;

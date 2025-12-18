@@ -46,8 +46,8 @@ const AlertList = ({ alerts, budgetCategories, onEdit }: AlertListProps) => {
     const config = alert.config as any;
     switch (alert.type) {
       case AlertType.PRICE:
-        const formattedPrice = priceFormatter.format(config.price);
-        return `${config.symbol} ${config.condition === 'above' ? '>' : '<'} ${formattedPrice}`;
+        const formattedPrice = priceFormatter.format(config.targetPrice || 0);
+        return `${config.symbol} ${config.operator === 'gt' ? '>' : '<'} ${formattedPrice}`;
       case AlertType.BUDGET:
         const categoryName = categoryMap[config.categoryId] || 'Categoria desconhecida';
         return `${categoryName} > ${config.percentage}%`;
@@ -75,8 +75,14 @@ const AlertList = ({ alerts, budgetCategories, onEdit }: AlertListProps) => {
             <span className={styles.alertType}>{getAlertTypeText(alert.type)}</span>
             <span className={styles.alertCondition}>{getAlertConditionText(alert)}</span>
             <span className={`${styles.alertStatus} ${styles[alert.status.toLowerCase()]}`}>
+              {alert.status === AlertStatus.TRIGGERED && '🔔 '}
               {alert.status}
             </span>
+            {alert.status === AlertStatus.ERROR && (
+              <span className={styles.errorMessage}>
+                ⚠️ Erro: Símbolo inválido ou preço indisponível. Verifique a configuração.
+              </span>
+            )}
           </div>
           <div className={styles.alertActions}>
             <button className={styles.editButton} onClick={() => onEdit(alert)} disabled={!!deletingId}>Editar</button>

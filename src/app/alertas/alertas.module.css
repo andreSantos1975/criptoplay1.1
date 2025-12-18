@@ -65,3 +65,28 @@
   padding: 3rem;
   color: #777;
 }
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+}
+
+.manualCheckButton {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.manualCheckButton:hover:not(:disabled) {
+  background-color: #138496;
+}
+
+.manualCheckButton:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}

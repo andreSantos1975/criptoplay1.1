@@ -60,9 +60,9 @@ export const useAlertLines = ({
     const currentAlertIds = new Set<string>();
     staticAlerts?.forEach(alert => {
       const config = alert.config as { symbol?: string, price?: number };
-      if (config.symbol === symbol && alert.status === 'active' && config.price) {
+      if (config.symbol === symbol && alert.status === 'active' && config.targetPrice) {
         currentAlertIds.add(alert.id);
-        const price = config.price;
+        const price = config.targetPrice;
         const existingLine = staticLinesRef.current.get(alert.id);
         const options = createLineOptions(price, '#FFC107', `Alerta`, LineStyle.Solid);
 
