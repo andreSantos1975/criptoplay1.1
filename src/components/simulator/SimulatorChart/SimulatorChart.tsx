@@ -22,7 +22,7 @@ interface SimulatorChartProps {
   interval: string;
   onIntervalChange: (interval: string) => void;
   realtimeChartUpdate: BarData | null;
-  openTrades: Trade[] | undefined;
+  openPositions: any[] | undefined;
   alerts: Alert[] | undefined;
   // New props for better UX
   prospectiveAlert: { price: number } | null;
@@ -42,7 +42,7 @@ export const SimulatorChart = memo(({
   interval,
   onIntervalChange,
   realtimeChartUpdate,
-  openTrades,
+  openPositions,
   alerts,
   prospectiveAlert,
   onProspectiveAlertChange,
@@ -65,7 +65,7 @@ export const SimulatorChart = memo(({
     isChartReady,
     marketType: 'spot',
     tipoOperacao: tipoOperacao,
-    openTrades,
+    openPositions,
     symbol,
   });
 
@@ -120,7 +120,7 @@ export const SimulatorChart = memo(({
       seriesRef.current = null;
       setIsChartReady(false);
     };
-  }, []);
+  }, [symbol]);
 
   // Load initial data
   useEffect(() => {

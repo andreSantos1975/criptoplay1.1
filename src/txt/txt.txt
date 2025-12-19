@@ -258,3 +258,20 @@ SITEMA DE RECORRENCIA DE PAGAMENTO IMPLEMENTAÇÃO
 
   Gostaria de prosseguir com a implementação dos alertas para "Contas a Pagar" ou há outra
   tarefa em que prefere que eu trabalhe?
+
+  ==============================================
+
+  Resumo da implementação:
+
+   1. API de Perfil: Serve corretamente openPositions agregadas.
+   2. Nova API de Fechamento: Criada para fechar todas as negociações de uma posição.
+   3. Novo Componente `PositionRow.tsx`: Exibe a linha de posição agregada.
+   4. Componente Principal do Simulador:
+       * Usa o novo componente PositionRow.
+       * Implementa closePositionMutation para chamar a nova API de fechamento.
+       * Mapeia e exibe corretamente openPositions na tabela.
+
+  A aplicação agora deve exibir posições agregadas, permitir o fechamento de posições
+  inteiras e exibir um único conjunto de linhas no gráfico por posição. Todos os bugs
+
+ Using: 1 GEMINI.md file

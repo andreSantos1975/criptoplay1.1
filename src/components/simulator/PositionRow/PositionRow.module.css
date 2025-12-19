@@ -1,0 +1,45 @@
+.positionRow {
+    border-bottom: 1px solid #333;
+    transition: background-color 0.2s;
+}
+
+.positionRow:hover {
+    background-color: #2a2e39;
+}
+
+.positionRow td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+.positivePnl {
+    color: #26a69a;
+}
+
+.negativePnl {
+    color: #ef5350;
+}
+
+.neutralPnl {
+    color: #d9d9d9;
+}
+
+.closeButton {
+    background-color: #ef5350;
+    color: white;
+    border: none;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 0.8rem;
+}
+
+.closeButton:hover {
+    background-color: #d32f2f;
+}
+
+.closeButton:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+}

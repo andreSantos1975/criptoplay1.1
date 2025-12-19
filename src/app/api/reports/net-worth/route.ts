@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     const usdtToBrlRate = await getCurrentPrice("USDTBRL");
 
     // 3. Get the user's initial balance or default to 1000
-    const initialBalance = user?.simulatorInitialBalance ? user.simulatorInitialBalance.toNumber() : 1000;
+    const initialBalance = user?.virtualBalance ? user.virtualBalance.toNumber() : 10000;
 
 
     // 4. Call the centralized portfolio calculator

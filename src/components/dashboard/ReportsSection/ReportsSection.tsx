@@ -202,6 +202,19 @@ const generateMonthlyReportData = (
     .sort((a, b) => a.month.localeCompare(b.month));
 };
 
+interface SimulatorProfile {
+  virtualBalance: number;
+  openTrades: Trade[]; // Adicionei openTrades porque é usado em Simulator.tsx
+}
+
+const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
+  const response = await fetch('/api/simulator/profile');
+  if (!response.ok) throw new Error('Falha ao buscar perfil do simulador.');
+  const data = await response.json();
+  // Ensure virtualBalance is a number, as Prisma Decimal can be serialized as string
+  return { ...data, virtualBalance: Number(data.virtualBalance) };
+};
+
 export const ReportsSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -236,8 +249,17 @@ export const ReportsSection = () => {
     queryFn: fetchBinanceTickers,
   });
 
-  const isLoading = l1 || l2 || l3 || l4;
-  const error = e1 || e2 || e3 || e4;
+  const {
+    data: simulatorProfile,
+    isLoading: l5,
+    error: e5,
+  } = useQuery<SimulatorProfile>({
+    queryKey: ['simulatorProfile'],
+    queryFn: fetchSimulatorProfile,
+  });
+
+  const isLoading = l1 || l2 || l3 || l4 || l5;
+  const error = e1 || e2 || e3 || e4 || e5;
 
   const brlRate = exchangeRateData?.usdtToBrl || 1;
   const openTrades = useMemo(
@@ -283,7 +305,7 @@ export const ReportsSection = () => {
   const kpiData = useMemo(() => {
     // FIXME: The initial balance should come from a single source of truth, not be hardcoded.
     // This is a temporary fix for consistency with the portfolio evolution chart.
-    const initialBalance = 1000; 
+    const initialBalance = Number(simulatorProfile?.virtualBalance) || 0; 
 
     const totalDeposits = capitalMovements
       .filter((m) => m.type === 'DEPOSIT')

@@ -29,7 +29,7 @@ export const generatePortfolioData = (
   capitalMovements: CapitalMovement[],
   granularity: 'weekly' | 'monthly',
   usdtToBrlRate: number,
-  initialBalance: number = 1000
+  initialBalance: number = 10000
 ) => {
   const events: { date: Date; amount: number }[] = [];
 

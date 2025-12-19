@@ -12,7 +12,7 @@ import { Alert } from '@prisma/client';
 // Componentes do simulador e dashboard
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
 import SimulatorChart from '@/components/simulator/SimulatorChart/SimulatorChart';
-import { TradeRow } from '@/components/simulator/TradeRow/TradeRow';
+import { PositionRow } from '@/components/simulator/PositionRow/PositionRow';
 import { CryptoList } from '@/components/dashboard/CryptoList/CryptoList';
 
 import styles from './Simulator.module.css';
@@ -32,7 +32,7 @@ interface Trade {
 
 interface SimulatorProfile {
   balance: number;
-  openTrades: Trade[];
+  openPositions: any[]; // Usando 'any' temporariamente para acomodar a nova estrutura
 }
 
 interface CurrentPrice {
@@ -107,13 +107,15 @@ const createSimulatorTrade = async (tradeData: { symbol: string, quantity: numbe
     return response.json();
 };
 
-const closeSimulatorTrade = async (tradeId: string): Promise<Trade> => {
-    const response = await fetch(`/api/simulator/trades/${tradeId}/close`, {
+const closeSimulatorPosition = async (symbol: string): Promise<{ message: string }> => {
+    const response = await fetch(`/api/simulator/positions/close`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol }),
     });
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Falha ao fechar ordem de simulação');
+        throw new Error(error.message || 'Falha ao fechar posição');
     }
     return response.json();
 };
@@ -128,11 +130,10 @@ const Simulator = () => {
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCBRL');
   const [marketType, setMarketType] = useState<'spot' | 'futures'>('spot');
   const [interval, setInterval] = useState("1m");
-  const [isConfiguring, setIsConfiguring] = useState(true);
   const [stopLoss, setStopLoss] = useState(0);
   const [takeProfit, setTakeProfit] = useState(0);
   const [quantity, setQuantity] = useState(0.01);
-  const [closingTradeIds, setClosingTradeIds] = useState(new Set<string>());
+  const [closingPositionSymbol, setClosingPositionSymbol] = useState<string | null>(null);
   const [watchedSymbols, setWatchedSymbols] = useState(['BTCBRL', 'ETHBRL', 'SOLBRL', 'ADABRL', 'DOGEBRL', 'SHIBBRL', 'BNBBRL']);
   const [newSymbol, setNewSymbol] = useState('');
   const [prospectiveAlert, setProspectiveAlert] = useState<{ price: number } | null>(null);
@@ -144,11 +145,11 @@ const Simulator = () => {
     enabled: isPremiumUser,
   });
 
-    const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[], Error>({
-        queryKey: ['alerts'],
-        queryFn: fetchAlerts,
-        enabled: isPremiumUser,
-    });
+  const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[], Error>({
+    queryKey: ['alerts'],
+    queryFn: fetchAlerts,
+    enabled: isPremiumUser,
+  });
 
   const { data: currentPriceData } = useQuery<CurrentPrice, Error>({
       queryKey: ['currentPrice', selectedCrypto],
@@ -157,7 +158,7 @@ const Simulator = () => {
       enabled: isPremiumUser && !!selectedCrypto,
   });
 
-   const { data: initialChartData, isFetching: isChartLoading } = useQuery({
+  const { data: initialChartData, isFetching: isChartLoading } = useQuery({
     queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
     queryFn: async () => {
       const apiPath = marketType === 'futures' ? 'futures-klines' : 'klines';
@@ -179,7 +180,6 @@ const Simulator = () => {
       setQuantity(0.01);
       setStopLoss(0);
       setTakeProfit(0);
-      setIsConfiguring(false);
     },
     onError: (error) => toast.error(`Erro ao abrir ordem: ${error.message}`),
   });
@@ -194,29 +194,26 @@ const Simulator = () => {
     onError: (error) => toast.error(`Erro ao criar alerta: ${error.message}`),
     });
 
-  const closeSimulatorTradeMutation = useMutation<Trade, Error, string>({
-    mutationFn: closeSimulatorTrade,
-    onMutate: (tradeId) => setClosingTradeIds(prev => new Set(prev).add(tradeId)),
-    onSuccess: (data) => toast.success(`Ordem simulada para ${data.symbol} fechada!`),
-    onError: (error) => toast.error(`Erro ao fechar ordem: ${error.message}`),
-    onSettled: (data, error, tradeId) => {
-      setClosingTradeIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(tradeId);
-        return newSet;
-      });
+  // Nova mutation para fechar uma posição inteira
+  const closePositionMutation = useMutation({
+    mutationFn: closeSimulatorPosition,
+    onMutate: (symbol: string) => {
+      setClosingPositionSymbol(symbol);
+    },
+    onSuccess: (data, symbol) => {
+      toast.success(`Posição em ${symbol} fechada com sucesso!`);
+    },
+    onError: (error: Error, symbol) => {
+      toast.error(`Erro ao fechar ${symbol}: ${error.message}`);
+    },
+    onSettled: () => {
+      setClosingPositionSymbol(null);
       queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
     },
   });
 
   // --- HOOKS ---
-  useVigilante({
-    openTrades: simulatorProfile?.openTrades,
-    closeMutation: closeSimulatorTradeMutation,
-    enabled: isPremiumUser,
-    closingTradeIds,
-    onAddToClosingTradeIds: (tradeId: string) => setClosingTradeIds(prev => new Set(prev).add(tradeId)),
-  });
+  // useVigilante foi removido temporariamente pois dependia da estrutura antiga de 'openTrades'
 
   const { realtimeChartUpdate } = useRealtimeChartUpdate({
     symbol: selectedCrypto,
@@ -225,9 +222,17 @@ const Simulator = () => {
     enabled: isPremiumUser,
   });
 
+  // Temporarily keeping this for debugging purposes, will remove after confirming fix
+  useEffect(() => {
+    if (simulatorProfile?.openPositions) {
+      console.log('Simulator: openPositions passed to SimulatorChart:', simulatorProfile?.openPositions);
+    }
+  }, [simulatorProfile?.openPositions]);
+
+
   // --- CÁLCULOS MEMOIZADOS E EFEITOS ---
   const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
-  const tradeLevelsForChart: TradeLevels = isConfiguring ? { entry: entryPrice, stopLoss, takeProfit } : { entry: 0, stopLoss: 0, takeProfit: 0 };
+  const tradeLevelsForChart: TradeLevels = { entry: entryPrice, stopLoss, takeProfit };
   
   const assetHeaderData = useMemo(() => {
     if (!initialChartData || initialChartData.length === 0) return { open: 0, high: 0, low: 0, close: 0, time: 0 };
@@ -238,39 +243,22 @@ const Simulator = () => {
     };
   }, [initialChartData, realtimeChartUpdate]);
 
-  useEffect(() => {
-    if (isConfiguring && entryPrice > 0 && stopLoss === 0 && takeProfit === 0) {
-      const defaultStopLoss = entryPrice * 0.99;
-      const defaultTakeProfit = entryPrice * 1.02;
-      setStopLoss(defaultStopLoss);
-      setTakeProfit(defaultTakeProfit);
-    }
-  }, [isConfiguring, entryPrice, stopLoss, takeProfit]);
+  const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  const riskAmount = entryPrice > 0 && stopLoss > 0 ? (entryPrice - stopLoss) * quantity : 0;
+  const rewardAmount = entryPrice > 0 && takeProfit > 0 ? (takeProfit - entryPrice) * quantity : 0;
 
-  useEffect(() => {
-    if (!simulatorProfile?.openTrades) return;
-    const hasOpenTradesForSelectedSymbol = simulatorProfile.openTrades.some(trade => trade.symbol === selectedCrypto);
-    if (!hasOpenTradesForSelectedSymbol && !isConfiguring) {
-      setIsConfiguring(true);
-    }
-    if (hasOpenTradesForSelectedSymbol && isConfiguring) {
-      setIsConfiguring(false);
-    }
-  }, [simulatorProfile?.openTrades, selectedCrypto, isConfiguring]);
 
   // --- MANIPULADORES ---
   const handleCryptoSelect = (symbol: string) => {
     setSelectedCrypto(symbol);
     setStopLoss(0);
     setTakeProfit(0);
-    setIsConfiguring(true);
     setProspectiveAlert(null); // Clear prospective alert when changing crypto
   };
 
   const handleLevelsChange = (newLevels: TradeLevels) => {
     setStopLoss(newLevels.stopLoss);
     setTakeProfit(newLevels.takeProfit);
-    setIsConfiguring(true);
   };
 
   const handleStartCreateAlert = () => {
@@ -340,10 +328,6 @@ const Simulator = () => {
     );
   }
 
-  const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  const riskAmount = entryPrice > 0 && stopLoss > 0 ? (entryPrice - stopLoss) * quantity : 0;
-  const rewardAmount = entryPrice > 0 && takeProfit > 0 ? (takeProfit - entryPrice) * quantity : 0;
-
   return (
     <div className={styles.simulatorContainer}>
       <div className={styles.chartContainer}>
@@ -365,7 +349,7 @@ const Simulator = () => {
                 interval={interval}
                 onIntervalChange={setInterval}
                 realtimeChartUpdate={realtimeChartUpdate}
-                openTrades={simulatorProfile?.openTrades}
+                openPositions={simulatorProfile?.openPositions}
                 alerts={alerts}
                 prospectiveAlert={prospectiveAlert}
                 onProspectiveAlertChange={setProspectiveAlert}
@@ -377,20 +361,25 @@ const Simulator = () => {
       </div>
 
       <div className={styles.tradesContainer}>
-          <h2 className={styles.tradesTitle}>Operações Abertas (Simulador)</h2>
-          {isLoadingSimulator ? <p>Carregando...</p> : simulatorProfile && simulatorProfile.openTrades.length > 0 ? (
+          <h2 className={styles.tradesTitle}>Posições Abertas (Simulador)</h2>
+          {isLoadingSimulator ? <p>Carregando...</p> : simulatorProfile && simulatorProfile.openPositions.length > 0 ? (
               <div className={styles.tableWrapper}>
               <table className={styles.table}>
-                  <thead><tr><th>Ativo</th><th>Qtd.</th><th>Preço Entrada</th><th>Valor</th><th>Lucro/Prejuízo</th><th>Data</th><th>Ações</th></tr></thead>
+                  <thead><tr><th>Ativo</th><th>Qtd. Total</th><th>Preço Médio</th><th>Valor Atual</th><th>Lucro/Prejuízo</th><th>Ações</th></tr></thead>
                   <tbody>
-                  {simulatorProfile.openTrades.map((trade) => (
-                      <TradeRow key={trade.id} trade={trade} closeMutation={closeSimulatorTradeMutation} isClosing={closingTradeIds.has(trade.id)} />
+                  {simulatorProfile.openPositions.map((position) => (
+                      <PositionRow 
+                        key={position.symbol} 
+                        position={position} 
+                        closePositionMutation={() => closePositionMutation.mutate(position.symbol)} 
+                        isClosing={closingPositionSymbol === position.symbol} 
+                      />
                   ))}
                   </tbody>
               </table>
               </div>
           ) : (
-              <p>Nenhuma operação aberta no simulador.</p>
+              <p>Nenhuma posição aberta no simulador.</p>
           )}
       </div>
 
@@ -415,7 +404,7 @@ const Simulator = () => {
               <button type="submit" className={styles.submitButton} disabled={createSimulatorTradeMutation.isPending || !entryPrice}>
                   {createSimulatorTradeMutation.isPending ? 'Enviando...' : 'Comprar'}
               </button>
-              {createSimulatorTradeMutation.isError && <p style={{ color: 'red', marginTop: '1rem' }}>Erro: {createSimulatorTradeMutation.error.message}</p>}
+              {createSimulatorTradeMutation.isError && <p style={{ color: 'red', marginTop: '1rem' }}>Erro: ${createSimulatorTradeMutation.error.message}</p>}
           </form>
       </div>
       
