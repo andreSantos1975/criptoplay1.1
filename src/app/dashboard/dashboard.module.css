@@ -68,4 +68,31 @@
   gap: 2rem;
 }
 
+/* Styles for Simulator Toggle */
+.simulatorToggle {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
 
+.simulatorToggle button {
+  padding: 0.5rem 1.5rem;
+  border: 1px solid #4a4a4a;
+  background-color: #2a2a2e;
+  color: #f0f0f0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  font-size: 1rem;
+}
+
+.simulatorToggle button:hover {
+  background-color: #2a2a2e;
+}
+
+.simulatorToggle .activeToggle {
+  background-color: #c3073f;
+  color: white;
+  border-color: #c3073f;
+}

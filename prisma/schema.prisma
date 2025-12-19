@@ -33,6 +33,7 @@ model User {
   subscriptionStatus  String?           // e.g., "none", "active", "pending", "cancelled"
   subscriptions       Subscription[]
   alerts              Alert[]
+  futuresPositions    FuturesPosition[]
 }
 
 model Subscription {
@@ -301,4 +302,35 @@ enum AlertStatus {
   ACKNOWLEDGED
   DELETED
   ERROR
+}
+
+model FuturesPosition {
+  id               String           @id @default(cuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbol           String
+  side             PositionSide
+  status           PositionStatus   @default(OPEN)
+  quantity         Decimal          @db.Decimal(18, 8)
+  leverage         Int
+  entryPrice       Decimal          @db.Decimal(18, 8)
+  liquidationPrice Decimal          @db.Decimal(18, 8)
+  margin           Decimal          @db.Decimal(18, 8)
+  pnl              Decimal?         @db.Decimal(18, 8)
+  closedAt         DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([userId, status])
+}
+
+enum PositionSide {
+  LONG
+  SHORT
+}
+
+enum PositionStatus {
+  OPEN
+  CLOSED
+  LIQUIDATED
 }

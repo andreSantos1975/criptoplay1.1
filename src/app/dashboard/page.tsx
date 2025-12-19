@@ -203,8 +203,40 @@ const DashboardPage = () => {
             )}
           </>
         );
-      case "analise":
-        return <Simulator />;
+      case "analise": {
+        const [simulatorMode, setSimulatorMode] = useState<'spot' | 'futures'>('spot');
+
+        // Renaming original simulator for clarity
+        const SpotSimulator = dynamic(
+          () => import('@/components/simulator/Simulator/Simulator'),
+          { ssr: false, loading: () => <p>Carregando Simulador...</p> }
+        );
+
+        const FuturesSimulator = dynamic(
+          () => import('@/components/simulator/FuturesSimulator/FuturesSimulator'),
+          { ssr: false, loading: () => <p>Carregando Simulador de Futuros...</p> }
+        );
+        
+        return (
+          <div>
+            <div className={styles.simulatorToggle}>
+              <button 
+                onClick={() => setSimulatorMode('spot')}
+                className={simulatorMode === 'spot' ? styles.activeToggle : ''}
+              >
+                Mercado Spot
+              </button>
+              <button 
+                onClick={() => setSimulatorMode('futures')}
+                className={simulatorMode === 'futures' ? styles.activeToggle : ''}
+              >
+                Mercado Futuros
+              </button>
+            </div>
+            {simulatorMode === 'spot' ? <SpotSimulator /> : <FuturesSimulator />}
+          </div>
+        );
+      }
       case "relatorios":
         return <ReportsSection />;
       default:
