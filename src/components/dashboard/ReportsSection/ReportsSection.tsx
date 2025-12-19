@@ -20,7 +20,6 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
-import CapitalMovementForm from "@/components/CapitalMovementForm/CapitalMovementForm";
 import Modal from "@/components/ui/modal/Modal";
 
 // Interfaces
@@ -35,14 +34,6 @@ interface Trade {
   pnl?: number;
 }
 
-interface CapitalMovement {
-  id: string;
-  amount: number;
-  type: "DEPOSIT" | "WITHDRAWAL";
-  date: string;
-  description?: string;
-}
-
 interface BinanceTicker {
   symbol: string;
   lastPrice: string;
@@ -52,12 +43,6 @@ interface BinanceTicker {
 const fetchTrades = async (): Promise<Trade[]> => {
   const res = await fetch("/api/simulator/trades");
   if (!res.ok) throw new Error("Falha ao buscar trades.");
-  return res.json();
-};
-
-const fetchCapitalMovements = async (): Promise<CapitalMovement[]> => {
-  const res = await fetch("/api/capital-movements");
-  if (!res.ok) throw new Error("Falha ao buscar movimentos de capital.");
   return res.json();
 };
 
@@ -77,7 +62,6 @@ const formatCurrency = (value: number) =>
 // Data Processing
 const generatePortfolioPerformanceData = (
   trades: Trade[],
-  capitalMovements: CapitalMovement[],
   brlRate: number
 ) => {
   const events = [
@@ -92,11 +76,6 @@ const generatePortfolioPerformanceData = (
           amount: pnlInBrl,
         };
       }),
-    ...capitalMovements.map((m) => ({
-      date: new Date(m.date),
-      amount:
-        m.type === "DEPOSIT" ? Number(m.amount) : -Number(m.amount),
-    })),
   ].sort((a, b) => a.date.getTime() - b.date.getTime());
 
   if (events.length === 0) return [{ date: "Início", Saldo: 0 }];
@@ -143,14 +122,11 @@ const generatePortfolioDistributionData = (
 
 const generateMonthlyReportData = (
   trades: Trade[],
-  capitalMovements: CapitalMovement[],
   brlRate: number
 ) => {
   const monthlyMap: {
     [key: string]: {
       pnl: number;
-      deposits: number;
-      withdrawals: number;
       tradeCount: number;
     };
   } = {};
@@ -158,39 +134,21 @@ const generateMonthlyReportData = (
   trades
     .filter((t) => t.status === "CLOSED" && t.pnl != null)
     .forEach((trade) => {
-      const date = new Date(trade.exitDate!);
+      const date = new Date(t.exitDate!);
       const key = `${date.getFullYear()}-${String(
         date.getMonth() + 1
       ).padStart(2, "0")}`;
       if (!monthlyMap[key])
         monthlyMap[key] = {
           pnl: 0,
-          deposits: 0,
-          withdrawals: 0,
           tradeCount: 0,
         };
       const pnlInBrl = trade.symbol.includes('BRL')
-        ? Number(trade.pnl)
-        : (Number(trade.pnl) || 0) * brlRate;
+        ? Number(t.pnl)
+        : (Number(t.pnl) || 0) * brlRate;
       monthlyMap[key].pnl += pnlInBrl;
       monthlyMap[key].tradeCount++;
     });
-
-  capitalMovements.forEach((m) => {
-    const date = new Date(m.date);
-    const key = `${date.getFullYear()}-${String(
-      date.getMonth() + 1
-    ).padStart(2, "0")}`;
-    if (!monthlyMap[key])
-      monthlyMap[key] = {
-        pnl: 0,
-        deposits: 0,
-        withdrawals: 0,
-        tradeCount: 0,
-      };
-    if (m.type === "DEPOSIT") monthlyMap[key].deposits += Number(m.amount);
-    else monthlyMap[key].withdrawals += Number(m.amount);
-  });
 
   return Object.entries(monthlyMap)
     .map(([key, value]) => ({
@@ -216,21 +174,12 @@ const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
 };
 
 export const ReportsSection = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
     data: trades = [],
     isLoading: l1,
     error: e1,
   } = useQuery<Trade[]>({ queryKey: ["trades"], queryFn: fetchTrades });
-  const {
-    data: capitalMovements = [],
-    isLoading: l2,
-    error: e2,
-  } = useQuery<CapitalMovement[]>({
-    queryKey: ["capitalMovements"],
-    queryFn: fetchCapitalMovements,
-  });
   const {
     data: exchangeRateData,
     isLoading: l3,
@@ -258,8 +207,8 @@ export const ReportsSection = () => {
     queryFn: fetchSimulatorProfile,
   });
 
-  const isLoading = l1 || l2 || l3 || l4 || l5;
-  const error = e1 || e2 || e3 || e4 || e5;
+  const isLoading = l1 || l3 || l4 || l5;
+  const error = e1 || e3 || e4 || e5;
 
   const brlRate = exchangeRateData?.usdtToBrl || 1;
   const openTrades = useMemo(
@@ -268,8 +217,8 @@ export const ReportsSection = () => {
   );
 
   const performanceData = useMemo(
-    () => generatePortfolioPerformanceData(trades, capitalMovements, brlRate),
-    [trades, capitalMovements, brlRate]
+    () => generatePortfolioPerformanceData(trades, brlRate),
+    [trades, brlRate]
   );
   const distributionData = useMemo(() => {
     const rawData = generatePortfolioDistributionData(openTrades, binanceTickers, brlRate);
@@ -298,22 +247,12 @@ export const ReportsSection = () => {
     return filtered;
   }, [openTrades, binanceTickers, brlRate]);
   const monthlyReportData = useMemo(
-    () => generateMonthlyReportData(trades, capitalMovements, brlRate),
-    [trades, capitalMovements, brlRate]
+    () => generateMonthlyReportData(trades, brlRate),
+    [trades, brlRate]
   );
 
   const kpiData = useMemo(() => {
-    // FIXME: The initial balance should come from a single source of truth, not be hardcoded.
-    // This is a temporary fix for consistency with the portfolio evolution chart.
     const initialBalance = Number(simulatorProfile?.virtualBalance) || 0; 
-
-    const totalDeposits = capitalMovements
-      .filter((m) => m.type === 'DEPOSIT')
-      .reduce((acc, m) => acc + Number(m.amount), 0);
-
-    const totalWithdrawals = capitalMovements
-      .filter((m) => m.type === 'WITHDRAWAL')
-      .reduce((acc, m) => acc + Number(m.amount), 0);
 
     const totalPnl = trades
       .filter((t) => t.status === 'CLOSED' && t.pnl != null)
@@ -324,17 +263,13 @@ export const ReportsSection = () => {
         return acc + pnlInBrl;
       }, 0);
 
-    // Correctly include the initial balance in the total deposits and current equity
-    const totalAportes = initialBalance + totalDeposits;
-    const patrimonioAtual = totalAportes - totalWithdrawals + totalPnl;
+    const patrimonioAtual = initialBalance + totalPnl;
 
     return {
-      totalDeposits: totalAportes, // Renamed for clarity in the return object
-      totalWithdrawals,
-      totalPnl,
       patrimonioAtual,
+      totalPnl,
     };
-  }, [trades, capitalMovements, brlRate]);
+  }, [trades, brlRate, simulatorProfile?.virtualBalance]);
 
   if (isLoading)
     return (
@@ -356,17 +291,8 @@ export const ReportsSection = () => {
 
   return (
     <div className={styles.reportsSection}>
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title="Registrar Movimento de Capital"
-      >
-        <CapitalMovementForm onFormSubmit={() => setIsModalOpen(false)} />
-      </Modal>
-
       <div className={styles.headerContainer}>
         <h1 className={styles.mainTitle}>Relatórios</h1>
-        <Button onClick={() => setIsModalOpen(true)}>Adicionar Movimentação</Button>
       </div>
 
       {/* KPIs */}
@@ -387,22 +313,6 @@ export const ReportsSection = () => {
             <p className={`${styles.kpiValue} ${kpiData.totalPnl >= 0 ? styles.positive : styles.negative}`}>
               {formatCurrency(kpiData.totalPnl)}
             </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Total de Aportes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={styles.kpiValue}>{formatCurrency(kpiData.totalDeposits)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Total de Retiradas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={styles.kpiValue}>{formatCurrency(kpiData.totalWithdrawals)}</p>
           </CardContent>
         </Card>
       </div>
@@ -495,18 +405,6 @@ export const ReportsSection = () => {
                 dataKey="pnl"
                 name="Lucro/Prejuízo"
                 fill="#82ca9d"
-              />
-              <Bar
-                yAxisId="left"
-                dataKey="deposits"
-                name="Aportes"
-                fill="#8884d8"
-              />
-              <Bar
-                yAxisId="left"
-                dataKey="withdrawals"
-                name="Retiradas"
-                fill="#ff8042"
               />
               <Bar
                 yAxisId="right"
