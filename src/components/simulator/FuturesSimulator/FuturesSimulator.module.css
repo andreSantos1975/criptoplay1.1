@@ -115,15 +115,22 @@
 }
 
 /* Positions List Table */
+.tableContainer {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .positionsTable {
     width: 100%;
     border-collapse: collapse;
+    min-width: 600px; /* Garante que a tabela tenha uma largura mínima para forçar o scroll */
 }
 
 .positionsTable th, .positionsTable td {
     padding: 0.75rem;
     text-align: left;
     border-bottom: 1px solid #4a4a4a;
+    white-space: nowrap; /* Impede que o conteúdo das células quebre a linha */
 }
 
 .positionsTable th {
@@ -159,4 +166,32 @@
 .closeButton:disabled {
   background-color: #333;
   cursor: not-allowed;
+}
+
+/* --- Media Queries --- */
+@media (max-width: 992px) {
+  .mainContent {
+    grid-template-columns: 1fr; /* Stack the form and the list vertically */
+  }
+}
+
+@media (max-width: 480px) {
+    .simulatorContainer {
+        padding: 0.5rem; /* More aggressive */
+    }
+
+    .tradeForm, .positionsList {
+        padding: 0.75rem; /* More aggressive */
+        min-width: 0; /* Prevent child from expanding parent */
+        word-break: break-word; /* Break long words if necessary */
+    }
+    
+    .formGroup input[type="text"],
+    .formGrup input[type="number"] {
+        min-width: 0; /* Ensure inputs can shrink */
+    }
+
+    .sideSelector {
+        grid-template-columns: 1fr; /* Stack the LONG/SHORT buttons */
+    }
 }

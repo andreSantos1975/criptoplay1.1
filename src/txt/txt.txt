@@ -199,3 +199,6 @@ Insights automáticos (“Você gastou 20% a mais com transporte este mês”).
          (com um gatilho de tempo), ou serviços como cron-job.org.
        * Na configuração do cron job, você precisará adicionar o Authorization Header com o
          valor Bearer seu-token-secreto-muito-longo-e-dificil.
+
+         1. Estrutura (HTML): src/components/simulator/FuturesSimulator/FuturesSimulator.tsx
+   2. Estilo (CSS): src/components/simulator/FuturesSimulator/FuturesSimulator.module.css

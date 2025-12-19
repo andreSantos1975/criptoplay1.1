@@ -10,7 +10,7 @@ import SimulatorChart from '@/components/simulator/SimulatorChart/SimulatorChart
 import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
 
-// --- Tipos ---
+/// --- Tipos ---
 type PositionSide = 'LONG' | 'SHORT';
 
 interface FuturesPosition {
@@ -196,18 +196,20 @@ const FuturesPositionsList = ({ positions, isLoading, closePositionMutation, exc
         <div className={styles.positionsList}>
             <h4>Posições Abertas</h4>
             {!positions || positions.length === 0 ? <p>Nenhuma posição aberta.</p> : (
-                <table className={styles.positionsTable}>
-                    <thead>
-                        <tr>
-                            <th>Símbolo</th><th>Lado</th><th>Qtd.</th><th>Alav.</th>
-                            <th>Preço Entrada</th><th>PnL (Não Realizado)</th>
-                            <th>Preço Liq.</th><th>Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {positions.map(pos => <FuturesPositionRow key={pos.id} position={pos} closePositionMutation={closePositionMutation} exchangeRate={exchangeRate} isLoadingRate={isLoadingRate} />)}
-                    </tbody>
-                </table>
+                <div className={styles.tableContainer}>
+                    <table className={styles.positionsTable}>
+                        <thead>
+                            <tr>
+                                <th>Símbolo</th><th>Lado</th><th>Qtd.</th><th>Alav.</th>
+                                <th>Preço Entrada</th><th>PnL (Não Realizado)</th>
+                                <th>Preço Liq.</th><th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {positions.map(pos => <FuturesPositionRow key={pos.id} position={pos} closePositionMutation={closePositionMutation} exchangeRate={exchangeRate} isLoadingRate={isLoadingRate} />)}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </div>
     );
@@ -217,6 +219,8 @@ const FuturesSimulator = () => {
   const queryClient = useQueryClient();
   const [symbol, setSymbol] = useState('BTCUSDT');
   const [interval, setInterval] = useState("1m");
+  const [prospectiveAlert, setProspectiveAlert] = useState<{ price: number } | null>(null);
+  const [tradeLevels, setTradeLevels] = useState({ entry: 0, stopLoss: 0, takeProfit: 0 });
 
   // Busca a taxa de câmbio no componente pai para ser distribuída
   const { data: exchangeRateData, isLoading: isLoadingRate } = useQuery({
@@ -308,12 +312,16 @@ const FuturesSimulator = () => {
           interval={interval}
           onIntervalChange={setInterval}
           realtimeChartUpdate={realtimeChartUpdate}
-          // Props simplificadas por enquanto, sem linhas de trade ou alertas
-          tradeLevels={{ entry: 0, stopLoss: 0, takeProfit: 0 }}
-          onLevelsChange={() => {}}
-          tipoOperacao="compra"
-          alerts={[]}
-          openPositions={[]}
+          tradeLevels={tradeLevels}
+          onLevelsChange={setTradeLevels}
+          tipoOperacao="compra" // Manter como "compra" ou adicionar estado se necessário
+          alerts={[]} // Futures simulator doesn't manage alerts directly on chart
+          openPositions={[]} // Futures simulator manages its own positions
+          prospectiveAlert={prospectiveAlert}
+          onProspectiveAlertChange={() => {}} // No-op for futures
+          onStartCreateAlert={() => {}} // No-op for futures
+          onSaveAlert={() => {}} // No-op for futures
+          onCancelCreateAlert={() => {}} // No-op for futures
         />
       </div>
 
