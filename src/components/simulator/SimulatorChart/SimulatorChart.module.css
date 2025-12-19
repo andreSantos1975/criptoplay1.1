@@ -51,3 +51,45 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+.alertControls {
+    display: flex; /* Make it a flex container as it has multiple buttons */
+    gap: 0.5rem; /* Space between buttons */
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .chartHeader {
+        flex-direction: column; /* Stack items vertically */
+        align-items: flex-start; /* Align items to the left */
+        gap: 1rem; /* Space between stacked items */
+    }
+
+    .title {
+        width: 100%; /* Ensure title takes full width */
+        text-align: left;
+    }
+
+    .intervalSelector {
+        width: 100%; /* Ensure selector takes full width if needed */
+        justify-content: flex-start; /* Align buttons to left */
+        flex-wrap: wrap; /* Allow interval buttons to wrap */
+    }
+
+    .alertControls {
+        width: 100%; /* Ensure alert controls take full width */
+        justify-content: flex-start; /* Align alert buttons to left */
+        flex-wrap: wrap; /* Allow alert buttons to wrap */
+    }
+}
+
+@media (max-width: 480px) {
+    .intervalSelector button {
+        padding: 0.4rem 0.8rem; /* Slightly smaller padding for very small screens */
+        font-size: 0.85rem;
+    }
+    .alertControls .Button { /* Target the Button component's internal styling if needed */
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+}
