@@ -87,6 +87,7 @@ const DashboardPage = () => {
   const [isIncomeDialogOpen, setIsIncomeDialogOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState<Income | undefined>();
   const [budgetCategories, setBudgetCategories] = useState<Category[]>([]);
+  const [simulatorMode, setSimulatorMode] = useState<'spot' | 'futures'>('spot');
 
   // --- PERSONAL FINANCE QUERIES & MUTATIONS ---
   const year = selectedDate.getFullYear();
@@ -204,8 +205,6 @@ const DashboardPage = () => {
           </>
         );
       case "analise": {
-        const [simulatorMode, setSimulatorMode] = useState<'spot' | 'futures'>('spot');
-
         // Renaming original simulator for clarity
         const SpotSimulator = dynamic(
           () => import('@/components/simulator/Simulator/Simulator'),
