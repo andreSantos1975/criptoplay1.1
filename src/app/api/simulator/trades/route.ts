@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const trades = await prisma.trade.findMany({
       where: {
         userId: userId,
-        marketType: 'SIMULATOR', // Garante que estamos pegando apenas do simulador
+        isSimulator: true,
       },
       orderBy: {
         entryDate: 'desc', // Ordena pelas mais recentes primeiro
@@ -52,11 +52,18 @@ export async function POST(request: Request) {
       quantity, // Quantidade do ativo a ser comprado
       type,     // 'BUY' ou 'SELL' (para short, se implementarmos)
       stopLoss,
-      takeProfit
+      takeProfit,
+      marketType // 'spot' ou 'futures'
     } = body;
 
     if (!symbol || !quantity || !type) {
       return new NextResponse(JSON.stringify({ message: 'Parâmetros inválidos' }), { status: 400 });
+    }
+
+    // Map marketType to Prisma enum, defaulting to SPOT if invalid or missing
+    let prismaMarketType: 'SPOT' | 'FUTURES' = 'SPOT';
+    if (marketType === 'futures') {
+        prismaMarketType = 'FUTURES';
     }
 
     let entryPrice: Decimal;
@@ -89,11 +96,12 @@ export async function POST(request: Request) {
         userId: userId,
         symbol: symbol.toUpperCase(),
         quantity: new Decimal(quantity),
-entryPrice: entryPrice,
+        entryPrice: entryPrice,
         entryDate: new Date(),
         type: type, // 'BUY' ou 'SELL'
         status: 'OPEN',
-        marketType: 'SIMULATOR',
+        marketType: prismaMarketType,
+        isSimulator: true,
         stopLoss: new Decimal(stopLoss),
         takeProfit: new Decimal(takeProfit),
       },

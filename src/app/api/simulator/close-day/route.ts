@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       const openTrades = await prisma.trade.findMany({
         where: {
           userId: user.id,
-          marketType: 'SIMULATOR',
+          isSimulator: true,
           status: 'OPEN',
         },
       });

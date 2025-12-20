@@ -28,7 +28,7 @@ export async function GET() {
     const trades = await prisma.trade.findMany({
       where: {
         userId: userId,
-        marketType: 'SIMULATOR',
+        isSimulator: true,
       },
       orderBy: {
         entryDate: 'desc',

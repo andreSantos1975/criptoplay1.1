@@ -181,6 +181,7 @@ model Trade {
   updatedAt  DateTime        @updatedAt
   userId     String
   marketType TradeMarketType @default(SPOT)
+  isSimulator Boolean         @default(false)
   user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -247,7 +248,6 @@ enum CapitalMovementType {
 enum TradeMarketType {
   SPOT
   FUTURES
-  SIMULATOR
 }
 
 model DailyPerformance {

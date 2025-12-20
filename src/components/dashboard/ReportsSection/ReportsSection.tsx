@@ -134,7 +134,7 @@ const generateMonthlyReportData = (
   trades
     .filter((t) => t.status === "CLOSED" && t.pnl != null)
     .forEach((trade) => {
-      const date = new Date(t.exitDate!);
+      const date = new Date(trade.exitDate!);
       const key = `${date.getFullYear()}-${String(
         date.getMonth() + 1
       ).padStart(2, "0")}`;
@@ -144,8 +144,8 @@ const generateMonthlyReportData = (
           tradeCount: 0,
         };
       const pnlInBrl = trade.symbol.includes('BRL')
-        ? Number(t.pnl)
-        : (Number(t.pnl) || 0) * brlRate;
+        ? Number(trade.pnl)
+        : (Number(trade.pnl) || 0) * brlRate;
       monthlyMap[key].pnl += pnlInBrl;
       monthlyMap[key].tradeCount++;
     });

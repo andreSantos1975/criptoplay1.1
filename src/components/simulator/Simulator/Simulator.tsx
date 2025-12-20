@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
-import { useVigilante } from '@/hooks/useVigilante';
+import { useVigilante, SimulatorPosition } from '@/hooks/useVigilante';
 import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
 import { Alert } from '@prisma/client';
 
@@ -32,7 +32,7 @@ interface Trade {
 
 interface SimulatorProfile {
   balance: number;
-  openPositions: any[]; // Usando 'any' temporariamente para acomodar a nova estrutura
+  openPositions: SimulatorPosition[]; 
 }
 
 interface CurrentPrice {
@@ -213,7 +213,23 @@ const Simulator = () => {
   });
 
   // --- HOOKS ---
-  // useVigilante foi removido temporariamente pois dependia da estrutura antiga de 'openTrades'
+  const [closingPositionSymbols, setClosingPositionSymbols] = useState<Set<string>>(new Set());
+
+  const handleAddToClosingPositionSymbols = (symbol: string) => {
+    setClosingPositionSymbols((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(symbol);
+      return newSet;
+    });
+  };
+
+  useVigilante({
+    openPositions: simulatorProfile?.openPositions,
+    closeMutation: closePositionMutation,
+    enabled: isPremiumUser && !!simulatorProfile?.openPositions,
+    closingPositionSymbols,
+    onAddToClosingPositionSymbols: handleAddToClosingPositionSymbols,
+  });
 
   const { realtimeChartUpdate } = useRealtimeChartUpdate({
     symbol: selectedCrypto,

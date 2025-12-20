@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         userId: userId,
         symbol: symbol,
         status: 'OPEN',
-        marketType: 'SIMULATOR',
+        isSimulator: true,
       }
     });
 

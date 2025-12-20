@@ -1,57 +1,72 @@
 import { useEffect } from 'react';
-import { Trade } from '@prisma/client';
 import { UseMutationResult } from '@tanstack/react-query';
 
+// Definition based on the aggregated object from /api/simulator/profile
+export interface SimulatorPosition {
+  symbol: string;
+  totalQuantity: number;
+  averageEntryPrice: number;
+  stopLoss: number;
+  takeProfit: number;
+  tradeIds: string[];
+  marketType?: 'spot' | 'futures'; // Optional, defaulting to 'spot' if missing
+}
+
 interface VigilanteOptions {
-  openTrades: Trade[] | undefined;
-  closeMutation: UseMutationResult<Trade, Error, string, unknown>;
+  openPositions: SimulatorPosition[] | undefined;
+  closeMutation: UseMutationResult<any, Error, string, unknown>; // Mutation expects symbol (string)
   enabled?: boolean;
-  closingTradeIds: Set<string>;
-  onAddToClosingTradeIds: (tradeId: string) => void;
+  closingPositionSymbols: Set<string>;
+  onAddToClosingPositionSymbols: (symbol: string) => void;
 }
 
 const getNumericValue = (value: any): number | null => {
   if (value === null || value === undefined) return null;
   if (typeof value === 'number') return value;
   if (typeof value === 'string') return parseFloat(value);
-  if (value.toNumber && typeof value.toNumber === 'function') {
+  // Handle Decimal-like objects if they leak here, though the API returns numbers
+  if (value && typeof value.toNumber === 'function') {
     return value.toNumber();
   }
   const num = parseFloat(value);
   return isNaN(num) ? null : num;
 };
 
-// This hook is now a "Global Vigilante". It watches all open trades
-// and closes them if their SL/TP is met. It does not return any UI data.
+// This hook is now a "Global Vigilante" for POSITIONS. 
+// It watches all open positions and closes them if their aggregated SL/TP is met.
 export const useVigilante = ({
-  openTrades,
+  openPositions,
   closeMutation,
   enabled = true,
-  closingTradeIds,
-  onAddToClosingTradeIds,
+  closingPositionSymbols,
+  onAddToClosingPositionSymbols,
 }: VigilanteOptions) => {
   useEffect(() => {
-    if (!enabled || !openTrades || openTrades.length === 0) {
+    if (!enabled || !openPositions || openPositions.length === 0) {
       return;
     }
 
-    const tradesBySymbol: { [key: string]: Trade[] } = {};
-    openTrades.forEach(trade => {
-      if (!tradesBySymbol[trade.symbol]) {
-        tradesBySymbol[trade.symbol] = [];
-      }
-      tradesBySymbol[trade.symbol].push(trade);
+    // Map positions by symbol for easy lookup inside WebSocket callback
+    const positionsBySymbol: { [key: string]: SimulatorPosition } = {};
+    openPositions.forEach(pos => {
+      positionsBySymbol[pos.symbol] = pos;
     });
 
-    const symbols = Object.keys(tradesBySymbol);
+    const symbols = Object.keys(positionsBySymbol);
     const sockets: WebSocket[] = [];
-    const priceState: { [key: string]: number } = {};
 
     symbols.forEach(symbol => {
-      // Assuming all trades for a symbol have the same marketType.
-      // This is a reasonable assumption for this app's structure.
-      const marketType = tradesBySymbol[symbol][0].marketType || 'spot'; 
+      // Assuming marketType might be available in position, or default to spot.
+      // The current API might not be passing marketType explicitly in the aggregated object,
+      // but usually the symbol implies it or we can check the first trade.
+      // For now, let's assume 'spot' or check if we can infer it. 
+      // Ideally, the backend should provide marketType on the position.
+      // If not available, we default to standard Binance stream which covers spot.
+      // If futures are needed, the position object needs to carry that info.
       
+      const position = positionsBySymbol[symbol];
+      const marketType = position.marketType || 'spot';
+
       const streamHost = marketType === 'futures'
         ? 'fstream.binance.com'
         : 'stream.binance.com:9443';
@@ -64,41 +79,82 @@ export const useVigilante = ({
 
         if (kline) {
           const currentPrice = parseFloat(kline.c);
-          priceState[symbol] = currentPrice;
 
           if (closeMutation.isPending) return;
 
-          const tradesForSymbol = tradesBySymbol[symbol] || [];
+          // Check the specific position for this symbol
+          const pos = positionsBySymbol[symbol];
+          
+          if (!pos) return;
 
-          for (const trade of tradesForSymbol) {
-            if (closingTradeIds.has(trade.id)) {
-              continue;
-            }
+          if (closingPositionSymbols.has(pos.symbol)) {
+            return;
+          }
 
-            const stopLoss = getNumericValue(trade.stopLoss);
-            const takeProfit = getNumericValue(trade.takeProfit);
+          const stopLoss = getNumericValue(pos.stopLoss);
+          const takeProfit = getNumericValue(pos.takeProfit);
 
-            if (stopLoss === null && takeProfit === null) {
-              continue;
-            }
+          // If neither is set, nothing to do
+          if ((!stopLoss || stopLoss === 0) && (!takeProfit || takeProfit === 0)) {
+            return;
+          }
 
-            const tradeType = trade.type.toLowerCase();
-            const isBuyTrade = tradeType === 'compra' || tradeType === 'buy' || tradeType === 'long';
+          // Determine direction based on logic (Long vs Short)
+          // Since we don't have explicit 'SIDE' (Buy/Sell) on the Position object from the API response seen earlier,
+          // we usually assume 'LONG' for Spot. 
+          // If the system supports Shorting (Futures), the position object needs to indicate direction.
+          // However, based on typical simple spot simulators:
+          // Long: Stop Loss < Entry, Take Profit > Entry.
+          
+          // Heuristic:
+          // If Stop Loss < Average Entry -> Likely LONG
+          // If Stop Loss > Average Entry -> Likely SHORT
+          
+          // But a safer bet for now (as per previous logic):
+          // Buy (Long): Close if price <= SL or price >= TP
+          // Sell (Short): Close if price >= SL or price <= TP
+          
+          // We can try to infer side from SL/TP relative to Entry if not provided.
+          // Or simply check:
+          // If SL is defined and Price hits it.
+          // If TP is defined and Price hits it.
+          
+          // Let's refine the logic.
+          // If SL < EntryPrice, it's a Long SL (trigger if Price <= SL)
+          // If SL > EntryPrice, it's a Short SL (trigger if Price >= SL)
+          
+          // Similarly for TP:
+          // If TP > EntryPrice, it's a Long TP (trigger if Price >= TP)
+          // If TP < EntryPrice, it's a Short TP (trigger if Price <= TP)
+          
+          let shouldClose = false;
 
-            let shouldClose = false;
-            if (isBuyTrade) {
-              if (stopLoss && currentPrice <= stopLoss) shouldClose = true;
-              else if (takeProfit && currentPrice >= takeProfit) shouldClose = true;
-            } else { // Sell/Short trade
-              if (stopLoss && currentPrice >= stopLoss) shouldClose = true;
-              else if (takeProfit && currentPrice <= takeProfit) shouldClose = true;
-            }
+          // STOP LOSS CHECK
+          if (stopLoss && stopLoss > 0) {
+             if (stopLoss < pos.averageEntryPrice) {
+                 // Long SL logic
+                 if (currentPrice <= stopLoss) shouldClose = true;
+             } else {
+                 // Short SL logic
+                 if (currentPrice >= stopLoss) shouldClose = true;
+             }
+          }
 
-            if (shouldClose) {
-              onAddToClosingTradeIds(trade.id);
-              closeMutation.mutate(trade.id);
-              break; 
-            }
+          // TAKE PROFIT CHECK
+          if (!shouldClose && takeProfit && takeProfit > 0) {
+              if (takeProfit > pos.averageEntryPrice) {
+                  // Long TP logic
+                  if (currentPrice >= takeProfit) shouldClose = true;
+              } else {
+                  // Short TP logic
+                  if (currentPrice <= takeProfit) shouldClose = true;
+              }
+          }
+
+          if (shouldClose) {
+            console.log(`[VIGILANTE] Closing position ${pos.symbol} at ${currentPrice} (SL: ${stopLoss}, TP: ${takeProfit})`);
+            onAddToClosingPositionSymbols(pos.symbol);
+            closeMutation.mutate(pos.symbol);
           }
         }
       };
@@ -113,10 +169,6 @@ export const useVigilante = ({
     return () => {
       sockets.forEach(ws => ws.close());
     };
-  // IMPORTANT: We reduce dependency changes to avoid re-running this complex effect
-  // unnecessarily. We only need to re-run if the list of open trades *structurally* changes.
-  // A simple JSON.stringify is a pragmatic way to check for changes in the trades list.
-  }, [JSON.stringify(openTrades), enabled, closeMutation, closingTradeIds, onAddToClosingTradeIds]);
-
-  // This hook no longer returns anything as it's a background process
+  // Re-run if the structure of positions (symbols or SL/TP values) changes substantially
+  }, [JSON.stringify(openPositions), enabled, closeMutation, closingPositionSymbols, onAddToClosingPositionSymbols]);
 };

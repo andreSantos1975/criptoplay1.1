@@ -31,7 +31,7 @@ export async function GET() {
     const openTrades = await prisma.trade.findMany({
       where: {
         userId: userId,
-        marketType: 'SIMULATOR',
+        isSimulator: true,
         status: 'OPEN',
       },
       orderBy: {
@@ -51,6 +51,7 @@ export async function GET() {
           totalInvested: 0,
           stopLoss: trade.stopLoss, // Usa o da primeira trade encontrada
           takeProfit: trade.takeProfit, // Usa o da primeira trade encontrada
+          marketType: trade.marketType.toLowerCase(), // Adiciona o marketType aqui
           trades: [],
         });
       }
@@ -81,6 +82,7 @@ export async function GET() {
       averageEntryPrice: Number(pos.totalInvested / pos.totalQuantity),
       stopLoss: Number(pos.stopLoss || 0), // Converte para Número e garante que não seja null
       takeProfit: Number(pos.takeProfit || 0), // Converte para Número e garante que não seja null
+      marketType: pos.marketType, // Garante que o marketType é incluído na resposta final
       tradeIds: pos.trades,
     }));
 
