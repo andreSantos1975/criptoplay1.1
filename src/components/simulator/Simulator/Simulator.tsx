@@ -138,6 +138,19 @@ const Simulator = () => {
   const [newSymbol, setNewSymbol] = useState('');
   const [prospectiveAlert, setProspectiveAlert] = useState<{ price: number } | null>(null);
 
+  // Fetch exchange rate USDT/BRL
+  const { data: exchangeRateData, isLoading: isLoadingExchangeRate } = useQuery({
+    queryKey: ['usdtToBrlRate'],
+    queryFn: async () => {
+      const response = await fetch('/api/exchange-rate');
+      if (!response.ok) throw new Error('Falha ao buscar taxa de câmbio.');
+      return response.json();
+    },
+    staleTime: 60000,
+    enabled: isPremiumUser,
+  });
+  const usdtToBrlRate = exchangeRateData?.usdtToBrl || 1;
+
   // --- BUSCA DE DADOS E MUTAÇÕES ---
   const { data: simulatorProfile, isLoading: isLoadingSimulator } = useQuery<SimulatorProfile, Error>({
     queryKey: ['simulatorProfile'],
@@ -262,6 +275,11 @@ const Simulator = () => {
   const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   const riskAmount = entryPrice > 0 && stopLoss > 0 ? (entryPrice - stopLoss) * quantity : 0;
   const rewardAmount = entryPrice > 0 && takeProfit > 0 ? (takeProfit - entryPrice) * quantity : 0;
+
+  const estimatedCostUSDT = quantity * entryPrice;
+  const estimatedCostBRL = selectedCrypto.endsWith('BRL') 
+    ? estimatedCostUSDT 
+    : estimatedCostUSDT * usdtToBrlRate;
 
 
   // --- MANIPULADORES ---
@@ -405,7 +423,19 @@ const Simulator = () => {
               <div className={styles.formGroup}><label>Ativo: {selectedCrypto}</label></div>
               <div className={styles.formGroup}>
                 <label htmlFor="quantity">Quantidade</label>
-                <input id="quantity" type="number" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className={styles.input} step="0.001" min="0.001" required />
+                <input 
+                  id="quantity" 
+                  type="number" 
+                  value={quantity} 
+                  onChange={(e) => setQuantity(Number(e.target.value))} 
+                  className={styles.input} 
+                  step="any" // Allow any decimal precision
+                  min="0" // Minimum quantity of 0
+                  required 
+                />
+                {quantity > 0 && entryPrice > 0 && (
+                  <p className={styles.riskInfo}>Custo Total: {formatCurrency(estimatedCostBRL)}</p>
+                )}
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="stopLoss">Stop Loss</label>
