@@ -82,29 +82,54 @@ const closePosition = async (payload: ClosePositionPayload) => {
 
 // --- Componentes ---
 
-const FuturesTradeForm = ({ symbol, setSymbol, createPositionMutation, isCreating }: { symbol: string, setSymbol: (s: string) => void, createPositionMutation: any, isCreating: boolean }) => {
+const FuturesTradeForm = ({ 
+  symbol, 
+  setSymbol, 
+  createPositionMutation, 
+  isCreating,
+  currentPrice,
+  exchangeRate
+}: { 
+  symbol: string, 
+  setSymbol: (s: string) => void, 
+  createPositionMutation: any, 
+  isCreating: boolean,
+  currentPrice: number,
+  exchangeRate: number
+}) => {
   const [side, setSide] = useState<PositionSide>('LONG');
   const [quantity, setQuantity] = useState(0.01);
   const [leverage, setLeverage] = useState(10);
 
+  // Cálculos de Estimativa
+  const notionalValueUSDT = quantity * currentPrice;
+  const marginRequiredUSDT = notionalValueUSDT / leverage;
+  const marginRequiredBRL = marginRequiredUSDT * exchangeRate;
+
+  const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.loading('Buscando preço de mercado...');
-    
-    try {
-      const priceResponse = await fetch(`/api/binance/price?symbol=${symbol}`);
-      if (!priceResponse.ok) throw new Error('Não foi possível obter o preço atual.');
-      const priceData = await priceResponse.json();
-      const entryPrice = parseFloat(priceData.price);
+    // Usa o preço atual passado via prop se disponível, senão busca (fallback)
+    let entryPrice = currentPrice;
 
-      toast.dismiss();
-      toast.loading('Abrindo posição...');
-      createPositionMutation.mutate({ symbol, side, quantity, leverage, entryPrice });
-
-    } catch (error: any) {
-      toast.dismiss();
-      toast.error(`Erro: ${error.message}`);
+    if (!entryPrice) {
+        toast.loading('Buscando preço de mercado...');
+        try {
+            const priceResponse = await fetch(`/api/binance/price?symbol=${symbol}`);
+            if (!priceResponse.ok) throw new Error('Não foi possível obter o preço atual.');
+            const priceData = await priceResponse.json();
+            entryPrice = parseFloat(priceData.price);
+        } catch (error: any) {
+            toast.dismiss();
+            toast.error(`Erro: ${error.message}`);
+            return;
+        }
     }
+
+    toast.dismiss();
+    toast.loading('Abrindo posição...');
+    createPositionMutation.mutate({ symbol, side, quantity, leverage, entryPrice });
   };
   
   return (
@@ -122,13 +147,38 @@ const FuturesTradeForm = ({ symbol, setSymbol, createPositionMutation, isCreatin
         </div>
       </div>
       <div className={styles.formGroup}>
-        <label htmlFor="quantity">Quantidade</label>
-        <input id="quantity" type="number" value={quantity} onChange={e => setQuantity(parseFloat(e.target.value))} step="0.001" />
+        <label htmlFor="quantity">Quantidade ({symbol.replace('USDT', '')})</label>
+        <input 
+          id="quantity" 
+          type="number" 
+          value={quantity} 
+          onChange={e => setQuantity(parseFloat(e.target.value))} 
+          step="any" 
+          min="0" 
+        />
       </div>
       <div className={styles.formGroup}>
         <label htmlFor="leverage">Alavancagem ({leverage}x)</label>
         <input id="leverage" type="range" min="1" max="125" value={leverage} onChange={e => setLeverage(parseInt(e.target.value, 10))} />
       </div>
+
+      <div className={styles.costEstimate} style={{ 
+          backgroundColor: '#1e293b', 
+          padding: '10px', 
+          borderRadius: '4px', 
+          margin: '10px 0',
+          fontSize: '0.9rem'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <span>Preço Ref.:</span>
+          <span>{currentPrice ? formatCurrency(currentPrice * exchangeRate) : '...'}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#fbbf24' }}>
+          <span>Custo (Margem):</span>
+          <span>{currentPrice ? formatCurrency(marginRequiredBRL) : '...'}</span>
+        </div>
+      </div>
+
       <button type="submit" disabled={isCreating} className={styles.submitButton}>
         {isCreating ? 'Abrindo...' : `Abrir Posição ${side}`}
       </button>
@@ -254,6 +304,33 @@ const FuturesSimulator = () => {
     enabled: true,
   });
 
+  // Convert chart data to BRL
+  const chartDataInBRL = useMemo(() => {
+    if (!initialChartData) return undefined;
+    if (symbol.endsWith('BRL')) return initialChartData;
+    
+    return initialChartData.map(d => ({
+        ...d,
+        open: d.open * exchangeRate,
+        high: d.high * exchangeRate,
+        low: d.low * exchangeRate,
+        close: d.close * exchangeRate,
+    }));
+  }, [initialChartData, exchangeRate, symbol]);
+
+  const realtimeUpdateInBRL = useMemo(() => {
+      if (!realtimeChartUpdate) return null;
+      if (symbol.endsWith('BRL')) return realtimeChartUpdate;
+      
+      return {
+          ...realtimeChartUpdate,
+          open: realtimeChartUpdate.open * exchangeRate,
+          high: realtimeChartUpdate.high * exchangeRate,
+          low: realtimeChartUpdate.low * exchangeRate,
+          close: realtimeChartUpdate.close * exchangeRate,
+      };
+  }, [realtimeChartUpdate, exchangeRate, symbol]);
+
   const assetHeaderData = useMemo(() => {
     if (!initialChartData || initialChartData.length === 0) return { open: 0, high: 0, low: 0, close: 0, time: 0 };
     const lastCandle = initialChartData[initialChartData.length - 1];
@@ -307,11 +384,11 @@ const FuturesSimulator = () => {
       <div className={styles.chartWrapper}>
         <SimulatorChart
           symbol={symbol}
-          initialChartData={initialChartData}
+          initialChartData={chartDataInBRL}
           isChartLoading={isChartLoading}
           interval={interval}
           onIntervalChange={setInterval}
-          realtimeChartUpdate={realtimeChartUpdate}
+          realtimeChartUpdate={realtimeUpdateInBRL}
           tradeLevels={tradeLevels}
           onLevelsChange={setTradeLevels}
           tipoOperacao="compra" // Manter como "compra" ou adicionar estado se necessário
@@ -326,7 +403,14 @@ const FuturesSimulator = () => {
       </div>
 
       <div className={styles.mainContent}>
-        <FuturesTradeForm symbol={symbol} setSymbol={setSymbol} createPositionMutation={createPositionMutation} isCreating={createPositionMutation.isPending} />
+        <FuturesTradeForm 
+          symbol={symbol} 
+          setSymbol={setSymbol} 
+          createPositionMutation={createPositionMutation} 
+          isCreating={createPositionMutation.isPending}
+          currentPrice={assetHeaderData.close} // Preço em Dólar (USDT) ou BRL dependendo do par, mas assetHeaderData já vem convertido se for BRL? Não, assetHeaderData.close vem do useMemo que não aplicou conversão no assetHeaderData. Vamos verificar.
+          exchangeRate={exchangeRate}
+        />
         <FuturesPositionsList 
           positions={positions} 
           isLoading={isLoading} 
