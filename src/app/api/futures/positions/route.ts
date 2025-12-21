@@ -11,6 +11,8 @@ const createPositionSchema = z.object({
   quantity: z.number().positive("A quantidade deve ser positiva."),
   leverage: z.number().min(1).max(125, "A alavancagem deve ser entre 1 e 125."),
   entryPrice: z.number().positive("O preço de entrada deve ser positivo."),
+  stopLoss: z.number().optional().nullable(),
+  takeProfit: z.number().optional().nullable(),
 });
 
 export async function POST(req: Request) {
@@ -30,7 +32,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Dados inválidos', details: validation.error.flatten() }, { status: 400 });
     }
 
-    const { symbol, side, quantity, leverage, entryPrice } = validation.data;
+    const { symbol, side, quantity, leverage, entryPrice, stopLoss, takeProfit } = validation.data;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -86,6 +88,8 @@ export async function POST(req: Request) {
           entryPrice,
           margin,
           liquidationPrice,
+          stopLoss: stopLoss ?? undefined,
+          takeProfit: takeProfit ?? undefined,
           status: 'OPEN',
         },
       }),

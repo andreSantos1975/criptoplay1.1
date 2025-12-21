@@ -399,7 +399,7 @@ const Simulator = () => {
           {isLoadingSimulator ? <p>Carregando...</p> : simulatorProfile && simulatorProfile.openPositions.length > 0 ? (
               <div className={styles.tableWrapper}>
               <table className={styles.table}>
-                  <thead><tr><th>Ativo</th><th>Qtd. Total</th><th>Preço Médio</th><th>Valor Atual</th><th>Lucro/Prejuízo</th><th>Ações</th></tr></thead>
+                  <thead><tr><th>Ativo</th><th>Qtd. Total</th><th>Preço Médio</th><th>Valor Investido</th><th>Risco (SL / TP)</th><th>Valor Atual</th><th>Lucro/Prejuízo</th><th>Ações</th></tr></thead>
                   <tbody>
                   {simulatorProfile.openPositions.map((position) => (
                       <PositionRow 

@@ -4,13 +4,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import styles from './PositionRow.module.css';
 
-// Tipo para a posição agregada (deve corresponder ao que a API retorna)
-interface Position {
-  symbol: string;
-  totalQuantity: number;
-  averageEntryPrice: number;
-  tradeIds: string[];
-}
+import { SimulatorPosition } from '@/hooks/useVigilante';
 
 // Tipo para o preço atual
 interface CurrentPrice {
@@ -18,7 +12,7 @@ interface CurrentPrice {
 }
 
 interface PositionRowProps {
-  position: Position;
+  position: SimulatorPosition;
   isClosing: boolean;
   closePositionMutation: (symbol: string) => void; // A mutação agora aceita o símbolo
 }
@@ -46,19 +40,31 @@ export const PositionRow = ({ position, isClosing, closePositionMutation }: Posi
     refetchInterval: 5000,
   });
 
-  const { totalValue, pnl, pnlPercentage } = useMemo(() => {
+  const { totalValue, pnl, pnlPercentage, investedValue, riskSL, rewardTP } = useMemo(() => {
     const currentPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
-    if (!currentPrice) return { totalValue: 0, pnl: 0, pnlPercentage: 0 };
+    if (!currentPrice) return { totalValue: 0, pnl: 0, pnlPercentage: 0, investedValue: 0, riskSL: 0, rewardTP: 0 };
     
     const avgPrice = Number(position.averageEntryPrice);
     const quantity = Number(position.totalQuantity);
+    const stopLoss = Number(position.stopLoss);
+    const takeProfit = Number(position.takeProfit);
 
-    const totalInvested = avgPrice * quantity;
+    const investedValue = avgPrice * quantity;
     const currentValue = currentPrice * quantity;
-    const pnl = currentValue - totalInvested;
-    const pnlPercentage = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
+    const pnl = currentValue - investedValue;
+    const pnlPercentage = investedValue > 0 ? (pnl / investedValue) * 100 : 0;
 
-    return { totalValue: currentValue, pnl, pnlPercentage };
+    let riskSL = 0;
+    if (stopLoss > 0 && stopLoss < avgPrice) { // Assumindo posição LONG
+        riskSL = (avgPrice - stopLoss) * quantity;
+    }
+
+    let rewardTP = 0;
+    if (takeProfit > 0 && takeProfit > avgPrice) { // Assumindo posição LONG
+        rewardTP = (takeProfit - avgPrice) * quantity;
+    }
+
+    return { totalValue: currentValue, pnl, pnlPercentage, investedValue, riskSL, rewardTP };
   }, [currentPriceData, position]);
 
   const pnlClass = pnl > 0 ? styles.positivePnl : pnl < 0 ? styles.negativePnl : styles.neutralPnl;
@@ -68,6 +74,12 @@ export const PositionRow = ({ position, isClosing, closePositionMutation }: Posi
       <td>{position.symbol}</td>
       <td>{position.totalQuantity.toFixed(4)}</td>
       <td>{formatCurrency(position.averageEntryPrice)}</td>
+      <td>{formatCurrency(investedValue)}</td>
+      <td>
+        {riskSL > 0 ? `SL: ${formatCurrency(riskSL)}` : 'N/A'}
+        <br />
+        {rewardTP > 0 ? `TP: ${formatCurrency(rewardTP)}` : 'N/A'}
+      </td>
       <td>{formatCurrency(totalValue)}</td>
       <td className={pnlClass}>
         {formatCurrency(pnl)} ({pnlPercentage.toFixed(2)}%)

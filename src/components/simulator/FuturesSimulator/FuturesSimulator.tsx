@@ -31,6 +31,8 @@ interface CreatePositionPayload {
   quantity: number;
   leverage: number;
   entryPrice: number;
+  stopLoss?: number;
+  takeProfit?: number;
 }
 
 interface ClosePositionPayload {
@@ -88,16 +90,23 @@ const FuturesTradeForm = ({
   createPositionMutation, 
   isCreating,
   currentPrice,
-  exchangeRate
+  exchangeRate,
+  tradeLevels,
+  onLevelsChange,
+  side,
+  setSide
 }: { 
   symbol: string, 
   setSymbol: (s: string) => void, 
   createPositionMutation: any, 
   isCreating: boolean,
   currentPrice: number,
-  exchangeRate: number
+  exchangeRate: number,
+  tradeLevels: { entry: number, stopLoss: number, takeProfit: number },
+  onLevelsChange: (levels: any) => void,
+  side: PositionSide,
+  setSide: (s: PositionSide) => void
 }) => {
-  const [side, setSide] = useState<PositionSide>('LONG');
   const [quantity, setQuantity] = useState(0.01);
   const [leverage, setLeverage] = useState(10);
 
@@ -107,6 +116,33 @@ const FuturesTradeForm = ({
   const marginRequiredBRL = marginRequiredUSDT * exchangeRate;
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
+  // Cálculos de Risco/Recompensa em BRL
+  // Se tradeLevels.entry não estiver definido (o usuário ainda não clicou no gráfico), usa o preço atual convertido.
+  const entryPriceBRL = tradeLevels.entry > 0 ? tradeLevels.entry : (currentPrice * exchangeRate);
+  
+  let riskAmountBRL = 0;
+  if (entryPriceBRL > 0 && tradeLevels.stopLoss > 0) {
+    if (side === 'LONG') {
+      riskAmountBRL = (entryPriceBRL - tradeLevels.stopLoss) * quantity;
+    } else { // SHORT
+      riskAmountBRL = (tradeLevels.stopLoss - entryPriceBRL) * quantity;
+    }
+  }
+  // Garante que o risco não seja exibido como negativo se o SL estiver acima/abaixo do Entry de forma "ganhadora" (por ex, SL em gain)
+  riskAmountBRL = Math.max(0, riskAmountBRL);
+
+  let rewardAmountBRL = 0;
+  if (entryPriceBRL > 0 && tradeLevels.takeProfit > 0) {
+    if (side === 'LONG') {
+      rewardAmountBRL = (tradeLevels.takeProfit - entryPriceBRL) * quantity;
+    } else { // SHORT
+      rewardAmountBRL = (entryPriceBRL - tradeLevels.takeProfit) * quantity;
+    }
+  }
+  // Garante que a recompensa não seja exibida como negativo
+  rewardAmountBRL = Math.max(0, rewardAmountBRL);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,7 +165,25 @@ const FuturesTradeForm = ({
 
     toast.dismiss();
     toast.loading('Abrindo posição...');
-    createPositionMutation.mutate({ symbol, side, quantity, leverage, entryPrice });
+    
+    // Convertendo SL/TP de volta para a moeda original (USDT) se necessário
+    let finalStopLoss = tradeLevels.stopLoss > 0 ? tradeLevels.stopLoss : undefined;
+    let finalTakeProfit = tradeLevels.takeProfit > 0 ? tradeLevels.takeProfit : undefined;
+
+    if (!symbol.endsWith('BRL') && exchangeRate > 0) {
+        if (finalStopLoss) finalStopLoss = finalStopLoss / exchangeRate;
+        if (finalTakeProfit) finalTakeProfit = finalTakeProfit / exchangeRate;
+    }
+
+    createPositionMutation.mutate({ 
+      symbol, 
+      side, 
+      quantity, 
+      leverage, 
+      entryPrice,
+      stopLoss: finalStopLoss,
+      takeProfit: finalTakeProfit
+    });
   };
   
   return (
@@ -160,6 +214,30 @@ const FuturesTradeForm = ({
       <div className={styles.formGroup}>
         <label htmlFor="leverage">Alavancagem ({leverage}x)</label>
         <input id="leverage" type="range" min="1" max="125" value={leverage} onChange={e => setLeverage(parseInt(e.target.value, 10))} />
+      </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="stopLoss">Stop Loss (R$)</label>
+        <input 
+          id="stopLoss" 
+          type="number" 
+          value={tradeLevels.stopLoss || ''} 
+          onChange={e => onLevelsChange({ ...tradeLevels, stopLoss: parseFloat(e.target.value) })} 
+          step="any" 
+        />
+        {riskAmountBRL > 0 && <p className={styles.riskInfo}>Risco: {formatCurrency(riskAmountBRL)}</p>}
+      </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="takeProfit">Take Profit (R$)</label>
+        <input 
+          id="takeProfit" 
+          type="number" 
+          value={tradeLevels.takeProfit || ''} 
+          onChange={e => onLevelsChange({ ...tradeLevels, takeProfit: parseFloat(e.target.value) })} 
+          step="any" 
+        />
+        {rewardAmountBRL > 0 && <p className={styles.rewardInfo}>Ganho Potencial: {formatCurrency(rewardAmountBRL)}</p>}
       </div>
 
       <div className={styles.costEstimate} style={{ 
@@ -271,6 +349,7 @@ const FuturesSimulator = () => {
   const [interval, setInterval] = useState("1m");
   const [prospectiveAlert, setProspectiveAlert] = useState<{ price: number } | null>(null);
   const [tradeLevels, setTradeLevels] = useState({ entry: 0, stopLoss: 0, takeProfit: 0 });
+  const [side, setSide] = useState<PositionSide>('LONG');
 
   // Busca a taxa de câmbio no componente pai para ser distribuída
   const { data: exchangeRateData, isLoading: isLoadingRate } = useQuery({
@@ -391,7 +470,7 @@ const FuturesSimulator = () => {
           realtimeChartUpdate={realtimeUpdateInBRL}
           tradeLevels={tradeLevels}
           onLevelsChange={setTradeLevels}
-          tipoOperacao="compra" // Manter como "compra" ou adicionar estado se necessário
+          tipoOperacao={side === 'LONG' ? 'compra' : 'venda'} // Pass correct type for line logic
           alerts={[]} // Futures simulator doesn't manage alerts directly on chart
           openPositions={[]} // Futures simulator manages its own positions
           prospectiveAlert={prospectiveAlert}
@@ -410,6 +489,10 @@ const FuturesSimulator = () => {
           isCreating={createPositionMutation.isPending}
           currentPrice={assetHeaderData.close} // Preço em Dólar (USDT) ou BRL dependendo do par, mas assetHeaderData já vem convertido se for BRL? Não, assetHeaderData.close vem do useMemo que não aplicou conversão no assetHeaderData. Vamos verificar.
           exchangeRate={exchangeRate}
+          tradeLevels={tradeLevels}
+          onLevelsChange={setTradeLevels}
+          side={side}
+          setSide={setSide}
         />
         <FuturesPositionsList 
           positions={positions} 
