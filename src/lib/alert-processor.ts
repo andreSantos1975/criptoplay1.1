@@ -32,7 +32,7 @@ export async function processAlerts() {
   if (priceAlerts.length > 0) {
     console.log(`[AlertProcessor] Processing ${priceAlerts.length} price alerts.`);
     
-    const symbolsToMonitor = [...new Set(priceAlerts.map(alert => (alert.config as any).symbol))];
+    const symbolsToMonitor = Array.from(new Set(priceAlerts.map(alert => (alert.config as any).symbol)));
     const prices: { [key: string]: number } = {};
 
     // Track symbols that failed to fetch price

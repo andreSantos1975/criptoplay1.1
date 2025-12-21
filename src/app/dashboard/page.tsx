@@ -164,6 +164,10 @@ const DashboardPage = () => {
       allocatedTotalExpenses,
       remainingTotalExpenses,
       totalSavings,
+      budgetedEssential: 0,
+      actualEssential: 0,
+      essentialDifference: 0,
+      totalBudgeted: 0,
     };
   }, [expenses, totalIncome, categoriesWithSpending]);
   

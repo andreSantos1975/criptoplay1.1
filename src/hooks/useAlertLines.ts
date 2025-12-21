@@ -60,9 +60,9 @@ export const useAlertLines = ({
     const currentAlertIds = new Set<string>();
     staticAlerts?.forEach(alert => {
       const config = alert.config as { symbol?: string, price?: number };
-      if (config.symbol === symbol && alert.status === 'active' && config.targetPrice) {
+      if (config.symbol === symbol && alert.status === 'ACTIVE' && config.price) {
         currentAlertIds.add(alert.id);
-        const price = config.targetPrice;
+        const price = config.price;
         const existingLine = staticLinesRef.current.get(alert.id);
         const options = createLineOptions(price, '#FFC107', `Alerta`, LineStyle.Solid);
 
@@ -170,10 +170,11 @@ export const useAlertLines = ({
 
   // Cleanup on unmount
   useEffect(() => {
+    const series = seriesRef.current;
     return () => {
       removeAllStaticLines();
-      if (seriesRef.current && prospectiveLineRef.current) {
-        seriesRef.current.removePriceLine(prospectiveLineRef.current);
+      if (series && prospectiveLineRef.current) {
+        series.removePriceLine(prospectiveLineRef.current);
       }
     };
   }, [removeAllStaticLines, seriesRef]);

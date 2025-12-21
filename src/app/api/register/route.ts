@@ -5,7 +5,7 @@ import prisma from '@/lib/prisma'
 
 // Função para gerar um username único
 async function generateUniqueUsername(): Promise<string> {
-  let uniqueUsername: string;
+  let uniqueUsername = '';
   let isUnique = false;
   while (!isUnique) {
     const randomNumber = Math.floor(1000 + Math.random() * 9000); // 4 dígitos

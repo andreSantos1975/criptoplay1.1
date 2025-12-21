@@ -41,6 +41,8 @@ export const useVigilante = ({
   closingPositionSymbols,
   onAddToClosingPositionSymbols,
 }: VigilanteOptions) => {
+  const openPositionsString = JSON.stringify(openPositions);
+
   useEffect(() => {
     if (!enabled || !openPositions || openPositions.length === 0) {
       return;
@@ -170,5 +172,6 @@ export const useVigilante = ({
       sockets.forEach(ws => ws.close());
     };
   // Re-run if the structure of positions (symbols or SL/TP values) changes substantially
-  }, [JSON.stringify(openPositions), enabled, closeMutation, closingPositionSymbols, onAddToClosingPositionSymbols]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openPositionsString, enabled, closeMutation, closingPositionSymbols, onAddToClosingPositionSymbols]);
 };

@@ -51,7 +51,7 @@ export async function POST(req: Request) {
         ],
         payer: {
           email: user.email,
-          name: user.name,
+          name: user.name ?? undefined,
         },
         back_urls: {
           success: `${process.env.NEXTAUTH_URL}/dashboard?payment=success`,

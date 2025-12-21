@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -46,12 +45,12 @@ export function AccountCardList({ title, items, onAdd, onEdit, onDelete, type }:
                 </div>
                 <div className={styles.itemValues}>
                   {type === 'account' && 'balance' in item && (
-                    <span className={styles.balance}>{formatCurrency(item.balance)}</span>
+                    <span className={styles.balance}>{formatCurrency(Number(item.balance))}</span>
                   )}
                    {type === 'card' && 'availableCredit' in item && (
                     <div>
-                      <span className={styles.limit}>Limite: {formatCurrency(item.creditLimit)}</span>
-                      <span className={styles.available}>Disponível: {formatCurrency(item.availableCredit)}</span>
+                      <span className={styles.limit}>Limite: {formatCurrency(Number(item.creditLimit))}</span>
+                      <span className={styles.available}>Disponível: {formatCurrency(Number(item.availableCredit))}</span>
                     </div>
                   )}
                 </div>

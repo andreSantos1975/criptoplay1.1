@@ -12,6 +12,7 @@ declare module 'next-auth' {
       id: string;
       username?: string | null;
       subscriptionStatus?: string | null; // Adicionado status da assinatura
+      isAdmin?: boolean;
     } & DefaultSession['user'];
   }
 }
@@ -21,5 +22,6 @@ declare module 'next-auth/jwt' {
     id: string;
     username?: string | null;
     subscriptionStatus?: string | null; // Adicionado status da assinatura
+    isAdmin?: boolean;
   }
 }

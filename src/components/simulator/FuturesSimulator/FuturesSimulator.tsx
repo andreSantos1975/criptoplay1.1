@@ -49,7 +49,7 @@ interface BinanceKlineData {
   4: string; // Close
 }
 
-import { Alert } from '@prisma/client';
+import { Alert, AlertType } from '@prisma/client';
 
 // --- API Hooks ---
 const fetchOpenPositions = async (): Promise<FuturesPosition[]> => {
@@ -539,9 +539,12 @@ const FuturesSimulator = () => {
       }
 
       createAlertMutation.mutate({
-        symbol: symbol,
-        price: targetPrice,
-        condition: 'above', // Simplificação, backend ou lógica complexa poderia determinar
+        type: AlertType.PRICE,
+        config: {
+          symbol: symbol,
+          price: targetPrice,
+          condition: 'above', // Simplificação, backend ou lógica complexa poderia determinar
+        }
       });
     }
   };

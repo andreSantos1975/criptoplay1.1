@@ -1,11 +1,11 @@
 // src/app/api/webhooks/mercadopago/route.ts
 import { NextResponse } from 'next/server';
-import mercadopago from 'mercadopago';
+import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago';
 import prisma from '@/lib/prisma';
 
 // Configurar Mercado Pago
-mercadopago.configure({
-  access_token: process.env.MERCADOPAGO_ACCESS_TOKEN!,
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
 });
 
 export async function POST(req: Request) {
@@ -17,8 +17,8 @@ export async function POST(req: Request) {
     // Lógica para assinaturas recorrentes
     if (type === 'preapproval') {
       const preapprovalId = data.id;
-      const preapprovalResponse = await mercadopago.preapproval.get(preapprovalId);
-      const preapproval = preapprovalResponse.body;
+      const preapprovalInstance = new PreApproval(client);
+      const preapproval = await preapprovalInstance.get({ id: preapprovalId });
 
       if (!preapproval || !preapproval.external_reference) {
         console.error('Webhook: Preapproval não encontrada ou sem external_reference.', preapproval);
@@ -48,17 +48,19 @@ export async function POST(req: Request) {
     // Lógica para pagamentos únicos (Plano Vitalício)
     if (type === 'payment') {
       const paymentId = data.id;
-      const payment = await mercadopago.payment.findById(paymentId);
+      const paymentInstance = new Payment(client);
+      const payment = await paymentInstance.get({ id: paymentId });
       
-      if (!payment || !payment.body || !payment.body.external_reference) {
+      if (!payment || !payment.external_reference) {
         console.error('Webhook: Pagamento não encontrado ou sem external_reference.', payment);
         return NextResponse.json({ message: 'Pagamento inválido.' }, { status: 400 });
       }
 
       // Verificar se o pagamento foi aprovado
-      if (payment.body.status === 'approved') {
-        const userId = payment.body.external_reference;
-        const planId = payment.body.metadata?.plan_id || 'LIFETIME_PLAN'; // Garante compatibilidade
+      if (payment.status === 'approved') {
+        const userId = payment.external_reference;
+        // @ts-ignore: metadata property might be missing in type definition but present in API response
+        const planId = payment.metadata?.plan_id || 'LIFETIME_PLAN'; // Garante compatibilidade
 
         // Atualiza a assinatura para ativa
         const updatedSubscription = await prisma.subscription.updateMany({

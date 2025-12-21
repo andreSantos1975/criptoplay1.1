@@ -14,10 +14,9 @@ const AlertasPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
 
-  const { data: alerts, isLoading: isLoadingAlerts, error: errorAlerts } = useAlerts();
+  const { data: alerts, isLoading: isLoadingAlerts, error: errorAlerts, refetch: mutateAlerts } = useAlerts();
   const { data: budgetCategories, isLoading: isLoadingCategories, error: errorCategories } = useBudgetCategories();
   const { notificationCount, mutate: mutateNotifications } = useAlertNotification();
-  const { mutate: mutateAlerts } = useAlerts(); // Get mutate function for alerts list
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -34,10 +33,7 @@ const AlertasPage = () => {
     };
 
     acknowledgeNotifications();
-    // We only want to run this on mount and when notificationCount changes from >0 to 0 etc.
-    // The dependency array is kept minimal to avoid re-running on every notification count change during polling.
-    // The main trigger is the user visiting the page.
-  }, []); // Empty dependency array means it runs once on mount.
+  }, [notificationCount, mutateNotifications]);
 
   const handleManualCheck = async () => {
     setIsProcessing(true);

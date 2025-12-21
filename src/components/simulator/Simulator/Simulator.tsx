@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { useVigilante, SimulatorPosition } from '@/hooks/useVigilante';
 import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
-import { Alert } from '@prisma/client';
+import { Alert, AlertType } from '@prisma/client';
 
 // Componentes do simulador e dashboard
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
@@ -304,9 +304,12 @@ const Simulator = () => {
   const handleSaveAlert = () => {
     if (prospectiveAlert) {
       createAlertMutation.mutate({
-        symbol: selectedCrypto,
-        price: prospectiveAlert.price,
-        condition: 'above', // Or determine condition based on price difference
+        type: AlertType.PRICE,
+        config: {
+          symbol: selectedCrypto,
+          price: prospectiveAlert.price,
+          condition: 'above',
+        },
       });
     }
   };
