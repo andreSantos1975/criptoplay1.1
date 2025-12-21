@@ -34,6 +34,7 @@
   background-color: #2a2a2e;
   padding: 1.5rem;
   border-radius: 8px;
+  min-width: 0; /* Crucial for preventing grid overflow */
 }
 
 .tradeForm h4, .positionsList h4 {
@@ -153,6 +154,25 @@
     font-size: 0.8rem;
     color: #a9a9a9;
     text-transform: uppercase;
+}
+
+.closeButton {
+  padding: 0.4rem 0.8rem;
+  background-color: #4a4a4a !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s !important;
+}
+
+.closeButton:hover {
+  background-color: #6f2232 !important;
+}
+
+.closeButton:disabled {
+  background-color: #333 !important;
+  cursor: not-allowed !important;
 }
 
 /* --- Media Queries --- */

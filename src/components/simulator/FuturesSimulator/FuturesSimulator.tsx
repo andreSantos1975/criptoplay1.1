@@ -26,6 +26,8 @@ interface FuturesPosition {
   liquidationPrice: number;
   pnl: number | null;
   createdAt: string;
+  stopLoss?: number | null;
+  takeProfit?: number | null;
 }
 
 interface CreatePositionPayload {
@@ -156,30 +158,36 @@ const FuturesTradeForm = ({
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   // Cálculos de Risco/Recompensa em BRL
-  // Se tradeLevels.entry não estiver definido (o usuário ainda não clicou no gráfico), usa o preço atual convertido.
   const entryPriceBRL = tradeLevels.entry > 0 ? tradeLevels.entry : (currentPrice * exchangeRate);
   
+  // Cálculo explícito do risco
   let riskAmountBRL = 0;
   if (entryPriceBRL > 0 && tradeLevels.stopLoss > 0) {
-    if (side === 'LONG') {
-      riskAmountBRL = (entryPriceBRL - tradeLevels.stopLoss) * quantity;
-    } else { // SHORT
-      riskAmountBRL = (tradeLevels.stopLoss - entryPriceBRL) * quantity;
-    }
+     const pnlPerUnit = side === 'LONG' 
+        ? entryPriceBRL - tradeLevels.stopLoss 
+        : tradeLevels.stopLoss - entryPriceBRL;
+     riskAmountBRL = pnlPerUnit * quantity;
   }
-  // Garante que o risco não seja exibido como negativo se o SL estiver acima/abaixo do Entry de forma "ganhadora" (por ex, SL em gain)
-  riskAmountBRL = Math.max(0, riskAmountBRL);
+  // Exibir risco apenas se for positivo (perda)
+  const showRisk = riskAmountBRL > 0;
 
+  // Cálculo explícito do ganho
   let rewardAmountBRL = 0;
   if (entryPriceBRL > 0 && tradeLevels.takeProfit > 0) {
-    if (side === 'LONG') {
-      rewardAmountBRL = (tradeLevels.takeProfit - entryPriceBRL) * quantity;
-    } else { // SHORT
-      rewardAmountBRL = (entryPriceBRL - tradeLevels.takeProfit) * quantity;
-    }
+      const pnlPerUnit = side === 'LONG'
+        ? tradeLevels.takeProfit - entryPriceBRL
+        : entryPriceBRL - tradeLevels.takeProfit;
+      rewardAmountBRL = pnlPerUnit * quantity;
   }
-  // Garante que a recompensa não seja exibida como negativo
-  rewardAmountBRL = Math.max(0, rewardAmountBRL);
+  const showReward = rewardAmountBRL > 0;
+
+  // ... (dentro do return)
+
+  // Abaixo do Input de Stop Loss:
+  // {showRisk && <p className={styles.riskInfo}>Risco Estimado: {formatCurrency(riskAmountBRL)}</p>}
+
+  // Abaixo do Input de Take Profit:
+  // {showReward && <p className={styles.rewardInfo}>Ganho Estimado: {formatCurrency(rewardAmountBRL)}</p>}
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -263,7 +271,7 @@ const FuturesTradeForm = ({
           onChange={e => onLevelsChange({ ...tradeLevels, stopLoss: parseFloat(e.target.value) })} 
           step="any" 
         />
-        {riskAmountBRL > 0 && <p className={styles.riskInfo}>Risco: {formatCurrency(riskAmountBRL)}</p>}
+        {showRisk && <p className={styles.riskInfo}>Risco: {formatCurrency(riskAmountBRL)}</p>}
       </div>
 
       <div className={styles.formGroup}>
@@ -275,7 +283,7 @@ const FuturesTradeForm = ({
           onChange={e => onLevelsChange({ ...tradeLevels, takeProfit: parseFloat(e.target.value) })} 
           step="any" 
         />
-        {rewardAmountBRL > 0 && <p className={styles.rewardInfo}>Ganho Potencial: {formatCurrency(rewardAmountBRL)}</p>}
+        {showReward && <p className={styles.rewardInfo}>Ganho Potencial: {formatCurrency(rewardAmountBRL)}</p>}
       </div>
 
       <div className={styles.costEstimate} style={{ 
@@ -337,13 +345,38 @@ const FuturesPositionRow = ({ position, closePositionMutation, exchangeRate, isL
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value * exchangeRate);
     }
 
+    const initialMargin = (position.entryPrice * position.quantity) / position.leverage;
+
+    // Calculate projected PnL (Risk/Reward) in BRL
+    let riskValue = 0;
+    if (position.stopLoss) {
+        const pnl = position.side === 'LONG' 
+            ? position.stopLoss - position.entryPrice 
+            : position.entryPrice - position.stopLoss;
+        riskValue = pnl * position.quantity * exchangeRate; // Convert to BRL explicitly
+    }
+
+    let rewardValue = 0;
+    if (position.takeProfit) {
+        const pnl = position.side === 'LONG'
+            ? position.takeProfit - position.entryPrice
+            : position.entryPrice - position.takeProfit;
+        rewardValue = pnl * position.quantity * exchangeRate;
+    }
+
+    // Helper to format BRL directly from BRL value
+    const formatMoney = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
     return (
         <tr>
             <td>{position.symbol}</td>
             <td className={position.side === 'LONG' ? styles.long : styles.short}>{position.side}</td>
             <td>{position.quantity}</td>
             <td>{position.leverage}x</td>
+            <td>{formatBRL(initialMargin)}</td>
             <td>{formatBRL(position.entryPrice)}</td>
+            <td style={{ color: '#ef5350' }}>{position.stopLoss ? formatMoney(riskValue) : '-'}</td>
+            <td style={{ color: '#26a69a' }}>{position.takeProfit ? formatMoney(rewardValue) : '-'}</td>
             <td className={pnlClass}>{unrealizedPnl !== null ? formatBRL(unrealizedPnl) : '...'}</td>
             <td>{formatBRL(position.liquidationPrice)}</td>
             <td>
@@ -367,7 +400,11 @@ const FuturesPositionsList = ({ positions, isLoading, closePositionMutation, exc
                         <thead>
                             <tr>
                                 <th>Símbolo</th><th>Lado</th><th>Qtd.</th><th>Alav.</th>
-                                <th>Preço Entrada</th><th>PnL (Não Realizado)</th>
+                                <th>Margem</th>
+                                <th>Preço Entrada</th>
+                                <th>Risco (SL)</th>
+                                <th>Retorno (TP)</th>
+                                <th>PnL (Não Realizado)</th>
                                 <th>Preço Liq.</th><th>Ação</th>
                             </tr>
                         </thead>
