@@ -307,8 +307,8 @@ const Simulator = () => {
         type: AlertType.PRICE,
         config: {
           symbol: selectedCrypto,
-          price: prospectiveAlert.price,
-          condition: 'above',
+          targetPrice: prospectiveAlert.price,
+          operator: 'gt',
         },
       });
     }

@@ -542,8 +542,8 @@ const FuturesSimulator = () => {
         type: AlertType.PRICE,
         config: {
           symbol: symbol,
-          price: targetPrice,
-          condition: 'above', // Simplificação, backend ou lógica complexa poderia determinar
+          targetPrice: targetPrice,
+          operator: 'gt', // Simplificação, backend ou lógica complexa poderia determinar
         }
       });
     }

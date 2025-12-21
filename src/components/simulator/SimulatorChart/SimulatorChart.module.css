@@ -58,6 +58,41 @@
     align-items: center;
 }
 
+.createAlertBtn {
+  background-color: #2a2a2a !important;
+  border: 1px solid #444 !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.createAlertBtn:hover {
+  background-color: #4ade80 !important;
+  border-color: #4ade80 !important;
+  color: #1a1a1a !important;
+  font-weight: bold !important;
+}
+
+.cancelAlertBtn {
+  background-color: #555 !important;
+  border: 1px solid #555 !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+  
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+}
+
+.cancelAlertBtn:hover {
+  background-color: #666 !important;
+  border-color: #666 !important;
+  color: #fff !important;
+}
+
 @media (max-width: 768px) {
     .chartHeader {
         flex-direction: column; /* Stack items vertically */

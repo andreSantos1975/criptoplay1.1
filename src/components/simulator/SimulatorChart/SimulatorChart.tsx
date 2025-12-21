@@ -185,12 +185,12 @@ export const SimulatorChart = memo(({
               <Button onClick={onSaveAlert} variant="default" size="sm">
                 Salvar Alerta
               </Button>
-              <Button onClick={onCancelCreateAlert} variant="ghost" size="sm">
+              <Button onClick={onCancelCreateAlert} variant="ghost" size="sm" className={styles.cancelAlertBtn}>
                 Cancelar
               </Button>
             </>
           ) : (
-            <Button onClick={onStartCreateAlert} variant="outline" size="sm">
+            <Button onClick={onStartCreateAlert} variant="outline" size="sm" className={styles.createAlertBtn}>
               Criar Alerta
             </Button>
           )}
