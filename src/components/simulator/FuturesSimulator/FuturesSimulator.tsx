@@ -5,11 +5,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { signOut } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import styles from './FuturesSimulator.module.css';
+import { Button } from '@/components/ui/button';
 
 // Importando o gráfico existente e seus hooks de suporte
 import SimulatorChart from '@/components/simulator/SimulatorChart/SimulatorChart';
 import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
+import { CryptoList } from '@/components/dashboard/CryptoList/CryptoList'; // Import CryptoList
 
 /// --- Tipos ---
 type PositionSide = 'LONG' | 'SHORT';
@@ -386,6 +388,8 @@ const FuturesSimulator = () => {
   const [prospectiveAlert, setProspectiveAlert] = useState<{ price: number } | null>(null);
   const [tradeLevels, setTradeLevels] = useState({ entry: 0, stopLoss: 0, takeProfit: 0 });
   const [side, setSide] = useState<PositionSide>('LONG');
+  const [watchedSymbols, setWatchedSymbols] = useState<string[]>(['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'ADATUSD', 'DOGEUSDT', 'SHIBUSDT', 'BNBUSDT']);
+  const [newSymbol, setNewSymbol] = useState('');
 
   // Busca a taxa de câmbio no componente pai para ser distribuída
   const { data: exchangeRateData, isLoading: isLoadingRate } = useQuery({
@@ -553,6 +557,41 @@ const FuturesSimulator = () => {
     setProspectiveAlert(null);
   };
   
+  const handleCryptoSelect = (s: string) => {
+    setSymbol(s);
+    setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 }); // Reset levels when changing symbol
+    setProspectiveAlert(null); // Clear prospective alert
+  };
+
+  const handleDeleteSymbol = (symbolToDelete: string) => {
+    setWatchedSymbols(prev => prev.filter(s => s !== symbolToDelete));
+  };
+
+  const handleAddSymbol = async () => {
+    if (!newSymbol) return;
+    const s = newSymbol.trim().toUpperCase();
+    const formattedSymbol = s.endsWith('USDT') ? s : `${s}USDT`; // Assume USDT for futures
+
+    if (watchedSymbols.includes(formattedSymbol)) {
+        toast.error('Ativo já está na lista.');
+        setNewSymbol('');
+        return;
+    }
+    try {
+        // Verify symbol exists in futures market
+        const res = await fetch(`/api/binance/futures-klines?symbol=${formattedSymbol}&interval=1m&limit=1`);
+        if (!res.ok) throw new Error('Ativo não encontrado no mercado de Futuros da Binance.');
+        
+        setWatchedSymbols(prev => [...prev, formattedSymbol]);
+        toast.success(`${formattedSymbol} adicionado à lista!`);
+    } catch (error) {
+        if (error instanceof Error) toast.error(error.message);
+        else toast.error('Ocorreu um erro ao adicionar o ativo.');
+    } finally {
+        setNewSymbol('');
+    }
+  };
+  
   return (
     <div className={styles.simulatorContainer}>
       <AssetHeader 
@@ -606,6 +645,26 @@ const FuturesSimulator = () => {
           isLoadingRate={isLoadingRate}
         />
       </div>
+
+      <div className={styles.formContainer} style={{ gridColumn: 'span 2' }}>
+        <h3 className={styles.formTitle}>Adicionar Ativo à Lista</h3>
+        <div className={styles.addSymbolForm}>
+            <input 
+                type="text" 
+                value={newSymbol} 
+                onChange={(e) => setNewSymbol(e.target.value)} 
+                placeholder="Ex: XRP"
+                className={styles.input}
+            />
+            <Button onClick={handleAddSymbol}>Adicionar</Button>
+        </div>
+      </div>
+
+      <CryptoList
+          watchedSymbols={watchedSymbols}
+          onCryptoSelect={handleCryptoSelect}
+          onDeleteSymbol={handleDeleteSymbol}
+      />
     </div>
   );
 };

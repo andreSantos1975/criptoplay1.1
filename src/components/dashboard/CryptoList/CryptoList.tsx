@@ -165,6 +165,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect, onDeleteSymbol }: C
                             e.stopPropagation(); // Prevent row click
                             onDeleteSymbol(crypto.symbol);
                         }}
+                        className={styles.deleteButton}
                     >
                         <XCircle className="h-4 w-4" />
                     </Button>
