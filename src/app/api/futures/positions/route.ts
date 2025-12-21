@@ -43,6 +43,8 @@ export async function POST(req: Request) {
     }
 
     // --- Lógica principal ---
+
+    // --- Lógica principal ---
     // 1. Calcular a margem necessária (valor da posição / alavancagem).
     const positionValue = quantity * entryPrice;
     const margin = positionValue / leverage;

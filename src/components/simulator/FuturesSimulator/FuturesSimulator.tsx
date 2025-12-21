@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { signOut } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import styles from './FuturesSimulator.module.css';
 
@@ -48,11 +49,32 @@ interface BinanceKlineData {
   4: string; // Close
 }
 
+import { Alert } from '@prisma/client';
+
 // --- API Hooks ---
 const fetchOpenPositions = async (): Promise<FuturesPosition[]> => {
   const response = await fetch('/api/futures/positions');
   if (!response.ok) throw new Error('Falha ao buscar posições abertas.');
   return response.json();
+};
+
+const fetchAlerts = async (): Promise<Alert[]> => {
+    const response = await fetch('/api/alerts');
+    if (!response.ok) throw new Error('Falha ao buscar alertas');
+    return response.json();
+};
+
+const createAlert = async (alertData: Partial<Alert>): Promise<Alert> => {
+    const response = await fetch('/api/alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(alertData),
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Falha ao criar alerta');
+    }
+    return response.json();
 };
 
 const createPosition = async (payload: CreatePositionPayload) => {
@@ -81,6 +103,20 @@ const closePosition = async (payload: ClosePositionPayload) => {
     return response.json();
 };
 
+// --- Componentes ---
+// ... (FuturesTradeForm and FuturesPositionRow remain unchanged) ...
+// (Omitting them here for brevity in replace call, assuming replace context handles it if I target carefully or re-include entire file content if safe. 
+// Given replace tool constraints, I should target specific blocks. 
+// BUT the prompt asks to implement logic which spans across imports, hook definitions and component body.
+// I will target the Imports/API section first, then the Component Body.)
+
+// Step 1: Replace imports and API functions
+// Step 2: Replace Component Body logic
+
+// Let's try to target the FuturesSimulator component body primarily.
+
+// REPLACING ENTIRE FILE CONTENT IS SAFER IF I HAVE IT ALL, BUT I NEED TO BE CAREFUL.
+// I will target the `FuturesSimulator` component definition to inject state and logic.
 
 // --- Componentes ---
 
@@ -423,6 +459,21 @@ const FuturesSimulator = () => {
     refetchInterval: 10000,
   });
 
+  const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[], Error>({
+    queryKey: ['alerts'],
+    queryFn: fetchAlerts,
+  });
+
+  const createAlertMutation = useMutation<Alert, Error, Partial<Alert>>({
+    mutationFn: createAlert,
+    onSuccess: () => {
+        toast.success('Alerta criado com sucesso!');
+        queryClient.invalidateQueries({ queryKey: ['alerts'] });
+        setProspectiveAlert(null);
+    },
+    onError: (error) => toast.error(`Erro ao criar alerta: ${error.message}`),
+  });
+
   const createPositionMutation = useMutation({
     mutationFn: createPosition,
     onSuccess: () => {
@@ -432,7 +483,12 @@ const FuturesSimulator = () => {
     },
     onError: (error: Error) => {
       toast.dismiss();
-      toast.error(`Erro: ${error.message}`);
+      if (error.message.includes('Usuário não encontrado')) {
+          toast.error('Sessão inválida. Redirecionando para login...');
+          setTimeout(() => signOut(), 1500);
+      } else {
+          toast.error(`Erro: ${error.message}`);
+      }
     }
   });
 
@@ -448,6 +504,51 @@ const FuturesSimulator = () => {
         toast.error(`Erro: ${error.message}`);
     }
   });
+
+  // Handlers para Alertas
+  const handleStartCreateAlert = () => {
+    const currentPrice = assetHeaderData.close; // Já está em BRL se exchangeRate for aplicado no assetHeaderData?
+    // Verificar assetHeaderData.close acima. Ele pega do initialChartData RAW ou realtimeChartUpdate RAW?
+    // initialChartData é RAW (USDT). chartDataInBRL é convertido.
+    // assetHeaderData usa initialChartData RAW.
+    // Precisamos do preço em BRL se o gráfico estiver em BRL.
+    
+    // CORREÇÃO: Pegar o último preço do `chartDataInBRL` se disponível
+    const lastCloseBRL = chartDataInBRL && chartDataInBRL.length > 0 
+        ? chartDataInBRL[chartDataInBRL.length - 1].close 
+        : (assetHeaderData.close * exchangeRate);
+
+    if (lastCloseBRL > 0) {
+      setProspectiveAlert({ price: lastCloseBRL });
+    }
+  };
+
+  const handleSaveAlert = () => {
+    if (prospectiveAlert) {
+      // Se o símbolo for USDT, precisamos converter o preço do alerta de volta para USDT para salvar no banco?
+      // OU salvamos em BRL e o backend lida? O sistema de alertas parece simples.
+      // Assumindo que o alerta deve ser no valor do par. Se o par é BTCUSDT, o alerta é em USDT.
+      // Mas o usuário vê em BRL.
+      // Para simplificar, se o usuário está vendo em BRL, ele quer ser alertado naquele preço em BRL.
+      // MAS, o preço da Binance vem em USDT. O alerta precisa comparar maçãs com maçãs.
+      
+      // SOLUÇÃO: Converter o preço alvo de volta para a moeda do par (USDT) antes de salvar
+      let targetPrice = prospectiveAlert.price;
+      if (!symbol.endsWith('BRL')) {
+          targetPrice = targetPrice / exchangeRate;
+      }
+
+      createAlertMutation.mutate({
+        symbol: symbol,
+        price: targetPrice,
+        condition: 'above', // Simplificação, backend ou lógica complexa poderia determinar
+      });
+    }
+  };
+
+  const handleCancelCreateAlert = () => {
+    setProspectiveAlert(null);
+  };
   
   return (
     <div className={styles.simulatorContainer}>
@@ -470,14 +571,14 @@ const FuturesSimulator = () => {
           realtimeChartUpdate={realtimeUpdateInBRL}
           tradeLevels={tradeLevels}
           onLevelsChange={setTradeLevels}
-          tipoOperacao={side === 'LONG' ? 'compra' : 'venda'} // Pass correct type for line logic
-          alerts={[]} // Futures simulator doesn't manage alerts directly on chart
-          openPositions={[]} // Futures simulator manages its own positions
+          tipoOperacao={side === 'LONG' ? 'compra' : 'venda'}
+          alerts={alerts}
+          openPositions={[]} // Mantemos vazio pois o futures mostra posições na tabela abaixo, não desenha linhas (por enquanto)
           prospectiveAlert={prospectiveAlert}
-          onProspectiveAlertChange={() => {}} // No-op for futures
-          onStartCreateAlert={() => {}} // No-op for futures
-          onSaveAlert={() => {}} // No-op for futures
-          onCancelCreateAlert={() => {}} // No-op for futures
+          onProspectiveAlertChange={setProspectiveAlert}
+          onStartCreateAlert={handleStartCreateAlert}
+          onSaveAlert={handleSaveAlert}
+          onCancelCreateAlert={handleCancelCreateAlert}
         />
       </div>
 
@@ -487,7 +588,7 @@ const FuturesSimulator = () => {
           setSymbol={setSymbol} 
           createPositionMutation={createPositionMutation} 
           isCreating={createPositionMutation.isPending}
-          currentPrice={assetHeaderData.close} // Preço em Dólar (USDT) ou BRL dependendo do par, mas assetHeaderData já vem convertido se for BRL? Não, assetHeaderData.close vem do useMemo que não aplicou conversão no assetHeaderData. Vamos verificar.
+          currentPrice={assetHeaderData.close} 
           exchangeRate={exchangeRate}
           tradeLevels={tradeLevels}
           onLevelsChange={setTradeLevels}
