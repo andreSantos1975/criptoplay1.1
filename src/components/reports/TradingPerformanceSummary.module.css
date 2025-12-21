@@ -1,0 +1,93 @@
+.summaryGrid {
+  display: grid;
+  gap: 1rem; /* 16px */
+}
+
+/* Responsividade para desktop e telas maiores */
+@media (min-width: 768px) { /* md */
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) { /* lg */
+  .summaryGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.card {
+  background-color: var(--card-background); /* Usar variável CSS se disponível ou cor padrão */
+  border: 1px solid var(--border-color); /* Usar variável CSS ou cor padrão */
+  border-radius: 0.5rem; /* 8px */
+  padding: 1rem; /* 16px */
+  display: flex;
+  flex-direction: column;
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem; /* 8px */
+}
+
+.cardTitle {
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500; /* font-medium */
+}
+
+.cardIcon {
+  height: 1rem; /* h-4 */
+  width: 1rem; /* w-4 */
+}
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.cardValue {
+  font-size: 1.5rem; /* text-2xl */
+  font-weight: 700; /* font-bold */
+}
+
+.cardDescription {
+  font-size: 0.75rem; /* text-xs */
+  color: var(--text-muted-foreground); /* Usar variável CSS ou cor padrão */
+}
+
+/* Cores específicas para valores */
+.textGreen {
+  color: #22c55e; /* green-500 */
+}
+
+.textGreen600 {
+  color: #16a34a; /* green-600 */
+}
+
+.textRed {
+  color: #ef4444; /* red-500 */
+}
+
+.textRed600 {
+  color: #dc2626; /* red-600 */
+}
+
+.textBlue {
+  color: #3b82f6; /* blue-500 */
+}
+
+.textYellow600 {
+  color: #eab308; /* yellow-600 */
+}
+
+.errorMessage {
+  padding: 1rem;
+  color: #ef4444; /* red-500 */
+}
+
+.loadingMessage {
+  padding: 1rem;
+}

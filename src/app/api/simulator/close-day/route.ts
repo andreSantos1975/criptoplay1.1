@@ -3,9 +3,10 @@ import prisma from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { getCurrentPrice } from '@/lib/binance';
 
-// Esta é a função que será chamada pelo cron job diariamente
-// Ela não é para ser chamada pelo frontend diretamente.
-// Por segurança, podemos adicionar uma verificação de 'secret' ou 'cron job key' no futuro.
+// Esta função é chamada diariamente pelo Cron Job.
+// ATUALIZADO: Agora suporta Swing Trade (Binance Futures Style).
+// Não fecha mais as posições compulsoriamente. Apenas calcula o valor de mercado (Equity)
+// e salva o snapshot na tabela DailyPerformance.
 
 export async function POST(request: Request) {
   // --- Verificação de Segurança do Cron Job ---
@@ -14,20 +15,21 @@ export async function POST(request: Request) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  console.log('Iniciando processo de fechamento diário do simulador...');
+  console.log('Iniciando processamento diário de snapshot do simulador (Swing Trade)...');
 
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Normaliza para o início do dia
 
-    // 1. Obter todos os usuários que têm saldo virtual
-    // (no futuro, podemos otimizar para pegar apenas usuários com operações abertas)
     const users = await prisma.user.findMany();
 
     for (const user of users) {
-      console.log(`Processando usuário: ${user.id}`);
-
-      const startingBalance = user.virtualBalance; // Saldo no início do processamento
+      // O 'startingBalance' para o gráfico de performance deve ser o patrimônio total (Equity)
+      // do dia anterior. Se não houver, assume o virtualBalance atual.
+      // Para simplificar a lógica deste loop, vamos calcular o Equity ATUAL e salvar.
+      
+      const cashBalance = new Decimal(user.virtualBalance);
+      let unrealizedPnlTotal = new Decimal(0);
 
       // 2. Encontrar todas as operações de SIMULATOR abertas para o usuário
       const openTrades = await prisma.trade.findMany({
@@ -38,74 +40,82 @@ export async function POST(request: Request) {
         },
       });
 
-      if (openTrades.length === 0) {
-        console.log(`Usuário ${user.id} não possui operações abertas. Pulando.`);
-        // Mesmo sem operações, podemos querer salvar um registro de performance
-        // se o saldo mudou por outros motivos. Por enquanto, vamos pular.
-        continue;
-      }
+      // Se não tem trades abertos, o Equity é apenas o saldo em caixa.
+      // Ainda assim, queremos registrar isso para ter histórico contínuo se desejado,
+      // ou podemos pular se nada mudou. Vamos registrar para manter a linha do gráfico.
+      
+      if (openTrades.length > 0) {
+        console.log(`Usuário ${user.id} possui ${openTrades.length} operações abertas. Calculando PnL não realizado...`);
 
-      let currentBalance = new Decimal(user.virtualBalance);
+        for (const trade of openTrades) {
+          let currentMarketPrice: Decimal;
+          try {
+            currentMarketPrice = await getCurrentPrice(trade.symbol);
+          } catch (error) {
+            console.error(`Não foi possível obter o preço para ${trade.symbol}. Ignorando no cálculo de PnL.`, error);
+            continue;
+          }
 
-      // 3. Simular o fechamento de cada operação
-      for (const trade of openTrades) {
-        let currentMarketPrice: Decimal;
-        try {
-          // Obter o preço de mercado real da Binance
-          currentMarketPrice = await getCurrentPrice(trade.symbol);
-        } catch (error) {
-          console.error(`Não foi possível obter o preço para ${trade.symbol}. Pulando operação ${trade.id}.`, error);
-          continue; // Pula para a próxima operação
+          let tradePnl = new Decimal(0);
+
+          if (trade.type === 'BUY') {
+            // Long: Lucro se preço sobe
+            tradePnl = currentMarketPrice.sub(trade.entryPrice).mul(trade.quantity);
+          } else if (trade.type === 'SELL') {
+            // Short: Lucro se preço desce
+            tradePnl = trade.entryPrice.sub(currentMarketPrice).mul(trade.quantity);
+          }
+
+          unrealizedPnlTotal = unrealizedPnlTotal.add(tradePnl);
         }
-
-        const pnl = currentMarketPrice.sub(trade.entryPrice).mul(trade.quantity);
-
-        // Atualiza o saldo do usuário com o resultado da operação
-        currentBalance = currentBalance.add(pnl);
-        
-        // "Fecha" a operação no banco de dados
-        await prisma.trade.update({
-          where: { id: trade.id },
-          data: {
-            exitPrice: currentMarketPrice,
-            exitDate: new Date(),
-            status: 'CLOSED',
-            pnl: pnl,
-          },
-        });
-        console.log(`Operação ${trade.id} fechada com PnL de ${pnl.toFixed(2)}`);
       }
 
-      // 4. Atualizar o saldo final do usuário no banco de dados
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          virtualBalance: currentBalance,
-        },
+      // Equity = Saldo em Caixa + Lucro/Prejuízo Aberto
+      const currentEquity = cashBalance.add(unrealizedPnlTotal);
+
+      // Busca o último registro de performance para calcular o ganho percentual diário relativo
+      const lastPerformance = await prisma.dailyPerformance.findFirst({
+        where: { userId: user.id },
+        orderBy: { date: 'desc' },
       });
 
-      // 5. Calcular a performance e salvar o registro diário
-      const dailyPercentageGain = startingBalance.eq(0)
-        ? new Decimal(0)
-        : currentBalance.sub(startingBalance).div(startingBalance).mul(100);
+      const previousEquity = lastPerformance ? lastPerformance.endingBalance : cashBalance;
 
-      await prisma.dailyPerformance.create({
-        data: {
+      const dailyPercentageGain = previousEquity.eq(0)
+        ? new Decimal(0)
+        : currentEquity.sub(previousEquity).div(previousEquity).mul(100);
+
+      // Salva ou atualiza o registro de hoje
+      // Usamos upsert para garantir que se o cron rodar 2x no dia, não duplique
+      await prisma.dailyPerformance.upsert({
+        where: {
+          userId_date: {
+            userId: user.id,
+            date: today,
+          }
+        },
+        update: {
+          startingBalance: previousEquity, // O final de ontem é o começo de hoje
+          endingBalance: currentEquity,
+          dailyPercentageGain: dailyPercentageGain.toNumber(),
+        },
+        create: {
           userId: user.id,
           date: today,
-          startingBalance: startingBalance,
-          endingBalance: currentBalance,
+          startingBalance: previousEquity,
+          endingBalance: currentEquity,
           dailyPercentageGain: dailyPercentageGain.toNumber(),
         },
       });
-      console.log(`Performance diária do usuário ${user.id} salva.`);
+
+      console.log(`Snapshot salvo para usuário ${user.id}. Equity: ${currentEquity.toFixed(2)} (Caixa: ${cashBalance.toFixed(2)} + PnL: ${unrealizedPnlTotal.toFixed(2)})`);
     }
 
-    console.log('Processo de fechamento diário concluído com sucesso.');
-    return NextResponse.json({ message: 'Processo de fechamento diário concluído com sucesso.' });
+    console.log('Processo de snapshot diário concluído com sucesso.');
+    return NextResponse.json({ message: 'Snapshot diário concluído.' });
 
   } catch (error) {
-    console.error('Erro no processo de fechamento diário:', error);
+    console.error('Erro no processo diário:', error);
     if (error instanceof Error) {
       return new NextResponse(JSON.stringify({ message: 'Erro no servidor', error: error.message }), { status: 500 });
     }

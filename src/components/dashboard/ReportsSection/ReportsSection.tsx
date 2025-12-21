@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
 import Modal from "@/components/ui/modal/Modal";
+import { TradingPerformanceSummary } from "@/components/reports/TradingPerformanceSummary";
 
 // Interfaces
 interface Trade {
@@ -315,6 +316,12 @@ export const ReportsSection = () => {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Performance Avançada */}
+      <div style={{ marginBottom: '2rem' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Performance Avançada</h2>
+        <TradingPerformanceSummary />
       </div>
 
       {/* Gráficos */}
