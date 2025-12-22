@@ -321,7 +321,7 @@ export const ReportsSection = () => {
       {/* Performance Avançada */}
       <div style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Performance Avançada</h2>
-        <TradingPerformanceSummary />
+        <TradingPerformanceSummary trades={trades} />
       </div>
 
       {/* Gráficos */}

@@ -46,16 +46,24 @@ const TradingCard: React.FC<TradingCardProps> = ({ title, value, icon: Icon, des
 );
 
 
-export const TradingPerformanceSummary = () => {
-  const { data: trades = [], isLoading, error } = useQuery<Trade[]>({
+interface TradingPerformanceSummaryProps {
+  trades?: Trade[]; // Tornar trades um prop opcional
+}
+
+export const TradingPerformanceSummary: React.FC<TradingPerformanceSummaryProps> = ({ trades: propTrades }) => {
+  const { data: fetchedTrades = [], isLoading, error } = useQuery<Trade[]>({
     queryKey: ["simulatorTrades"],
     queryFn: fetchTrades,
+    enabled: !propTrades, // Apenas busca se os trades não forem fornecidos via prop
   });
 
-  if (isLoading) return <div className={styles.loadingMessage}>Carregando métricas de trading...</div>;
-  if (error) return <div className={styles.errorMessage}>Erro ao carregar dados de trading.</div>;
+  const tradesToUse = propTrades || fetchedTrades;
 
-  const stats = calculateTradingStats(trades);
+  if (isLoading && !propTrades) return <div className={styles.loadingMessage}>Carregando métricas de trading...</div>;
+  if (error && !propTrades) return <div className={styles.errorMessage}>Erro ao carregar dados de trading.</div>;
+  if (!tradesToUse.length && !isLoading && !error) return <div className={styles.noDataMessage}>Nenhum trade para analisar.</div>;
+
+  const stats = calculateTradingStats(tradesToUse);
 
   const cardsData = [
     {

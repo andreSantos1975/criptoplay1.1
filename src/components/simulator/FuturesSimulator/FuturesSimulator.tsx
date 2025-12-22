@@ -521,6 +521,8 @@ const FuturesSimulator = () => {
       toast.dismiss();
       toast.success('Posição aberta com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['futuresPositions'] });
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
+      queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
     },
     onError: (error: Error) => {
       toast.dismiss();
@@ -539,6 +541,8 @@ const FuturesSimulator = () => {
         toast.dismiss();
         toast.success('Posição fechada com sucesso!');
         queryClient.invalidateQueries({ queryKey: ['futuresPositions'] });
+        queryClient.invalidateQueries({ queryKey: ['trades'] });
+        queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
     },
     onError: (error: Error) => {
         toast.dismiss();

@@ -120,6 +120,66 @@ const closeSimulatorPosition = async (symbol: string): Promise<{ message: string
     return response.json();
 };
 
+// Componente auxiliar para Input Decimal
+const DecimalInput = ({
+  value,
+  onChange,
+  className,
+  id,
+  required = false
+}: {
+  value: number;
+  onChange: (val: number) => void;
+  className?: string;
+  id?: string;
+  required?: boolean;
+}) => {
+  const [displayValue, setDisplayValue] = useState(value === 0 ? '' : value.toString().replace('.', ','));
+
+  useEffect(() => {
+    // Convert current displayValue to a number for comparison
+    const currentNum = parseFloat(displayValue.replace(',', '.'));
+    
+    // Only update displayValue from 'value' prop if it's truly different
+    // This prevents cursor jumps while typing.
+    // Small epsilon for float comparison
+    const epsilon = 0.00000001; 
+    if (Math.abs(value - (isNaN(currentNum) ? 0 : currentNum)) > epsilon) {
+      setDisplayValue(value === 0 ? '' : value.toString().replace('.', ','));
+    }
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVal = e.target.value;
+    
+    // Filtra para permitir apenas números, vírgula e ponto
+    if (!/^[0-9.,]*$/.test(newVal)) {
+      return; 
+    }
+
+    setDisplayValue(newVal);
+
+    // Normaliza para ponto para o parseFloat
+    const normalized = newVal.replace(',', '.');
+    const parsed = parseFloat(normalized);
+    // Envia 0 se não for um número válido (ex: apenas "-")
+    onChange(isNaN(parsed) ? 0 : parsed);
+  };
+
+  return (
+    <input
+      id={id}
+      type="text"
+      inputMode="decimal"
+      value={displayValue}
+      onChange={handleChange}
+      className={className}
+      required={required}
+      autoComplete="off"
+    />
+  );
+};
+
 
 const Simulator = () => {
   const queryClient = useQueryClient();
@@ -190,6 +250,8 @@ const Simulator = () => {
     onSuccess: () => {
       toast.success('Ordem de simulação aberta com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
+      queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
       setQuantity(0.01);
       setStopLoss(0);
       setTakeProfit(0);
@@ -222,6 +284,8 @@ const Simulator = () => {
     onSettled: () => {
       setClosingPositionSymbol(null);
       queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
+      queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
     },
   });
 
@@ -277,9 +341,19 @@ const Simulator = () => {
   const rewardAmount = entryPrice > 0 && takeProfit > 0 ? (takeProfit - entryPrice) * quantity : 0;
 
   const estimatedCostUSDT = quantity * entryPrice;
-  const estimatedCostBRL = selectedCrypto.endsWith('BRL') 
+  const isBrlPair = selectedCrypto.endsWith('BRL');
+  const estimatedCostBRL = isBrlPair 
     ? estimatedCostUSDT 
     : estimatedCostUSDT * usdtToBrlRate;
+  
+  // Calculate Risk and Reward in BRL correctly
+  const riskAmountBRL = isBrlPair 
+      ? riskAmount 
+      : riskAmount * usdtToBrlRate;
+      
+  const rewardAmountBRL = isBrlPair 
+      ? rewardAmount 
+      : rewardAmount * usdtToBrlRate;
 
 
   // --- MANIPULADORES ---
@@ -426,14 +500,11 @@ const Simulator = () => {
               <div className={styles.formGroup}><label>Ativo: {selectedCrypto}</label></div>
               <div className={styles.formGroup}>
                 <label htmlFor="quantity">Quantidade</label>
-                <input 
+                <DecimalInput 
                   id="quantity" 
-                  type="number" 
                   value={quantity} 
-                  onChange={(e) => setQuantity(Number(e.target.value))} 
+                  onChange={setQuantity} 
                   className={styles.input} 
-                  step="any" // Allow any decimal precision
-                  min="0" // Minimum quantity of 0
                   required 
                 />
                 {quantity > 0 && entryPrice > 0 && (
@@ -442,13 +513,27 @@ const Simulator = () => {
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="stopLoss">Stop Loss</label>
-                <input id="stopLoss" type="number" value={stopLoss === 0 ? '' : stopLoss} onChange={(e) => setStopLoss(Number(e.target.value))} className={styles.input} step="0.01" />
-                  {riskAmount > 0 && <p className={styles.riskInfo}>Risco: {formatCurrency(riskAmount)}</p>}
+                <DecimalInput 
+                  id="stopLoss" 
+                  value={stopLoss} 
+                  onChange={setStopLoss} 
+                  className={styles.input} 
+                />
+                  {riskAmount > 0 && (
+                    <p className={styles.riskInfo}>Risco Estimado: {formatCurrency(riskAmountBRL)}</p>
+                  )}
               </div>
                 <div className={styles.formGroup}>
                 <label htmlFor="takeProfit">Take Profit</label>
-                <input id="takeProfit" type="number" value={takeProfit === 0 ? '' : takeProfit} onChange={(e) => setTakeProfit(Number(e.target.value))} className={styles.input} step="0.01" />
-                {rewardAmount > 0 && <p className={styles.rewardInfo}>Ganho Potencial: {formatCurrency(rewardAmount)}</p>}
+                <DecimalInput 
+                  id="takeProfit" 
+                  value={takeProfit} 
+                  onChange={setTakeProfit} 
+                  className={styles.input} 
+                />
+                {rewardAmount > 0 && (
+                  <p className={styles.rewardInfo}>Ganho Potencial: {formatCurrency(rewardAmountBRL)}</p>
+                )}
               </div>
               <button type="submit" className={styles.submitButton} disabled={createSimulatorTradeMutation.isPending || !entryPrice}>
                   {createSimulatorTradeMutation.isPending ? 'Enviando...' : 'Comprar'}
