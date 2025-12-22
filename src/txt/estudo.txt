@@ -32,3 +32,17 @@ A Diferença de Conceito
   Manter essa separação é crucial para a saúde e precisão dos seus relatórios financeiros. É
   exatamente por isso que estou adicionando a funcionalidade de "Movimentação de Capital" que
   estava faltando no seu painel principal.
+
+  ===================================================================================
+
+  ----------------------- 22/12/2025 ---------------------------------------------
+
+     * Orçamento Anual (já presente no Sidebar):
+       * Foco Principal: Gerenciamento do fluxo de dinheiro (receitas e despesas) ao longo
+         de um ano. É sobre controlar para onde seu dinheiro está indo e garantir que você
+         não gaste mais do que ganha.
+       * Perguntas que responde: Quanto eu ganho? Quanto eu gasto em moradia, alimentação,
+         transporte, etc.? Onde posso cortar gastos? Quanto consigo poupar
+         mensalmente/anualmente?
+       * Natureza: É mais sobre o controle do presente e do curto prazo, garantindo a saúde
+         financeira diária/mensal.

@@ -27,6 +27,8 @@ const Sidebar = () => {
           )}
         </Link>
         <Link href="/orcamento-anual" className={styles.link}>Orçamento Anual</Link>
+        <Link href="/calculadora-juros" className={styles.link}>Calculadora de Juros</Link>
+        <Link href="/metas" className={styles.link}>Metas Financeiras</Link>
       </nav>
     </aside>
   );

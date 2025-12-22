@@ -202,3 +202,72 @@ Insights automáticos (“Você gastou 20% a mais com transporte este mês”).
 
          1. Estrutura (HTML): src/components/simulator/FuturesSimulator/FuturesSimulator.tsx
    2. Estilo (CSS): src/components/simulator/FuturesSimulator/FuturesSimulator.module.css
+
+   ===================================================================================
+
+   -----------------------------  22/12/2025 ----------------------------------------
+
+    Para implementar o sistema de Projeção de Juros Compostos e elevar o nível da sua
+  plataforma para algo verdadeiramente profissional, tenho as seguintes sugestões de
+  arquitetura e novas funcionalidades para a Sidebar:
+
+  1. Implementação da "Calculadora de Projeção" (O que você pediu)
+
+  Para o recurso de juros compostos, sugiro criar uma nova página chamada "Simulador de
+  Futuro" ou "Projeção de Patrimônio".
+
+  Funcionalidades Essenciais:
+   * Inputs: Aporte Inicial, Aporte Mensal, Taxa de Juros (Anual/Mensal), Tempo
+     (Anos/Meses).
+   * Gráfico Comparativo: Uma linha mostrando o "Total Investido" (sem juros) vs.
+     "Patrimônio Total" (com juros compostos). Isso visualiza o efeito "bola de neve".
+   * Cards de Resultado: Total Acumulado, Total em Juros (o dinheiro que "trabalhou" por
+     você).
+   * Tabela Detalhada: Evolução ano a ano.
+
+  Como implementar:
+   1. Criar nova rota: src/app/simulador-juros/page.tsx.
+   2. Adicionar link no Sidebar.tsx.
+   3. Usar a biblioteca recharts (que já está no projeto) para o gráfico de área ou linha.
+
+  ---
+
+  2. O que mais implementar na Sidebar (Sugestões Profissionais)
+
+  Para acompanhar Contas/Cartões, Relatórios, Alertas e Orçamento, aqui estão 3 módulos que
+  tornariam o sistema completo:
+  A. Metas Financeiras (Goals)
+  Em vez de apenas guardar dinheiro, o usuário guarda para um objetivo.
+   * Como funciona: O usuário cria uma meta (ex: "Viagem Eurotrip", "Comprar Carro",
+     "Aposentadoria"). Ele define o valor alvo e a data limite.
+   * Profissionalismo: O sistema calcula quanto ele precisa poupar por mês para atingir a
+     meta na data estipulada e mostra uma barra de progresso % para cada meta.
+   * Link na Sidebar: "Metas Financeiras".
+
+  B. Calculadora de Inflação / Poder de Compra
+  Para um investidor profissional, R$ 1 milhão hoje não é a mesma coisa que R$ 1 milhão
+  daqui a 10 anos.
+   * Como funciona: Uma ferramenta onde o usuário projeta o valor futuro descontando uma
+     inflação média (IPCA).
+   * Profissionalismo: Mostra o "Ganho Real" acima da inflação. Isso educa o usuário a
+     buscar rentabilidades que superem o IPCA.
+   * Link na Sidebar: "Calculadora de Inflação" (ou integrado na Projeção).
+
+  C. Gestão de Dívidas (Snowball/Avalanche)
+  Se a plataforma visa saúde financeira completa, gerenciar o passivo é tão importante
+  quanto o ativo.
+   * Como funciona: O usuário cadastra dívidas com suas taxas de juros. O sistema sugere
+     qual pagar primeiro (Matemática vs. Psicológica).
+   * Link na Sidebar: "Gestão de Dívidas".
+
+  ---
+
+  Plano de Ação
+
+  Sugiro começarmos implementando a Calculadora de Juros Compostos que você solicitou, pois
+  ela gera muito valor visual e engajamento.
+
+  Posso criar a página `src/app/simulador-juros/page.tsx` e adicionar o link no
+  `Sidebar.tsx` agora?
+
+  Se aprovar, farei uma interface limpa com um gráfico bonito usando as cores do seu tema.
