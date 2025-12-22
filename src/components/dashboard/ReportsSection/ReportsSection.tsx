@@ -22,19 +22,9 @@ import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
 import Modal from "@/components/ui/modal/Modal";
 import { TradingPerformanceSummary } from "@/components/reports/TradingPerformanceSummary";
+import { Trade } from "@prisma/client";
 
 // Interfaces
-interface Trade {
-  id: string;
-  symbol: string;
-  type: string;
-  status: "OPEN" | "CLOSED";
-  entryDate: string;
-  exitDate?: string;
-  quantity: number;
-  pnl?: number;
-}
-
 interface BinanceTicker {
   symbol: string;
   lastPrice: string;

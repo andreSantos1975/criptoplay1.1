@@ -147,7 +147,7 @@ const DecimalInput = ({
     if (Math.abs(value - (isNaN(currentNum) ? 0 : currentNum)) > epsilon) {
       setDisplayValue(value === 0 ? '' : value.toString().replace('.', ','));
     }
-  }, [value]);
+  }, [value, displayValue]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVal = e.target.value;

@@ -89,7 +89,7 @@ const MetasPage = () => {
         <div style={{ textAlign: 'center', padding: '4rem', color: '#a1a1aa', border: '1px dashed #3f3f46', borderRadius: '0.5rem' }}>
           <Target size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
           <p>Você ainda não tem metas definidas.</p>
-          <p>Clique em "Nova Meta" para começar.</p>
+          <p>Clique em &quot;Nova Meta&quot; para começar.</p>
         </div>
       ) : (
         <div className={styles.goalsGrid}>
