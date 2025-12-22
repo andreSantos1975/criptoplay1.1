@@ -103,10 +103,21 @@
 }
 
 .deleteButton {
-  color: #fff !important; /* Force white color for the icon */
-  background-color: transparent !important; /* Ensure background is transparent */
+  background-color: transparent !important;
 }
 
-.deleteButton:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important; /* Subtle hover effect */
+.deleteButtonDark {
+  color: #fff;
+}
+
+.deleteButtonDark:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.deleteButtonLight {
+  color: #4b5563; /* Cinza escuro para contraste em fundo branco */
+}
+
+.deleteButtonLight:hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
 }

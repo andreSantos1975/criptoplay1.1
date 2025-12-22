@@ -561,6 +561,7 @@ const Simulator = () => {
           watchedSymbols={watchedSymbols}
           onCryptoSelect={handleCryptoSelect}
           onDeleteSymbol={handleDeleteSymbol}
+          theme="light"
       />
     </div>
   );

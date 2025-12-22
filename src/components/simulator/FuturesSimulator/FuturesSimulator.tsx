@@ -705,6 +705,7 @@ const FuturesSimulator = () => {
           watchedSymbols={watchedSymbols}
           onCryptoSelect={handleCryptoSelect}
           onDeleteSymbol={handleDeleteSymbol}
+          theme="dark"
       />
     </div>
   );

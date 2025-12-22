@@ -84,9 +84,10 @@ interface CryptoListProps {
   watchedSymbols: string[];
   onCryptoSelect: (symbol: string) => void;
   onDeleteSymbol: (symbol: string) => void; // New prop for deleting a symbol
+  theme?: 'light' | 'dark';
 }
 
-export const CryptoList = ({ watchedSymbols, onCryptoSelect, onDeleteSymbol }: CryptoListProps) => {
+export const CryptoList = ({ watchedSymbols, onCryptoSelect, onDeleteSymbol, theme = 'dark' }: CryptoListProps) => {
   const { data: cryptos, isLoading, error } = useQuery<CryptoData[]>({
     queryKey: ["cryptos", watchedSymbols],
     queryFn: () => fetchCryptoData(watchedSymbols),
@@ -165,7 +166,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect, onDeleteSymbol }: C
                             e.stopPropagation(); // Prevent row click
                             onDeleteSymbol(crypto.symbol);
                         }}
-                        className={styles.deleteButton}
+                        className={`${styles.deleteButton} ${theme === 'light' ? styles.deleteButtonLight : styles.deleteButtonDark}`}
                     >
                         <XCircle className="h-4 w-4" />
                     </Button>
