@@ -7,6 +7,7 @@ interface AlertListProps {
   alerts: Alert[];
   budgetCategories: BudgetCategory[];
   onEdit: (alert: Alert) => void;
+  exchangeRate?: number;
 }
 
 const getAlertTypeText = (type: AlertType) => {
@@ -22,7 +23,7 @@ const getAlertTypeText = (type: AlertType) => {
   }
 };
 
-const AlertList = ({ alerts, budgetCategories, onEdit }: AlertListProps) => {
+const AlertList = ({ alerts, budgetCategories, onEdit, exchangeRate = 1 }: AlertListProps) => {
   const deleteAlertMutation = useDeleteAlert();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -33,20 +34,24 @@ const AlertList = ({ alerts, budgetCategories, onEdit }: AlertListProps) => {
     }, {} as Record<string, string>);
   }, [budgetCategories]);
 
-  const priceFormatter = useMemo(() => {
+  const formatPrice = (value: number, symbol: string) => {
+    const isBRLPair = symbol?.endsWith('BRL');
+    // Se não for par BRL, converte usando a taxa (valor * exchangeRate)
+    const finalValue = isBRLPair ? value : value * exchangeRate;
+
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-      minimumFractionDigits: 2, // Always show at least 2 decimal places
-      maximumFractionDigits: 8, // Max 8 for crypto, will adjust automatically
-    });
-  }, []);
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 8,
+    }).format(finalValue);
+  };
 
   const getAlertConditionText = (alert: Alert) => {
     const config = alert.config as any;
     switch (alert.type) {
       case AlertType.PRICE:
-        const formattedPrice = priceFormatter.format(config.targetPrice || 0);
+        const formattedPrice = formatPrice(config.targetPrice || 0, config.symbol || '');
         return `${config.symbol} ${config.operator === 'gt' ? '>' : '<'} ${formattedPrice}`;
       case AlertType.BUDGET:
         const categoryName = categoryMap[config.categoryId] || 'Categoria desconhecida';

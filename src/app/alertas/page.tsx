@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import styles from './alertas.module.css';
 import AlertForm from '@/components/alerts/AlertForm/AlertForm';
 import AlertList from '@/components/alerts/AlertList/AlertList';
@@ -18,6 +19,17 @@ const AlertasPage = () => {
   const { data: budgetCategories, isLoading: isLoadingCategories, error: errorCategories } = useBudgetCategories();
   const { notificationCount, mutate: mutateNotifications } = useAlertNotification();
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const { data: exchangeRateData } = useQuery({
+    queryKey: ['usdtToBrlRate'],
+    queryFn: async () => {
+      const response = await fetch('/api/exchange-rate');
+      if (!response.ok) throw new Error('Falha ao buscar taxa de câmbio.');
+      return response.json();
+    },
+    staleTime: 60000,
+  });
+  const usdtToBrl = exchangeRateData?.usdtToBrl || 1;
 
   useEffect(() => {
     const acknowledgeNotifications = async () => {
@@ -86,7 +98,7 @@ const AlertasPage = () => {
       );
     }
 
-    return <AlertList alerts={alerts} budgetCategories={budgetCategories || []} onEdit={handleEdit} />;
+    return <AlertList alerts={alerts} budgetCategories={budgetCategories || []} onEdit={handleEdit} exchangeRate={usdtToBrl} />;
   }
 
   return (
