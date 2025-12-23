@@ -39,12 +39,19 @@ export async function POST(req: Request) {
       consultar_curso: tool({
         description: 'Busca informações no conteúdo do curso "Jornada Cripto". Use isso para responder perguntas sobre o que é ensinado, definições e guias.',
         parameters: z.object({
-          termo_busca: z.string().describe('O termo ou frase principal para buscar no material do curso.'),
+          termo_busca: z.string().describe('O termo de busca OBRIGATÓRIO para encontrar informações no material do curso. Ex: "Hardware Wallet" ou "gerenciamento de risco".'),
         }),
-        execute: async ({ termo_busca }) => {
-          console.log(`[ChatAPI] Consultar curso: ${termo_busca}`);
+        execute: async (args) => {
+          console.log('[ChatAPI] Args recebidos:', JSON.stringify(args));
+          const termo = args.termo_busca;
+          
+          if (!termo) {
+            return 'Erro: Termo de busca não fornecido.';
+          }
+
+          console.log(`[ChatAPI] Consultar curso: ${termo}`);
           try {
-            const context = searchCourseContent(termo_busca);
+            const context = searchCourseContent(termo);
             console.log(`[ChatAPI] Resultado busca: ${context ? 'Encontrado' : 'Vazio'}`);
             return context || 'Nenhuma informação relevante encontrada no curso para este termo.';
           } catch (e) {
