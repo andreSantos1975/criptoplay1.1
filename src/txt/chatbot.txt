@@ -1,0 +1,54 @@
+O RAG (Retrieval-Augmented Generation) foi implementado com sucesso!
+
+  O que foi feito:
+
+   1. Ferramenta de Busca (`src/lib/course.ts`):
+       * Criei a função searchCourseContent(query) que lê os arquivos markdown do curso na
+         pasta content/jornada-cripto/.
+       * Ela divide o conteúdo em parágrafos e faz uma busca por palavras-chave ponderada,
+         retornando os 5 trechos mais relevantes.
+
+   2. Integração com a IA (`src/app/api/chat/route.ts`):
+       * Mudei o runtime de edge para nodejs (necessário para ler arquivos do sistema).
+       * Adicionei a ferramenta consultar_curso ao modelo Gemini.
+       * Atualizei o System Prompt para instruir a IA a usar essa ferramenta sempre que o
+         usuário perguntar sobre conteúdo educacional.
+
+  Como testar agora:
+  Se você perguntar no chat algo como:
+  "O que o curso fala sobre Hardware Wallets?"
+  ou
+  "Quais são as criptomoedas mais seguras segundo o curso?"
+
+  A IA vai automaticamente:
+   1. Perceber que precisa consultar o curso.
+   2. Chamar a função de busca interna.
+   3. Ler os trechos relevantes dos arquivos .md.
+   4. Responder com precisão baseada no seu material.
+
+  Deseja continuar com a próxima etapa: "Contexto e Personalização" (lembrar nome do
+  usuário, perfil, etc.)?
+
+  -----------------------------
+
+  O Contexto e Personalização foram implementados com sucesso!
+
+  O que foi feito:
+
+   1. Integração com NextAuth:
+       * O endpoint do chat (api/chat/route.ts) agora recupera a sessão do usuário logado
+         usando getServerSession(authOptions).
+
+   2. Injeção de Prompt Dinâmico:
+       * Se o usuário estiver logado, a IA recebe um bloco de contexto invisível contendo:
+           * Nome: Para tratá-lo de forma mais humana.
+           * Email: Para identificação se necessário.
+           * Status da Assinatura: A IA pode adaptar a resposta (ex: sugerir upgrade se for
+             'free' ou agradecer se for 'vip').
+
+  Resultado Prático:
+  Se eu estiver logado como "André", a conversa muda de:
+   * IA: "Olá! Como posso ajudar?"
+  Para:
+   * IA: "Olá André! Como posso ajudar com seus investimentos hoje?" (ou algo similar,
+     dependendo do modelo).

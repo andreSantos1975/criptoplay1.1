@@ -5,7 +5,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import styles from './AIChatWidget.module.css';
 
 export const AIChatWidget: React.FC = () => {
-  const { messages, sendMessage, status } = useChat({});
+  const { messages, sendMessage, status } = useChat({
+    onError: (error) => {
+      console.error('[ChatWidget] Error:', error);
+    }
+  });
   const isLoading = status === 'submitted' || status === 'streaming';
   const [input, setInput] = useState('');
   const [isOpen, setIsOpen] = useState(false);
