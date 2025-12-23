@@ -286,6 +286,3 @@ Insights automáticos (“Você gastou 20% a mais com transporte este mês”).
   Você gostaria de prosseguir com a implementação do RAG (Retrieval Augmented Generation)
   para que a IA possa responder perguntas com base no seu conteúdo Markdown? Ou quer testar
 ────────────────────────────────
-Esse erro acontece porque, embora você tenha uma Chave (API Key) válida, o serviço
-  específico que processa as mensagens (chamado Generative Language API) não está "ligado"
-  no projeto do Google Cloud onde essa chave foi criada.

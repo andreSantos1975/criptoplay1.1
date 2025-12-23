@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from '@ai-sdk/react';
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styles from './AIChatWidget.module.css';
 
 export const AIChatWidget: React.FC = () => {
@@ -9,6 +9,13 @@ export const AIChatWidget: React.FC = () => {
   const isLoading = status === 'submitted' || status === 'streaming';
   const [input, setInput] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isLoading]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -42,7 +49,14 @@ export const AIChatWidget: React.FC = () => {
             {m.parts.filter(p => p.type === 'text').map(p => (p as any).text).join('')}
           </div>
         ))}
-        {isLoading && <div className={styles.loadingMessage}>Digitando...</div>}
+        {isLoading && (
+          <div className={styles.typingIndicator}>
+            <div className={styles.typingDot}></div>
+            <div className={styles.typingDot}></div>
+            <div className={styles.typingDot}></div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
       <form onSubmit={handleSubmit} className={styles.inputForm}>
         <input
