@@ -123,68 +123,66 @@
    3. Avançado: Criar o "Coach de Trading" que lê a tabela Trade do Prisma e gera insights
       de texto.
       
-      ---------------------------------------- 2
+=====================================================================================
 
+------------------------- 23/12/2025 -------------------------------------------------
 
-> Qual é o plano para começar as etapas para implementar a inteligencia artificial na
-  plataforma?
+ Sim, a sua análise está corretíssima. Esses três pilares (RAG, Contexto e UI) são
+  exatamente o que difere um "wrapper simples do GPT/Gemini" de uma verdadeira aplicação de
+  IA integrada.
 
-✦ Para começar a implementação de IA no Criptoplay de forma segura, estruturada e
-  incremental, recomendo focarmos no Pilar Educacional (RAG - Retrieval Augmented
-  Generation).
+  Atualmente, seu chat (src/app/api/chat/route.ts) é apenas um canal direto para o modelo,
+  sem conhecimento dos seus dados.
 
-  É o caminho de menor resistência e maior valor imediato: você já tem o conteúdo (arquivos
-  Markdown) e o público (alunos) precisando de suporte. Não envolve risco financeiro (como
-  operar dinheiro real) e serve como prova de conceito.
+  Aqui estão os Próximos Passos detalhados e Novas Funcionalidades que o Gemini pode exercer
+  na sua plataforma CriptoPlay:
 
-  Aqui está o Plano de Execução - Fase 1: O Tutor Inteligente.
+  1. Refinando seus Próximos Passos (O Básico Avançado)
 
-  1. Preparação do Ambiente (Infraestrutura)
-  Antes de codar, precisamos habilitar as ferramentas.
+   * RAG (Retrieval-Augmented Generation):
+       * Como é hoje: Se perguntar "O que o curso fala sobre Hardware Wallets?", a IA vai
+         inventar uma resposta genérica.
+       * Com RAG: A IA busca no seu diretório content/jornada-cripto/, lê o arquivo
+         02-hardware-wallet.md e responde: "No módulo 2, ensinamos que Hardware Wallets são
+         dispositivos físicos..."
+       * Técnica: Podemos usar embeddings (vetores) ou busca semântica simples, já que seus
+         arquivos são locais.
 
-   * Tarefa 1.1: Escolher o Modelo (Brain).
-       * Recomendação: Google Gemini Flash 1.5 (Rápido, barato/gratuito no tier free, janela
-         de contexto enorme) ou OpenAI GPT-4o-mini.
-       * Ação: Obter a API Key.
-   * Tarefa 1.2: Instalar o Vercel AI SDK.
-       * Esta é a biblioteca padrão para Next.js. Ela gerencia o streaming de texto (o
-         efeito de "digitação" da IA) e o estado do chat.
-       * Comando: npm install ai @ai-sdk/google zod (ou @ai-sdk/openai).
+   * Contexto e Personalização (Memória):
+       * Sessão: Lembrar o que foi dito há 2 minutos (já suportado pelo useChat do Vercel AI
+         SDK, mas precisa persistir se recarregar a página).
+       * Perfil: Injetar dados do usuário no prompt do sistema: "Você está falando com o
+         André, que tem perfil arrojado e gosta de day-trade."
 
-  2. Backend: O "Cérebro" do Conteúdo (RAG)
-  A IA precisa "ler" seus arquivos Markdown para responder perguntas sobre eles.
+  2. O que mais a IA pode fazer? (Integração Profunda)
 
-   * Tarefa 2.1: Habilitar Vetores no Banco.
-       * Como já usamos Prisma + Postgres, vamos habilitar a extensão pgvector.
-       * Ação: Criar uma migration para adicionar a extensão e criar uma tabela
-         DocumentEmbedding (id, content, vector, url).
-   * Tarefa 2.2: Criar Script de Indexação.
-       * Precisamos de um script (que roda no build ou manualmente) que:
-           1. Lê a pasta content/jornada-cripto/.
-           2. Quebra os textos em pedaços menores (chunks).
-           3. Envia para a API de Embeddings (transforma texto em números).
-           4. Salva no Postgres.
-  3. Backend: A API de Chat
-   * Tarefa 3.1: Criar rota `api/chat/route.ts`.
-       * Essa rota receberá a mensagem do usuário.
-       * Ela fará uma busca no banco: "Quais trechos de texto são matematicamente parecidos
-         com a pergunta do usuário?"
-       * Montará o prompt: "Você é um tutor de cripto. Use o contexto abaixo para responder:
-         [Trechos encontrados]. Pergunta: [Input do usuário]".
-       * Retornará o stream de resposta.
+  Além de responder dúvidas do curso, a IA pode interagir com as features da sua plataforma
+  (Simulador, Orçamento, Alertas) usando Function Calling (Tools).
 
-  4. Frontend: A Interface de Conversa
-   * Tarefa 4.1: Componente `AIChatWidget`.
-       * Um botão flutuante (estilo Intercom/Zendesk) no canto inferior direito.
-       * Ao clicar, abre uma janelinha de chat.
-       * Usa o hook useChat do Vercel AI SDK para gerenciar o input e as mensagens.
+   * 📈 Analista Financeiro & de Trading (Consultoria Ativa):
+       * Análise de Gastos: O usuário pergunta "Gastei muito com Ifood esse mês?". A IA
+         chama uma função que consulta sua tabela Expense no banco de dados e responde com o
+         valor exato.
+       * Coach do Simulador: "Por que estou perdendo dinheiro?". A IA analisa seu histórico
+         de Trades no banco e diz: "Notei que sua taxa de acerto é alta, mas seu Payoff é
+         baixo. Você está saindo das operações muito cedo."
+   * 🤖 Executor de Comandos (Automação):
+       * Criar Alertas por Voz/Texto: Em vez de preencher o formulário, o usuário digita:
+         "Me avise se o Bitcoin cair abaixo de 90k". A IA extrai os dados e insere direto na
+         tabela Alert via Prisma.
+       * Adicionar Transação: "Comprei um café por 15 reais no débito". A IA categoriza e
+         insere na tabela CapitalMovement.
 
-  ---
+   * 🎓 Gerador de Testes Dinâmicos:
+       * A IA pode ler um capítulo do seu curso e gerar um quiz de 5 perguntas na hora para
+         testar o conhecimento do usuário.
 
-  Resumo do Primeiro Passo Prático
+  Resumo do Plano de Ação Sugerido:
 
-  O primeiro passo lógico não é tentar fazer tudo de uma vez. É fazer a IA "ler" um único
-  arquivo e responder sobre ele.
+   1. Imediato (Fácil): Injetar o Contexto do Usuário (nome, perfil) no System Prompt.
+   2. Curto Prazo (Seu pedido): Implementar RAG simples para o Chat responder dúvidas sobre
+      a "Jornada Cripto".
+   3. Médio Prazo (Diferencial): Implementar Tools para a IA ler o saldo e criar alertas.
 
-  Deseja que eu comece criando a lista de tarefas (`todo`) para instalar as dependências e
-  configurar o Vercel AI SDK agora?
+  Deseja começar implementando o RAG para que ele consiga ler os arquivos da pasta
+  `content/`?
