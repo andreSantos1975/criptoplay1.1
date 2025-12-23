@@ -52,8 +52,8 @@ export function BudgetExpenseChart({ data }: BudgetExpenseChartProps) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: number) => [
-            `R$ ${value.toFixed(2)}`,
+          formatter={(value: number | undefined) => [
+            `R$ ${(value ?? 0).toFixed(2)}`,
             "Orçado",
           ]}
         />

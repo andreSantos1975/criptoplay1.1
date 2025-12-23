@@ -155,7 +155,7 @@ const CalculadoraJurosPage = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46' }}
-                  formatter={(value: number) => formatCurrency(value)}
+                  formatter={(value: number | undefined) => formatCurrency(value ?? 0)}
                 />
                 <Legend />
                 <Area 

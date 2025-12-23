@@ -271,3 +271,18 @@ Insights automáticos (“Você gastou 20% a mais com transporte este mês”).
   `Sidebar.tsx` agora?
 
   Se aprovar, farei uma interface limpa com um gráfico bonito usando as cores do seu tema.
+
+  ------------------------------------------------------------------------------------
+
+    Próximos Passos (se desejar continuar aprimorando o Chat AI):
+
+   * RAG: Implementar a parte de indexação do conteúdo Markdown e a busca de similaridade
+     para que a IA responda com base nos seus cursos.
+   * Contexto e Personalização: Fazer a IA "lembrar" conversas anteriores ou o perfil do
+     usuário.
+   * Melhoria de UI/UX: Adicionar funcionalidades como scroll automático, indicadores de
+     digitação mais sofisticados, etc.
+
+  Você gostaria de prosseguir com a implementação do RAG (Retrieval Augmented Generation)
+  para que a IA possa responder perguntas com base no seu conteúdo Markdown? Ou quer testar
+────────────────────────────────

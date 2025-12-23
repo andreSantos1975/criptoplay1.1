@@ -328,7 +328,7 @@ export const ReportsSection = () => {
                 <XAxis dataKey="date" />
                 <YAxis tickFormatter={formatCurrency} width={100} />
                 <Tooltip
-                  formatter={(v: number) => [formatCurrency(v), "Saldo"]}
+                  formatter={(v: number | undefined) => [formatCurrency(v ?? 0), "Saldo"]}
                 />
                 <Legend />
                 <Line
@@ -367,7 +367,7 @@ export const ReportsSection = () => {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(v: number) => [formatCurrency(v), "Valor"]}
+                    formatter={(v: number | undefined) => [formatCurrency(v ?? 0), "Valor"]}
                   />
                   <Legend />
                 </PieChart>
@@ -392,8 +392,8 @@ export const ReportsSection = () => {
               <YAxis yAxisId="left" tickFormatter={formatCurrency} width={100} />
               <YAxis yAxisId="right" orientation="right" />
               <Tooltip
-                formatter={(value: number, name: string) =>
-                  name === "Trades" ? value : formatCurrency(value)
+                formatter={(value: number | undefined, name: string | undefined) =>
+                  name === "Trades" ? (value ?? 0) : formatCurrency(value ?? 0)
                 }
               />
               <Legend />

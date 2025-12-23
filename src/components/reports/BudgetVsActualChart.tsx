@@ -107,7 +107,7 @@ export const BudgetVsActualChart = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis tickFormatter={formatCurrency} />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Tooltip formatter={(v: number | undefined) => formatCurrency(v ?? 0)} />
               <Legend />
               <Bar dataKey="Orçado" fill="#8884d8" />
               <Bar dataKey="Realizado" fill="#82ca9d" />

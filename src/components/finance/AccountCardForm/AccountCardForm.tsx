@@ -18,7 +18,7 @@ const accountSchema = z.object({
   name: z.string().min(1, 'Nome da conta é obrigatório'),
   bankName: z.string().min(1, 'Nome do banco é obrigatório'),
   balance: z.number({
-    error: (issue) => issue.code === 'invalid_type' ? 'Saldo deve ser um número' : undefined,
+    invalid_type_error: 'Saldo deve ser um número',
   }).refine((val) => !Number.isNaN(val), { message: 'Saldo deve ser um número válido' }),
   type: z.enum(['CHECKING', 'SAVINGS']),
 });
@@ -27,16 +27,22 @@ const cardSchema = z.object({
   name: z.string().min(1, 'Apelido do cartão é obrigatório'),
   issuer: z.string().min(1, 'Emissor é obrigatório'),
   creditLimit: z.number({
-    error: (issue) => issue.code === 'invalid_type' ? 'Limite deve ser um número' : undefined,
+    invalid_type_error: 'Limite deve ser um número',
   }).refine((val) => !Number.isNaN(val), { message: 'Limite deve ser um número válido' }),
   closingDay: z.number({
-    error: (issue) => issue.code === 'invalid_type' ? 'Dia de fechamento deve ser um número' : undefined,
-  }).refine((val) => !Number.isNaN(val), { message: 'Dia de fechamento deve ser um número válido' })
-    .int().min(1).max(31),
+    invalid_type_error: 'Dia de fechamento deve ser um número',
+  })
+    .int('Dia de fechamento deve ser um número inteiro')
+    .min(1, 'Dia de fechamento deve ser no mínimo 1')
+    .max(31, 'Dia de fechamento deve ser no máximo 31')
+    .refine((val) => !Number.isNaN(val), { message: 'Dia de fechamento deve ser um número válido' }),
   dueDay: z.number({
-    error: (issue) => issue.code === 'invalid_type' ? 'Dia de vencimento deve ser um número' : undefined,
-  }).refine((val) => !Number.isNaN(val), { message: 'Dia de vencimento deve ser um número válido' })
-    .int().min(1).max(31),
+    invalid_type_error: 'Dia de vencimento deve ser um número',
+  })
+    .int('Dia de vencimento deve ser um número inteiro')
+    .min(1, 'Dia de vencimento deve ser no mínimo 1')
+    .max(31, 'Dia de vencimento deve ser no máximo 31')
+    .refine((val) => !Number.isNaN(val), { message: 'Dia de vencimento deve ser um número válido' }),
   flag: z.enum(['VISA', 'MASTERCARD', 'AMEX', 'ELO', 'HIPERCARD', 'OTHER']),
 });
 

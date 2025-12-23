@@ -82,7 +82,7 @@ export const ExpenseByCategoryChart = () => {
                   <Cell key={i} fill={d.color} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => [formatCurrency(v), "Valor"]} />
+              <Tooltip formatter={(v: number | undefined) => [formatCurrency(v ?? 0), "Valor"]} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>

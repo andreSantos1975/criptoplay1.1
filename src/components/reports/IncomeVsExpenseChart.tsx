@@ -53,11 +53,11 @@ export function IncomeVsExpenseChart({ data }: IncomeVsExpenseChartProps) {
           }
         />
         <Tooltip
-          formatter={(value: number) => [
+          formatter={(value: number | undefined) => [
             new Intl.NumberFormat("pt-BR", {
               style: "currency",
               currency: "BRL",
-            }).format(value),
+            }).format(value ?? 0),
             "",
           ]}
         />

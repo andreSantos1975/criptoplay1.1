@@ -120,7 +120,7 @@ export const DashboardOverview = () => {
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "var(--radius)",
                   }}
-                  formatter={(value: number) => [
+                  formatter={(value: number | undefined) => [
                     formatCurrency(value),
                     "Portfólio",
                   ]}

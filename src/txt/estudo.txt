@@ -122,3 +122,69 @@
       responda especificamente sobre o conteúdo do seu curso.
    3. Avançado: Criar o "Coach de Trading" que lê a tabela Trade do Prisma e gera insights
       de texto.
+      
+      ---------------------------------------- 2
+
+
+> Qual é o plano para começar as etapas para implementar a inteligencia artificial na
+  plataforma?
+
+✦ Para começar a implementação de IA no Criptoplay de forma segura, estruturada e
+  incremental, recomendo focarmos no Pilar Educacional (RAG - Retrieval Augmented
+  Generation).
+
+  É o caminho de menor resistência e maior valor imediato: você já tem o conteúdo (arquivos
+  Markdown) e o público (alunos) precisando de suporte. Não envolve risco financeiro (como
+  operar dinheiro real) e serve como prova de conceito.
+
+  Aqui está o Plano de Execução - Fase 1: O Tutor Inteligente.
+
+  1. Preparação do Ambiente (Infraestrutura)
+  Antes de codar, precisamos habilitar as ferramentas.
+
+   * Tarefa 1.1: Escolher o Modelo (Brain).
+       * Recomendação: Google Gemini Flash 1.5 (Rápido, barato/gratuito no tier free, janela
+         de contexto enorme) ou OpenAI GPT-4o-mini.
+       * Ação: Obter a API Key.
+   * Tarefa 1.2: Instalar o Vercel AI SDK.
+       * Esta é a biblioteca padrão para Next.js. Ela gerencia o streaming de texto (o
+         efeito de "digitação" da IA) e o estado do chat.
+       * Comando: npm install ai @ai-sdk/google zod (ou @ai-sdk/openai).
+
+  2. Backend: O "Cérebro" do Conteúdo (RAG)
+  A IA precisa "ler" seus arquivos Markdown para responder perguntas sobre eles.
+
+   * Tarefa 2.1: Habilitar Vetores no Banco.
+       * Como já usamos Prisma + Postgres, vamos habilitar a extensão pgvector.
+       * Ação: Criar uma migration para adicionar a extensão e criar uma tabela
+         DocumentEmbedding (id, content, vector, url).
+   * Tarefa 2.2: Criar Script de Indexação.
+       * Precisamos de um script (que roda no build ou manualmente) que:
+           1. Lê a pasta content/jornada-cripto/.
+           2. Quebra os textos em pedaços menores (chunks).
+           3. Envia para a API de Embeddings (transforma texto em números).
+           4. Salva no Postgres.
+  3. Backend: A API de Chat
+   * Tarefa 3.1: Criar rota `api/chat/route.ts`.
+       * Essa rota receberá a mensagem do usuário.
+       * Ela fará uma busca no banco: "Quais trechos de texto são matematicamente parecidos
+         com a pergunta do usuário?"
+       * Montará o prompt: "Você é um tutor de cripto. Use o contexto abaixo para responder:
+         [Trechos encontrados]. Pergunta: [Input do usuário]".
+       * Retornará o stream de resposta.
+
+  4. Frontend: A Interface de Conversa
+   * Tarefa 4.1: Componente `AIChatWidget`.
+       * Um botão flutuante (estilo Intercom/Zendesk) no canto inferior direito.
+       * Ao clicar, abre uma janelinha de chat.
+       * Usa o hook useChat do Vercel AI SDK para gerenciar o input e as mensagens.
+
+  ---
+
+  Resumo do Primeiro Passo Prático
+
+  O primeiro passo lógico não é tentar fazer tudo de uma vez. É fazer a IA "ler" um único
+  arquivo e responder sobre ele.
+
+  Deseja que eu comece criando a lista de tarefas (`todo`) para instalar as dependências e
+  configurar o Vercel AI SDK agora?

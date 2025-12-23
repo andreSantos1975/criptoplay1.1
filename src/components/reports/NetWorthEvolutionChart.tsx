@@ -57,7 +57,7 @@ export const NetWorthEvolutionChart = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tickFormatter={formatMonth} />
               <YAxis tickFormatter={formatCurrency} />
-              <Tooltip formatter={(value: number) => [formatCurrency(value), "Patrimônio"]}/>
+              <Tooltip formatter={(value: number | undefined) => [formatCurrency(value ?? 0), "Patrimônio"]}/>
               <Legend />
               <Line
                 type="monotone"
