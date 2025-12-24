@@ -52,3 +52,60 @@ O RAG (Retrieval-Augmented Generation) foi implementado com sucesso!
   Para:
    * IA: "Olá André! Como posso ajudar com seus investimentos hoje?" (ou algo similar,
      dependendo do modelo).
+
+       Já que você confirmou que "O chatbot reconheceu o usuário" com essa versão, isso significa
+  que a comunicação básica está funcionando, mas a chamada de ferramenta (tool calling) está
+  falhando silenciosamente ao passar argumentos.
+
+  --------------------
+
+  ✦ Essa abordagem "manual" (extração de JSON da resposta) é uma técnica válida, mas é
+  considerada um "workaround" (gambiarra técnica) hoje em dia. Ela era o padrão antes de
+  2023, mas agora que os modelos têm suporte nativo a Tools, o ideal é usar Tools.
+
+  O problema que estamos enfrentando é muito específico:
+   1. O modelo configurado gemini-2.5-flash funciona para conversar, mas falha ao passar
+      argumentos para Tools (envia {}).
+   2. Os modelos padrão da indústria (gemini-1.5-flash, gemini-pro) estão retornando erro
+      404 Not Found na sua máquina, o que é bizarro e sugere um problema de
+      ambiente/chave/região.
+
+  O que eu sugiro como solução profissional:
+
+  Tentar o modelo `gemini-1.5-pro-latest`.
+  O gemini-pro (versão 1.5) é muito mais "inteligente" que o Flash. Se o Flash está se
+  confundindo e mandando argumentos vazios, o Pro tem muito mais chance de entender a
+  instrução e mandar o JSON correto.
+
+  Se o gemini-1.5-pro-latest também der erro 404, então o problema é definitivamente na sua
+  API Key ou na biblioteca @ai-sdk/google que pode estar desatualizada, e aí teremos que
+  investigar isso.
+
+  Posso tentar mudar para o `gemini-1.5-pro-latest`? É a tentativa mais profissional antes
+  de partirmos para "gambiarras".
+
+
+✦ Essa abordagem "manual" (extração de JSON da resposta) é uma técnica válida, mas é
+  considerada um "workaround" (gambiarra técnica) hoje em dia. Ela era o padrão antes de
+  2023, mas agora que os modelos têm suporte nativo a Tools, o ideal é usar Tools.
+
+  O problema que estamos enfrentando é muito específico:
+   1. O modelo configurado gemini-2.5-flash funciona para conversar, mas falha ao passar
+      argumentos para Tools (envia {}).
+   2. Os modelos padrão da indústria (gemini-1.5-flash, gemini-pro) estão retornando erro
+      404 Not Found na sua máquina, o que é bizarro e sugere um problema de
+      ambiente/chave/região.
+
+  O que eu sugiro como solução profissional:
+
+  Tentar o modelo `gemini-1.5-pro-latest`.
+  O gemini-pro (versão 1.5) é muito mais "inteligente" que o Flash. Se o Flash está se
+  confundindo e mandando argumentos vazios, o Pro tem muito mais chance de entender a
+  instrução e mandar o JSON correto.
+
+  Se o gemini-1.5-pro-latest também der erro 404, então o problema é definitivamente na sua
+  API Key ou na biblioteca @ai-sdk/google que pode estar desatualizada, e aí teremos que
+  investigar isso.
+
+  Posso tentar mudar para o `gemini-1.5-pro-latest`? É a tentativa mais profissional antes
+  de partirmos para "gambiarras".

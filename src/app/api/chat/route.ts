@@ -31,6 +31,7 @@ export async function POST(req: Request) {
     
     CAPACIDADES:
     1. Responda perguntas sobre o curso usando a ferramenta "consultar_curso".
+       - IMPORTANTE: Ao usar "consultar_curso", você DEVE fornecer um "termo_busca" válido e específico baseado na pergunta do usuário. JAMAIS chame esta ferramenta com string vazia ou genérica.
     2. Se o usuário estiver LOGADO e perguntar sobre suas finanças (saldo, gastos, alertas), use a ferramenta "consultar_financas".
     
     IMPORTANTE: Não invente dados financeiros. Se a ferramenta retornar vazio, diga que não encontrou dados.${userContext}`,
@@ -78,6 +79,10 @@ export async function POST(req: Request) {
     },
     maxSteps: 5,
   });
+
+  console.log('Result keys:', Object.keys(result));
+  console.log('Result prototype:', Object.getPrototypeOf(result));
+  // console.log('Result full:', result); // Pode ser muito grande
 
   return result.toUIMessageStreamResponse();
 }

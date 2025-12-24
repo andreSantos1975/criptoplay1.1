@@ -8,8 +8,13 @@ export const AIChatWidget: React.FC = () => {
   const { messages, sendMessage, status } = useChat({
     onError: (error) => {
       console.error('[ChatWidget] Error:', error);
+    },
+    onFinish: (message) => {
+      console.log('[ChatWidget] Finished message:', message);
     }
   });
+
+  console.log('[ChatWidget] Messages:', messages);
   const isLoading = status === 'submitted' || status === 'streaming';
   const [input, setInput] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -50,7 +55,13 @@ export const AIChatWidget: React.FC = () => {
         {messages.map((m) => (
           <div key={m.id} className={`${styles.message} ${m.role === 'user' ? styles.userMessage : styles.aiMessage}`}>
             <strong>{m.role === 'user' ? 'Você: ' : 'AI: '}</strong>
-            {m.parts.filter(p => p.type === 'text').map(p => (p as any).text).join('')}
+            {m.parts.map((part, index) => {
+              if (part.type === 'text') {
+                return <span key={index}>{part.text}</span>;
+              }
+              // Ignorar outros tipos de partes, como tool-calls, por enquanto
+              return null;
+            })}
           </div>
         ))}
         {isLoading && (
