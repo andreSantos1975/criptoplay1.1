@@ -25,6 +25,52 @@ export async function POST(req: Request) {
     Use essas informações para personalizar a conversa. Trate o usuário pelo nome quando apropriado.`;
   }
 
+  const cursoSchema = z.object({
+    termo_busca: z.string().describe('O termo de busca OBRIGATÓRIO para encontrar informações no material do curso. Ex: "Hardware Wallet" ou "gerenciamento de risco".'),
+  });
+
+  const tools = {
+    consultar_curso: tool({
+      description: 'Busca informações no conteúdo do curso "Jornada Cripto". Use isso para responder perguntas sobre o que é ensinado, definições e guias.',
+      parameters: cursoSchema,
+      // @ts-ignore
+      execute: async (input) => {
+        const { termo_busca } = input;
+        console.log('[ChatAPI] Args recebidos:', termo_busca);
+        
+        if (!termo_busca) {
+          return 'Erro: Termo de busca não fornecido.';
+        }
+
+        console.log(`[ChatAPI] Consultar curso: ${termo_busca}`);
+        try {
+          const context = searchCourseContent(termo_busca);
+          console.log(`[ChatAPI] Resultado busca: ${context ? 'Encontrado' : 'Vazio'}`);
+          return context || 'Nenhuma informação relevante encontrada no curso para este termo.';
+        } catch (e) {
+          console.error('[ChatAPI] Erro na busca:', e);
+          return 'Erro interno ao buscar no curso.';
+        }
+      },
+    }),
+    consultar_financas: tool({
+      description: 'Consulta os dados financeiros reais do usuário logado (saldo, contas bancárias, últimas despesas e alertas ativos). Use isso quando o usuário perguntar sobre a "minha conta", "meu saldo", "meus gastos" ou "meus alertas".',
+      parameters: z.object({}),
+      // @ts-ignore
+      execute: async () => {
+        if (!session?.user?.id) {
+          return 'Erro: Usuário não está logado. Peça para ele fazer login para ver esses dados.';
+        }
+        try {
+          const data = await getUserFinancialData(session.user.id);
+          return JSON.stringify(data, null, 2);
+        } catch (error) {
+          return 'Erro ao buscar dados financeiros.';
+        }
+      },
+    }),
+  };
+
   const result = await streamText({
     model: gemini,
     system: `Você é um assistente útil especializado em criptomoedas para a plataforma CriptoPlay. Você deve SEMPRE responder em Português do Brasil (pt-BR).
@@ -36,53 +82,12 @@ export async function POST(req: Request) {
     
     IMPORTANTE: Não invente dados financeiros. Se a ferramenta retornar vazio, diga que não encontrou dados.${userContext}`,
     messages: await convertToModelMessages(messages as UIMessage[]),
-    tools: {
-      consultar_curso: tool({
-        description: 'Busca informações no conteúdo do curso "Jornada Cripto". Use isso para responder perguntas sobre o que é ensinado, definições e guias.',
-        parameters: z.object({
-          termo_busca: z.string().describe('O termo de busca OBRIGATÓRIO para encontrar informações no material do curso. Ex: "Hardware Wallet" ou "gerenciamento de risco".'),
-        }),
-        execute: async (args) => {
-          console.log('[ChatAPI] Args recebidos:', JSON.stringify(args));
-          const termo = args.termo_busca;
-          
-          if (!termo) {
-            return 'Erro: Termo de busca não fornecido.';
-          }
-
-          console.log(`[ChatAPI] Consultar curso: ${termo}`);
-          try {
-            const context = searchCourseContent(termo);
-            console.log(`[ChatAPI] Resultado busca: ${context ? 'Encontrado' : 'Vazio'}`);
-            return context || 'Nenhuma informação relevante encontrada no curso para este termo.';
-          } catch (e) {
-            console.error('[ChatAPI] Erro na busca:', e);
-            return 'Erro interno ao buscar no curso.';
-          }
-        },
-      }),
-      consultar_financas: tool({
-        description: 'Consulta os dados financeiros reais do usuário logado (saldo, contas bancárias, últimas despesas e alertas ativos). Use isso quando o usuário perguntar sobre a "minha conta", "meu saldo", "meus gastos" ou "meus alertas".',
-        parameters: z.object({}),
-        execute: async () => {
-          if (!session?.user?.id) {
-            return 'Erro: Usuário não está logado. Peça para ele fazer login para ver esses dados.';
-          }
-          try {
-            const data = await getUserFinancialData(session.user.id);
-            return JSON.stringify(data, null, 2);
-          } catch (error) {
-            return 'Erro ao buscar dados financeiros.';
-          }
-        },
-      }),
-    },
-    maxSteps: 5,
+    tools: tools as any,
   });
 
   console.log('Result keys:', Object.keys(result));
   console.log('Result prototype:', Object.getPrototypeOf(result));
   // console.log('Result full:', result); // Pode ser muito grande
 
-  return result.toUIMessageStreamResponse();
+  return result.toTextStreamResponse();
 }

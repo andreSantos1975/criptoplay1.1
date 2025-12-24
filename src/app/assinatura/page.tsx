@@ -13,20 +13,25 @@ interface Plan {
   amount: number;
   description: string;
   features: string[];
+  frequency?: number; // Adicionado para suportar recorrência (em meses)
+  type: 'LIFETIME' | 'RECURRING';
 }
 
 const plans: Plan[] = [
   {
-    id: 'premium_vitalicio',
-    name: 'Plano Vitalício',
-    amount: 99.00,
-    description: 'Pagamento único para acesso completo e vitalício a todas as ferramentas.',
+    id: 'premium_mensal',
+    name: 'Plano Mensal',
+    amount: 29.90,
+    description: 'Acesso completo com cobrança recorrente mensal. Cancele quando quiser.',
     features: [
-      'Acesso vitalício e ilimitado ao simulador de trading',
+      'Acesso ilimitado ao simulador de trading',
       'Relatórios financeiros avançados',
       'Alertas de mercado em tempo real',
       'Suporte prioritário',
+      'Cobrança mensal automática'
     ],
+    frequency: 1,
+    type: 'RECURRING'
   },
 ];
 
@@ -52,8 +57,9 @@ const AssinaturaPage = () => {
           planId: plan.id,
           planName: plan.name,
           amount: plan.amount,
-          planType: 'LIFETIME',
+          planType: plan.type,
           description: plan.description,
+          frequency: plan.frequency
         }),
       });
 

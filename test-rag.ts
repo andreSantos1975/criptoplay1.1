@@ -6,24 +6,29 @@ const matter = require('gray-matter');
 // Mocking the environment logic from src/lib/course.ts to run standalone
 const postsDirectory = path.join(process.cwd(), 'content/jornada-cripto');
 
-function searchCourseContent(query) {
+interface SearchResult {
+  content: string;
+  score: number;
+  path: string;
+  title: string; // Added title property
+}
+
+function searchCourseContent(query: string) {
   console.log(`Searching for: "${query}" in ${postsDirectory}`);
   
   if (!fs.existsSync(postsDirectory)) {
-    console.error(`Directory not found: ${postsDirectory}`);
-    return 'Directory not found';
+    return '';
   }
 
-  const fileNames = fs.readdirSync(postsDirectory);
-  const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 3);
-  
-  console.log(`Search terms: ${JSON.stringify(searchTerms)}`);
+  const fileNames = fs.readdirSync(postsDirectory).filter((fileName: string) => fileName.endsWith('.md'));
+
+  const searchTerms = query.toLowerCase().split(' ');
 
   if (searchTerms.length === 0) return '';
 
-  let results = [];
+  let results: SearchResult[] = [];
 
-  fileNames.forEach((fileName) => {
+  fileNames.forEach((fileName: string) => {
     const fullPath = path.join(postsDirectory, fileName);
     const fileContents = fs.readFileSync(fullPath, 'utf8');
     const { data, content } = matter(fileContents);
@@ -32,7 +37,7 @@ function searchCourseContent(query) {
     // Split content into paragraphs for better granularity
     const paragraphs = content.split(/\n\s*\n/);
 
-    paragraphs.forEach(paragraph => {
+    paragraphs.forEach((paragraph: string) => {
       let score = 0;
       const lowerParagraph = paragraph.toLowerCase();
       
@@ -46,7 +51,8 @@ function searchCourseContent(query) {
         results.push({
           content: paragraph.trim(),
           score,
-          title
+          title: data.title || fileName, // Assuming title is in data, fallback to fileName
+          path: fileName, // Added missing path property
         });
       }
     });

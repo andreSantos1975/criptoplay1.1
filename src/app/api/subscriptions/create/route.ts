@@ -106,15 +106,17 @@ export async function POST(req: Request) {
         external_reference: userId,
         payer_email: user.email,
         auto_recurring: {
-          frequency: frequency,
+          frequency: Number(frequency),
           frequency_type: "months",
-          transaction_amount: amount,
+          transaction_amount: Number(amount),
           currency_id: "BRL",
         },
         back_url: `${process.env.NEXTAUTH_URL}/dashboard?subscription=success`,
         auto_return: 'approved',
         notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`,
       };
+
+      console.log('📦 Payload PreApproval:', JSON.stringify(preapprovalData, null, 2));
 
       const response = await preapproval.create({ body: preapprovalData });
 
@@ -145,14 +147,27 @@ export async function POST(req: Request) {
       }
     }
 
-  } catch (error) {
-    console.error('Erro na API de criação de assinatura:', error);
-    // Adiciona mais detalhes ao erro se for um erro do Prisma
+  } catch (error: any) {
+    console.error('❌ ERRO CRÍTICO na API de criação de assinatura (Objeto Completo):', error);
+    
+    // Tentativa de extrair detalhes ocultos
+    if (error.response) {
+         console.error('🔍 Error Response Data:', JSON.stringify(error.response.data, null, 2));
+         console.error('🔍 Error Response Status:', error.response.status);
+    }
+    if (error.data) {
+        console.error('🔍 Error Data:', JSON.stringify(error.data, null, 2));
+    }
+    if (error.status) {
+        console.error('🔍 Error Status:', error.status);
+    }
+    
+    // ... resto do código de erro ...
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2002') {
         return NextResponse.json({ message: `Falha de restrição única no campo: ${error.meta?.target}` }, { status: 409 });
       }
     }
-    return NextResponse.json({ message: 'Erro interno do servidor' }, { status: 500 });
+    return NextResponse.json({ message: 'Erro interno do servidor', error: error.message }, { status: 500 });
   }
 }

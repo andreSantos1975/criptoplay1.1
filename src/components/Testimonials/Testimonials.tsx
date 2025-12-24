@@ -13,14 +13,14 @@ const testimonials = [
     name: "Carlos Roberto",
     role: "Trader Profissional",
     avatar: "CR",
-    content: "Migrei para esta plataforma após testar várias outras. As ferramentas de análise são profissionais e a execução é muito rápida.",
+    content: "Migrei para esta plataforma após testar várias outras. O rank tipo que da uma nota para o seu operacional. As ferramentas são intuítivas e a execução é muito rápida.",
     rating: 5
   },
   {
     name: "Ana Paula Silva",
-    role: "Empresária",
+    role: "Desenvolvedora de Sofware",
     avatar: "AS",
-    content: "Finalmente encontrei uma plataforma confiável para diversificar meus investimentos. Segurança e simplicidade em primeiro lugar.",
+    content: "Finalmente encontrei uma plataforma intuitiva para aprender a operar no mercado de criptomoedas. Segurança e simplicidade em primeiro lugar.",
     rating: 5
   }
 ];
@@ -90,13 +90,13 @@ const Testimonials = () => {
               </div>
               <div className={styles.divider} />
               <div className={styles.statItem}>
-                <div className={styles.statValue}>R$ 2.5B+</div>
-                <div className={styles.statLabel}>Volume Negociado</div>
+                <div className={styles.statValue}>Simulador Profissional</div>
+                <div className={styles.statLabel}>aleta de preço ilimitado</div>
               </div>
               <div className={styles.divider} />
               <div className={styles.statItem}>
-                <div className={styles.statValue}>99.9%</div>
-                <div className={styles.statLabel}>Uptime</div>
+                <div className={styles.statValue}>5%</div>
+                <div className={styles.statLabel}>Trade de Elite</div>
               </div>
             </div>
           </div>

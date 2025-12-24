@@ -1,4 +1,4 @@
-import { TrendingUp, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Linkedin } from "lucide-react";
+import { TrendingUp, Mail, Phone, MapPin, Facebook, Instagram } from "lucide-react";
 import styles from './Footer.module.css';
 
 const Footer = () => {
@@ -12,7 +12,7 @@ const Footer = () => {
               <div className={styles.brandIconContainer}>
                 <TrendingUp className={styles.brandIcon} />
               </div>
-              <span className={styles.brandName}>CryptoTrade</span>
+              <span className={styles.brandName}>CryptoGame</span>
             </div>
             <p className={styles.brandDescription}>
               A plataforma de trading de criptomoedas mais confiável e segura do Brasil. 
@@ -24,12 +24,6 @@ const Footer = () => {
               </a>
               <a href="#" className={styles.socialLink}>
                 <Instagram />
-              </a>
-              <a href="#" className={styles.socialLink}>
-                <Twitter />
-              </a>
-              <a href="#" className={styles.socialLink}>
-                <Linkedin />
               </a>
             </div>
           </div>
@@ -54,15 +48,11 @@ const Footer = () => {
                 </a>
               </li>
               <li className={styles.listItem}>
-                <a href="#">
+                <a href="/precos">
                   Preços
                 </a>
               </li>
-              <li className={styles.listItem}>
-                <a href="#">
-                  Blog
-                </a>
-              </li>
+          
             </ul>
           </div>
 
@@ -71,28 +61,18 @@ const Footer = () => {
             <h3 className={styles.heading}>Suporte</h3>
             <ul className={styles.list}>
               <li className={styles.listItem}>
-                <a href="#">
+                <a href="/central-ajuda">
                   Central de Ajuda
                 </a>
               </li>
               <li className={styles.listItem}>
-                <a href="#">
-                  Documentação
+                <a href="/suporte">
+                  Suporte Técnico
                 </a>
               </li>
               <li className={styles.listItem}>
-                <a href="#">
-                  Status da API
-                </a>
-              </li>
-              <li className={styles.listItem}>
-                <a href="#">
+                <a href="/contato">
                   Contato
-                </a>
-              </li>
-              <li className={styles.listItem}>
-                <a href="#">
-                  Segurança
                 </a>
               </li>
             </ul>
@@ -104,15 +84,15 @@ const Footer = () => {
             <div className={styles.list}>
               <div className={styles.contactItem}>
                 <Mail />
-                <span className={styles.contactText}>contato@cryptotrade.com.br</span>
+                <span className={styles.contactText}>contato@cryptogame.com.br</span>
               </div>
               <div className={styles.contactItem}>
                 <Phone />
-                <span className={styles.contactText}>+55 (11) 3000-0000</span>
+                <span className={styles.contactText}>+55 (61) 991637838</span>
               </div>
               <div className={styles.contactItem}>
                 <MapPin />
-                <span className={styles.contactText}>São Paulo, SP - Brasil</span>
+                <span className={styles.contactText}>Brasília, DF - Brasil</span>
               </div>
             </div>
           </div>
@@ -122,7 +102,7 @@ const Footer = () => {
         <div className={styles.bottomSection}>
           <div className={styles.bottomContent}>
             <div className={styles.copyright}>
-              © 2024 CryptoTrade. Todos os direitos reservados.
+              © 2024 CryptoGame. Todos os direitos reservados.
             </div>
             <div className={styles.legalLinks}>
               <a href="#" className={styles.legalLink}>

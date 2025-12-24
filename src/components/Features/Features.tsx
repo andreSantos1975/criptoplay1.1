@@ -5,26 +5,26 @@ const features = [
   {
     icon: BarChart3,
     title: "Análise em Tempo Real",
-    description: "Acesse dados de mercado atualizados constantemente com gráficos avançados e indicadores técnicos profissionais.",
-    benefits: ["Gráficos interativos", "Indicadores técnicos", "Análise de tendências"]
+    description: "Acesse dados de mercado atualizados constantemente com gráficos avançados.",
+    benefits: ["Gráficos interativos", "linhas marcadoras, stop loss e take profit", "Análise de tendências", "linha de alertas"]
   },
   {
     icon: Shield,
     title: "Rastreamento de Portfólio",
-    description: "Monitore todos os seus investimentos em um só lugar com análises detalhadas de performance e diversificação.",
+    description: "Monitore todos os seus investimentos em um só lugar com análises detalhadas de performance e diversificação e Finanças Pessoais.",
     benefits: ["Dashboard unificado", "Análise de risco", "Relatórios detalhados"]
   },
   {
     icon: Clock,
-    title: "Transações Seguras",
-    description: "Execute operações com total segurança através de nossa infraestrutura bancária e criptografia avançada.",
-    benefits: ["Criptografia SSL", "Autenticação 2FA", "Fundos protegidos"]
+    title: "Operações Seguras",
+    description: "Execute operações com total segurança através de nosso simulador avançada.",
+    benefits: ["Saldo Virtual de 10 mil", "Aprendizado Operacional", "Diario de Trader"]
   },
   {
     icon: Headphones,
     title: "Suporte 24/7",
     description: "Nossa equipe especializada está sempre disponível para ajudar você a maximizar seus resultados no mercado.",
-    benefits: ["Chat ao vivo", "Consultoria especializada", "Tutoriais exclusivos"]
+    benefits: ["Suporte pelo Whatsapp", "Consultoria especializada", "Tutoriais exclusivos"]
   }
 ];
 

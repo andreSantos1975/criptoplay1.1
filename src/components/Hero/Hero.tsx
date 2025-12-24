@@ -62,7 +62,7 @@ const Hero = () => {
             </div>
             <div className={styles.trustIndicatorItem}>
               <Shield className={styles.trustIndicatorIcon} />
-              <span className={styles.trustIndicatorText}>Segurança Bancária</span>
+              <span className={styles.trustIndicatorText}>Plataforma Gameficada</span>
             </div>
             <div className={styles.trustIndicatorItem}>
               <TrendingUp className={styles.trustIndicatorIcon} />

@@ -10,7 +10,7 @@ const steps = [
   {
     icon: Search,
     title: "Analise o Mercado",
-    description: "Análise de tendências pela inteligência artificial para identificar e sugerir oportunidades."
+    description: "Análise de tendências, com graficos do mercado spot e futuro de criptomoedas."
   },
 
   {
