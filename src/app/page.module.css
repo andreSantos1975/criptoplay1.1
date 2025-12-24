@@ -165,4 +165,5 @@ a.secondary {
 .mainContainer {
   min-height: 100vh;
   background-color: hsl(var(--background));
+  margin-top: 4rem; /* Espaço para a Navbar */
 }

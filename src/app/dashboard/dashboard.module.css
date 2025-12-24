@@ -1,5 +1,6 @@
 .page {
   min-height: 100vh;
+  margin-top: 4rem; /* Espaço para a Navbar */
 }
 
 .container {

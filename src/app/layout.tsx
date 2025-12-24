@@ -4,7 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import AuthProvider from "@/components/AuthProvider";
 import QueryProvider from "@/components/QueryProvider";
-import { AIChatWidget } from '@/components/ui/AIChatWidget';
+import Navbar from "@/components/Navbar/Navbar";
+// import { AIChatWidget } from '@/components/ui/AIChatWidget';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,8 +30,9 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
+                <Navbar />
                 {children}
-                <AIChatWidget />
+                {/* <AIChatWidget /> */}
             </ThemeProvider>
           </QueryProvider>
         </AuthProvider>
