@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, FormEvent } from 'react';
+import { useState, useMemo, useEffect, FormEvent, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -197,6 +197,9 @@ const Simulator = () => {
   const [watchedSymbols, setWatchedSymbols] = useState(['BTCBRL', 'ETHBRL', 'SOLBRL', 'ADABRL', 'DOGEBRL', 'SHIBBRL', 'BNBBRL']);
   const [newSymbol, setNewSymbol] = useState('');
   const [prospectiveAlert, setProspectiveAlert] = useState<{ price: number } | null>(null);
+  
+  // Ref para controlar a aplicação única dos valores padrão
+  const defaultsAppliedRef = useRef(false);
 
   // Fetch exchange rate USDT/BRL
   const { data: exchangeRateData, isLoading: isLoadingExchangeRate } = useQuery({
@@ -302,7 +305,11 @@ const Simulator = () => {
 
   useVigilante({
     openPositions: simulatorProfile?.openPositions,
-    closeMutation: closePositionMutation,
+    // Wrapper para compatibilidade com a nova assinatura (payload rico)
+    closeMutation: {
+      ...closePositionMutation,
+      mutate: (payload) => closePositionMutation.mutate(payload.symbol)
+    },
     enabled: isPremiumUser && !!simulatorProfile?.openPositions,
     closingPositionSymbols,
     onAddToClosingPositionSymbols: handleAddToClosingPositionSymbols,
@@ -326,6 +333,15 @@ const Simulator = () => {
   // --- CÁLCULOS MEMOIZADOS E EFEITOS ---
   const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
   const tradeLevelsForChart: TradeLevels = { entry: entryPrice, stopLoss, takeProfit };
+
+  // Efeito para aplicar Stop Loss (1%) e Take Profit (2%) padrão
+  useEffect(() => {
+    if (entryPrice > 0 && !defaultsAppliedRef.current) {
+      setStopLoss(entryPrice * 0.99); // 1% abaixo
+      setTakeProfit(entryPrice * 1.02); // 2% acima
+      defaultsAppliedRef.current = true;
+    }
+  }, [entryPrice, selectedCrypto]);
   
   const assetHeaderData = useMemo(() => {
     if (!initialChartData || initialChartData.length === 0) return { open: 0, high: 0, low: 0, close: 0, time: 0 };
@@ -362,6 +378,7 @@ const Simulator = () => {
     setStopLoss(0);
     setTakeProfit(0);
     setProspectiveAlert(null); // Clear prospective alert when changing crypto
+    defaultsAppliedRef.current = false; // Permite reaplicar os padrões
   };
 
   const handleLevelsChange = (newLevels: TradeLevels) => {

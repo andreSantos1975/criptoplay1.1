@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { signOut } from 'next-auth/react';
 import toast from 'react-hot-toast';
@@ -12,6 +12,7 @@ import SimulatorChart from '@/components/simulator/SimulatorChart/SimulatorChart
 import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
 import { CryptoList } from '@/components/dashboard/CryptoList/CryptoList'; // Import CryptoList
+import { useVigilante, SimulatorPosition } from '@/hooks/useVigilante';
 
 /// --- Tipos ---
 type PositionSide = 'LONG' | 'SHORT';
@@ -149,6 +150,65 @@ const FuturesTradeForm = ({
 }) => {
   const [quantity, setQuantity] = useState(0.01);
   const [leverage, setLeverage] = useState(10);
+  
+  // Local state for inputs to allow commas and flexible typing
+  // We initialize as string to allow "empty" state and "trailing comma" state
+  const [slInput, setSlInput] = useState(tradeLevels.stopLoss > 0 ? tradeLevels.stopLoss.toString().replace('.', ',') : '');
+  const [tpInput, setTpInput] = useState(tradeLevels.takeProfit > 0 ? tradeLevels.takeProfit.toString().replace('.', ',') : '');
+
+  // Sync local inputs when tradeLevels change externally (e.g. from chart drag)
+  // We only update if the numeric value is significantly different to avoid cursor jumping while typing
+  useEffect(() => {
+    const currentSlNumeric = parseFloat(slInput.replace(',', '.')) || 0;
+    // Tolerance for floating point comparison or just check strict inequality if handling integers mostly
+    if (Math.abs(tradeLevels.stopLoss - currentSlNumeric) > 0.000001) {
+       setSlInput(tradeLevels.stopLoss > 0 ? tradeLevels.stopLoss.toString().replace('.', ',') : '');
+    }
+  }, [tradeLevels.stopLoss]);
+
+  useEffect(() => {
+    const currentTpNumeric = parseFloat(tpInput.replace(',', '.')) || 0;
+    if (Math.abs(tradeLevels.takeProfit - currentTpNumeric) > 0.000001) {
+       setTpInput(tradeLevels.takeProfit > 0 ? tradeLevels.takeProfit.toString().replace('.', ',') : '');
+    }
+  }, [tradeLevels.takeProfit]);
+
+  // Handler for Stop Loss Input
+  const handleSlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      let rawValue = e.target.value;
+      
+      // Allow only numbers, commas and dots
+      if (!/^[0-9.,]*$/.test(rawValue)) return;
+
+      setSlInput(rawValue); // Update display immediately
+      
+      // Normalize for calculation: replace comma with dot
+      const normalized = rawValue.replace(',', '.');
+      const numValue = parseFloat(normalized);
+      
+      onLevelsChange({ 
+          ...tradeLevels, 
+          stopLoss: isNaN(numValue) ? 0 : numValue 
+      });
+  };
+
+  // Handler for Take Profit Input
+  const handleTpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      let rawValue = e.target.value;
+
+      // Allow only numbers, commas and dots
+      if (!/^[0-9.,]*$/.test(rawValue)) return;
+
+      setTpInput(rawValue); // Update display immediately
+      
+      const normalized = rawValue.replace(',', '.');
+      const numValue = parseFloat(normalized);
+      
+      onLevelsChange({ 
+          ...tradeLevels, 
+          takeProfit: isNaN(numValue) ? 0 : numValue 
+      });
+  };
 
   // Cálculos de Estimativa
   const notionalValueUSDT = quantity * currentPrice;
@@ -180,15 +240,6 @@ const FuturesTradeForm = ({
       rewardAmountBRL = pnlPerUnit * quantity;
   }
   const showReward = rewardAmountBRL > 0;
-
-  // ... (dentro do return)
-
-  // Abaixo do Input de Stop Loss:
-  // {showRisk && <p className={styles.riskInfo}>Risco Estimado: {formatCurrency(riskAmountBRL)}</p>}
-
-  // Abaixo do Input de Take Profit:
-  // {showReward && <p className={styles.rewardInfo}>Ganho Estimado: {formatCurrency(rewardAmountBRL)}</p>}
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -266,10 +317,12 @@ const FuturesTradeForm = ({
         <label htmlFor="stopLoss">Stop Loss (R$)</label>
         <input 
           id="stopLoss" 
-          type="number" 
-          value={tradeLevels.stopLoss || ''} 
-          onChange={e => onLevelsChange({ ...tradeLevels, stopLoss: parseFloat(e.target.value) })} 
-          step="any" 
+          type="text"
+          inputMode="decimal"
+          value={slInput} 
+          onChange={handleSlChange}
+          placeholder="0,00"
+          autoComplete="off"
         />
         {showRisk && <p className={styles.riskInfo}>Risco: {formatCurrency(riskAmountBRL)}</p>}
       </div>
@@ -278,10 +331,12 @@ const FuturesTradeForm = ({
         <label htmlFor="takeProfit">Take Profit (R$)</label>
         <input 
           id="takeProfit" 
-          type="number" 
-          value={tradeLevels.takeProfit || ''} 
-          onChange={e => onLevelsChange({ ...tradeLevels, takeProfit: parseFloat(e.target.value) })} 
-          step="any" 
+          type="text"
+          inputMode="decimal"
+          value={tpInput} 
+          onChange={handleTpChange}
+          placeholder="0,00"
+          autoComplete="off"
         />
         {showReward && <p className={styles.rewardInfo}>Ganho Potencial: {formatCurrency(rewardAmountBRL)}</p>}
       </div>
@@ -427,6 +482,14 @@ const FuturesSimulator = () => {
   const [side, setSide] = useState<PositionSide>('LONG');
   const [watchedSymbols, setWatchedSymbols] = useState<string[]>(['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'ADATUSD', 'DOGEUSDT', 'SHIBUSDT', 'BNBUSDT']);
   const [newSymbol, setNewSymbol] = useState('');
+  
+  // Ref para controlar a aplicação única dos valores padrão
+  const defaultsAppliedRef = useRef(false);
+
+  // Resetar a aplicação de padrões quando o lado mudar
+  useEffect(() => {
+    defaultsAppliedRef.current = false;
+  }, [side]);
 
   // Busca a taxa de câmbio no componente pai para ser distribuída
   const { data: exchangeRateData, isLoading: isLoadingRate } = useQuery({
@@ -493,6 +556,36 @@ const FuturesSimulator = () => {
     return { ...lastCandle, close: realtimeChartUpdate?.close || lastCandle.close };
   }, [initialChartData, realtimeChartUpdate]);
 
+  // Efeito para aplicar Stop Loss e Take Profit padrão (Futuros)
+  useEffect(() => {
+    let currentPrice = assetHeaderData.close;
+
+    // Se não for par BRL, converter para BRL para alinhar com o gráfico
+    if (!symbol.endsWith('BRL') && exchangeRate > 0) {
+        currentPrice = currentPrice * exchangeRate;
+    }
+
+    if (currentPrice > 0 && !defaultsAppliedRef.current) {
+        if (side === 'LONG') {
+            setTradeLevels(prev => ({ 
+                ...prev, 
+                entry: currentPrice, // Opcional: define também a entrada para referência visual
+                stopLoss: currentPrice * 0.99, // 1% abaixo
+                takeProfit: currentPrice * 1.02 // 2% acima
+            }));
+        } else {
+            // Short: Stop acima, Take abaixo
+            setTradeLevels(prev => ({ 
+                ...prev, 
+                entry: currentPrice,
+                stopLoss: currentPrice * 1.01, // 1% acima
+                takeProfit: currentPrice * 0.98 // 2% abaixo
+            }));
+        }
+        defaultsAppliedRef.current = true;
+    }
+  }, [assetHeaderData.close, side, symbol, exchangeRate]);
+
   // Lógica de busca de dados e mutações para as posições
   const { data: positions, isLoading } = useQuery<FuturesPosition[]>({
     queryKey: ['futuresPositions'],
@@ -550,6 +643,50 @@ const FuturesSimulator = () => {
     }
   });
 
+  const [closingPositionSymbols, setClosingPositionSymbols] = useState<Set<string>>(new Set());
+
+  const handleAddToClosing = (symbol: string) => {
+    setClosingPositionSymbols(prev => new Set(prev).add(symbol));
+  };
+
+  // Prepare positions for the Vigilante (Auto-Close)
+  const vigilantePositions: SimulatorPosition[] = useMemo(() => {
+    if (!positions) return [];
+    return positions.map(pos => ({
+      symbol: pos.symbol,
+      totalQuantity: pos.quantity, // FuturesPosition uses quantity directly
+      averageEntryPrice: pos.entryPrice,
+      stopLoss: pos.stopLoss || 0,
+      takeProfit: pos.takeProfit || 0,
+      tradeIds: [pos.id], // Using position ID as trade ID reference
+      marketType: 'futures'
+    }));
+  }, [positions]);
+
+  // Activate Vigilante
+  useVigilante({
+    openPositions: vigilantePositions,
+    closeMutation: {
+      ...closePositionMutation,
+      mutate: (payload) => {
+        // Vigilante agora passa { symbol, price, marketType }
+        // Não precisamos mais buscar o preço! Usamos o preço exato do trigger.
+        const pos = positions?.find(p => p.symbol === payload.symbol);
+        
+        if (pos) {
+           console.log(`[FuturesSimulator] Auto-closing ${pos.symbol} at ${payload.price}`);
+           closePositionMutation.mutate({ 
+               positionId: pos.id, 
+               exitPrice: payload.price 
+           });
+        }
+      }
+    } as any, // Cast necessário pois a assinatura do mutate varia
+    enabled: true,
+    closingPositionSymbols,
+    onAddToClosingPositionSymbols: handleAddToClosing,
+  });
+
   // Handlers para Alertas
   const handleStartCreateAlert = () => {
     const currentPrice = assetHeaderData.close; // Já está em BRL se exchangeRate for aplicado no assetHeaderData?
@@ -602,6 +739,7 @@ const FuturesSimulator = () => {
     setSymbol(s);
     setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 }); // Reset levels when changing symbol
     setProspectiveAlert(null); // Clear prospective alert
+    defaultsAppliedRef.current = false; // Permitir reaplicar defaults
   };
 
   const handleDeleteSymbol = (symbolToDelete: string) => {

@@ -12,9 +12,19 @@ export interface SimulatorPosition {
   marketType?: 'spot' | 'futures'; // Optional, defaulting to 'spot' if missing
 }
 
+interface VigilanteClosePayload {
+  symbol: string;
+  price: number;
+  marketType: 'spot' | 'futures';
+}
+
 interface VigilanteOptions {
   openPositions: SimulatorPosition[] | undefined;
-  closeMutation: UseMutationResult<any, Error, string, unknown>; // Mutation expects symbol (string)
+  // Relaxing the type to accept a mutation-like object that handles our payload
+  closeMutation: {
+    mutate: (payload: VigilanteClosePayload) => void;
+    isPending: boolean;
+  };
   enabled?: boolean;
   closingPositionSymbols: Set<string>;
   onAddToClosingPositionSymbols: (symbol: string) => void;
@@ -24,7 +34,7 @@ const getNumericValue = (value: any): number | null => {
   if (value === null || value === undefined) return null;
   if (typeof value === 'number') return value;
   if (typeof value === 'string') return parseFloat(value);
-  // Handle Decimal-like objects if they leak here, though the API returns numbers
+  // Handle Decimal-like objects if they leak here
   if (value && typeof value.toNumber === 'function') {
     return value.toNumber();
   }
@@ -58,14 +68,6 @@ export const useVigilante = ({
     const sockets: WebSocket[] = [];
 
     symbols.forEach(symbol => {
-      // Assuming marketType might be available in position, or default to spot.
-      // The current API might not be passing marketType explicitly in the aggregated object,
-      // but usually the symbol implies it or we can check the first trade.
-      // For now, let's assume 'spot' or check if we can infer it. 
-      // Ideally, the backend should provide marketType on the position.
-      // If not available, we default to standard Binance stream which covers spot.
-      // If futures are needed, the position object needs to carry that info.
-      
       const position = positionsBySymbol[symbol];
       const marketType = position.marketType || 'spot';
 
@@ -101,34 +103,6 @@ export const useVigilante = ({
             return;
           }
 
-          // Determine direction based on logic (Long vs Short)
-          // Since we don't have explicit 'SIDE' (Buy/Sell) on the Position object from the API response seen earlier,
-          // we usually assume 'LONG' for Spot. 
-          // If the system supports Shorting (Futures), the position object needs to indicate direction.
-          // However, based on typical simple spot simulators:
-          // Long: Stop Loss < Entry, Take Profit > Entry.
-          
-          // Heuristic:
-          // If Stop Loss < Average Entry -> Likely LONG
-          // If Stop Loss > Average Entry -> Likely SHORT
-          
-          // But a safer bet for now (as per previous logic):
-          // Buy (Long): Close if price <= SL or price >= TP
-          // Sell (Short): Close if price >= SL or price <= TP
-          
-          // We can try to infer side from SL/TP relative to Entry if not provided.
-          // Or simply check:
-          // If SL is defined and Price hits it.
-          // If TP is defined and Price hits it.
-          
-          // Let's refine the logic.
-          // If SL < EntryPrice, it's a Long SL (trigger if Price <= SL)
-          // If SL > EntryPrice, it's a Short SL (trigger if Price >= SL)
-          
-          // Similarly for TP:
-          // If TP > EntryPrice, it's a Long TP (trigger if Price >= TP)
-          // If TP < EntryPrice, it's a Short TP (trigger if Price <= TP)
-          
           let shouldClose = false;
 
           // STOP LOSS CHECK
@@ -156,7 +130,11 @@ export const useVigilante = ({
           if (shouldClose) {
             console.log(`[VIGILANTE] Closing position ${pos.symbol} at ${currentPrice} (SL: ${stopLoss}, TP: ${takeProfit})`);
             onAddToClosingPositionSymbols(pos.symbol);
-            closeMutation.mutate(pos.symbol);
+            closeMutation.mutate({ 
+                symbol: pos.symbol, 
+                price: currentPrice, 
+                marketType: marketType 
+            });
           }
         }
       };

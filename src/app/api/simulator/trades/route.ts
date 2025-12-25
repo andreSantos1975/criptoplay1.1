@@ -6,7 +6,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { getCurrentPrice } from '@/lib/binance';
 
 
-// Rota para BUSCAR todas as operações de simulação de um usuário
+// Rota para BUSCAR todas as operações de simulação de um usuário (Spot e Futuros unificados)
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,17 +16,51 @@ export async function GET(request: Request) {
 
     const userId = session.user.id;
 
-    const trades = await prisma.trade.findMany({
+    // 1. Buscar Trades Spot (Tabela antiga/Spot)
+    const spotTradesPromise = prisma.trade.findMany({
       where: {
         userId: userId,
         isSimulator: true,
       },
-      orderBy: {
-        entryDate: 'desc', // Ordena pelas mais recentes primeiro
+    });
+
+    // 2. Buscar Posições de Futuros
+    const futuresPositionsPromise = prisma.futuresPosition.findMany({
+      where: {
+        userId: userId,
       },
     });
 
-    return NextResponse.json(trades);
+    const [spotTrades, futuresPositions] = await Promise.all([spotTradesPromise, futuresPositionsPromise]);
+
+    // 3. Normalizar FuturesPosition para parecer com Trade
+    const futuresAsTrades = futuresPositions.map(pos => ({
+      id: pos.id,
+      symbol: pos.symbol,
+      type: pos.side === 'LONG' ? 'BUY' : 'SELL', // Aproximação para o relatório
+      status: pos.status, // OPEN, CLOSED, LIQUIDATED
+      entryDate: pos.createdAt,
+      exitDate: pos.closedAt,
+      entryPrice: pos.entryPrice,
+      exitPrice: null, // Futuros não salva exitPrice explícito no modelo atual, mas tem PnL
+      quantity: pos.quantity,
+      stopLoss: pos.stopLoss,
+      takeProfit: pos.takeProfit,
+      pnl: pos.pnl,
+      notes: `Alavancagem: ${pos.leverage}x`,
+      createdAt: pos.createdAt,
+      updatedAt: pos.updatedAt,
+      userId: pos.userId,
+      marketType: 'FUTURES',
+      isSimulator: true,
+    }));
+
+    // 4. Combinar e Ordenar
+    const allTrades = [...spotTrades, ...futuresAsTrades].sort((a, b) => {
+      return new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime();
+    });
+
+    return NextResponse.json(allTrades);
 
   } catch (error) {
     console.error('Erro ao buscar operações de simulação:', error);

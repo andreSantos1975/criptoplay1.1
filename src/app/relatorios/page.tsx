@@ -14,7 +14,7 @@ import { IncomeVsExpenseChart } from "@/components/reports/IncomeVsExpenseChart"
 import { NetWorthEvolutionChart } from "@/components/reports/NetWorthEvolutionChart";
 import { Income, Expense } from "@/types/personal-finance";
 import styles from "./relatorios.module.css";
-import { TradingPerformanceSummary } from "@/components/reports/TradingPerformanceSummary"; // Importar o novo componente
+
 
 const RelatoriosPage = () => {
   const [selectedYear] = useState(new Date().getFullYear());
@@ -125,14 +125,7 @@ const RelatoriosPage = () => {
           <IncomeVsExpenseChart data={isLoading ? [] : monthlyChartData} />
         </section>
 
-        {/* Nova seção para Performance de Trading */}
-        <section className={styles.tradingPerformanceSection}>
-          <h2 className={styles.title}>Relatórios de Performance de Trading (Simulador)</h2>
-          <p className={styles.subtitle}>
-            Análise aprofundada das suas operações no simulador.
-          </p>
-          <TradingPerformanceSummary />
-        </section>
+
       </div>
     </main>
   );

@@ -1,5 +1,6 @@
 .page {
   padding: 2rem;
+  padding-top: 6rem; /* Adicionado para compensar a Navbar fixa */
 }
 
 .container {

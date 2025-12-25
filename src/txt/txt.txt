@@ -138,6 +138,7 @@ npm run lint
 -------------------------------------------------------------------------------
 (Executa o build do projeto Next.js.
 npm run build 
+
 ---------------------------------------------------------------------------------
 
 🔑 Funções Essenciais da Aba de Finança Pessoal
