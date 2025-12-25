@@ -652,7 +652,7 @@ const FuturesSimulator = () => {
   // Prepare positions for the Vigilante (Auto-Close)
   const vigilantePositions: SimulatorPosition[] = useMemo(() => {
     if (!positions) return [];
-    return positions.map(pos => ({
+    const mappedPositions = positions.map(pos => ({
       symbol: pos.symbol,
       totalQuantity: pos.quantity, // FuturesPosition uses quantity directly
       averageEntryPrice: pos.entryPrice,
@@ -661,6 +661,9 @@ const FuturesSimulator = () => {
       tradeIds: [pos.id], // Using position ID as trade ID reference
       marketType: 'futures'
     }));
+    console.log("DEBUG: Original Futures Positions:", positions);
+    console.log("DEBUG: Mapped Vigilante Positions:", mappedPositions);
+    return mappedPositions;
   }, [positions]);
 
   // Activate Vigilante
@@ -790,7 +793,15 @@ const FuturesSimulator = () => {
           interval={interval}
           onIntervalChange={setInterval}
           realtimeChartUpdate={realtimeUpdateInBRL}
-          tradeLevels={tradeLevels}
+          // A linha de entrada deve seguir o preço atual (Ordem a Mercado)
+          // SL e TP continuam vindo do estado (fixos/arrastáveis)
+          tradeLevels={{
+            entry: (!symbol.endsWith('BRL') && exchangeRate > 0) 
+              ? assetHeaderData.close * exchangeRate 
+              : assetHeaderData.close,
+            stopLoss: tradeLevels.stopLoss,
+            takeProfit: tradeLevels.takeProfit
+          }}
           onLevelsChange={setTradeLevels}
           tipoOperacao={side === 'LONG' ? 'compra' : 'venda'}
           alerts={alerts}

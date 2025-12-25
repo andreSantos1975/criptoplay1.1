@@ -287,3 +287,47 @@ Insights automáticos (“Você gastou 20% a mais com transporte este mês”).
   Você gostaria de prosseguir com a implementação do RAG (Retrieval Augmented Generation)
   para que a IA possa responder perguntas com base no seu conteúdo Markdown? Ou quer testar
 ────────────────────────────────
+
+Sim, você está absolutamente correto.
+
+  Com a implementação atual (Vigilante no Hook do React), se o usuário fechar a aba ou
+  desligar o computador, a operação NÃO será fechada automaticamente pelo Stop Loss ou Take
+  Profit.
+
+  Se a plataforma for comercial e hospedada na Vercel (onde funções serverless têm tempo
+  limite curto e não rodam em segundo plano eternamente), o comportamento atual é:
+
+   1. Usuário abre simulador, coloca ordem com Stop Loss.
+   2. Usuário fecha o site.
+   3. Preço atinge o Stop Loss. Nada acontece.
+   4. Usuário abre o site 2 dias depois.
+   5. O Hook useVigilante roda, vê o preço atual, percebe que passou do Stop Loss e fecha a
+      ordem na hora (com o preço daquele momento, que pode ser muito pior que o Stop
+      original).
+
+  Isso é aceitável?
+   * Para um Simulador de Estudo (Day Trade): Pode ser aceitável, pois pressupõe-se que o
+     aluno está operando ativamente.
+   * Para um Simulador de Swing Trade / Position (Comercial): Não é ideal. O usuário espera
+     que o sistema "trabalhe" por ele.
+
+  Como resolver isso na Vercel (Solução Serverless)?
+  Como a Vercel não permite processos longos, usamos Cron Jobs.
+
+  A Vercel tem uma funcionalidade chamada Cron Jobs (Agendamento). Podemos configurar um
+  endpoint da API (ex: /api/cron/check-positions) para ser chamado automaticamente a cada 1
+  ou 5 minutos.
+
+  O que o Cron Job faria:
+   1. Acorda a cada X minutos.
+   2. Consulta o Banco de Dados por todas as posições abertas de todos os usuários que têm
+      SL/TP definido.
+   3. Consulta os preços atuais na Binance (em lote, para ser rápido).
+   4. Fecha as posições que atingiram os alvos.
+
+  Isso simularia um "Servidor Profissional" dentro da arquitetura Serverless da Vercel,
+  garantindo que as ordens sejam fechadas mesmo com o site desligado (com um atraso máximo
+  de X minutos do Cron).
+
+  Quer que eu implemente esse Cron Job agora? Seria uma adição valiosa para tornar o
+  simulador robusto para uso comercial.

@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { UseMutationResult } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 
 // Definition based on the aggregated object from /api/simulator/profile
 export interface SimulatorPosition {
@@ -12,7 +11,7 @@ export interface SimulatorPosition {
   marketType?: 'spot' | 'futures'; // Optional, defaulting to 'spot' if missing
 }
 
-interface VigilanteClosePayload {
+export interface VigilanteClosePayload {
   symbol: string;
   price: number;
   marketType: 'spot' | 'futures';
@@ -42,8 +41,43 @@ const getNumericValue = (value: any): number | null => {
   return isNaN(num) ? null : num;
 };
 
+// Helper function to check if price triggers SL or TP
+const checkTrigger = (
+  currentPrice: number, 
+  pos: SimulatorPosition, 
+  stopLoss: number | null, 
+  takeProfit: number | null
+): boolean => {
+    let shouldClose = false;
+
+    // STOP LOSS CHECK
+    if (stopLoss && stopLoss > 0) {
+        if (stopLoss < pos.averageEntryPrice) {
+            // Long SL logic
+            if (currentPrice <= stopLoss) shouldClose = true;
+        } else {
+            // Short SL logic
+            if (currentPrice >= stopLoss) shouldClose = true;
+        }
+    }
+
+    // TAKE PROFIT CHECK
+    if (!shouldClose && takeProfit && takeProfit > 0) {
+        if (takeProfit > pos.averageEntryPrice) {
+            // Long TP logic
+            if (currentPrice >= takeProfit) shouldClose = true;
+        } else {
+            // Short TP logic
+            if (currentPrice <= takeProfit) shouldClose = true;
+        }
+    }
+
+    return shouldClose;
+};
+
 // This hook is now a "Global Vigilante" for POSITIONS. 
 // It watches all open positions and closes them if their aggregated SL/TP is met.
+// Uses WebSocket for real-time updates AND Polling as a fallback for stability.
 export const useVigilante = ({
   openPositions,
   closeMutation,
@@ -52,13 +86,20 @@ export const useVigilante = ({
   onAddToClosingPositionSymbols,
 }: VigilanteOptions) => {
   const openPositionsString = JSON.stringify(openPositions);
+  
+  // Refs to keep track of state inside intervals/callbacks without staleness
+  const closingSymbolsRef = useRef(closingPositionSymbols);
+  closingSymbolsRef.current = closingPositionSymbols;
+
+  const closeMutationRef = useRef(closeMutation);
+  closeMutationRef.current = closeMutation;
 
   useEffect(() => {
     if (!enabled || !openPositions || openPositions.length === 0) {
       return;
     }
 
-    // Map positions by symbol for easy lookup inside WebSocket callback
+    // Map positions by symbol for easy lookup
     const positionsBySymbol: { [key: string]: SimulatorPosition } = {};
     openPositions.forEach(pos => {
       positionsBySymbol[pos.symbol] = pos;
@@ -67,6 +108,7 @@ export const useVigilante = ({
     const symbols = Object.keys(positionsBySymbol);
     const sockets: WebSocket[] = [];
 
+    // --- STRATEGY 1: WEBSOCKET (Fast, Real-time) ---
     symbols.forEach(symbol => {
       const position = positionsBySymbol[symbol];
       const marketType = position.marketType || 'spot';
@@ -84,53 +126,22 @@ export const useVigilante = ({
         if (kline) {
           const currentPrice = parseFloat(kline.c);
 
-          if (closeMutation.isPending) return;
+          if (closeMutationRef.current.isPending) return;
 
-          // Check the specific position for this symbol
           const pos = positionsBySymbol[symbol];
-          
           if (!pos) return;
 
-          if (closingPositionSymbols.has(pos.symbol)) {
-            return;
-          }
+          if (closingSymbolsRef.current.has(pos.symbol)) return;
 
           const stopLoss = getNumericValue(pos.stopLoss);
           const takeProfit = getNumericValue(pos.takeProfit);
 
-          // If neither is set, nothing to do
-          if ((!stopLoss || stopLoss === 0) && (!takeProfit || takeProfit === 0)) {
-            return;
-          }
+          if ((!stopLoss || stopLoss === 0) && (!takeProfit || takeProfit === 0)) return;
 
-          let shouldClose = false;
-
-          // STOP LOSS CHECK
-          if (stopLoss && stopLoss > 0) {
-             if (stopLoss < pos.averageEntryPrice) {
-                 // Long SL logic
-                 if (currentPrice <= stopLoss) shouldClose = true;
-             } else {
-                 // Short SL logic
-                 if (currentPrice >= stopLoss) shouldClose = true;
-             }
-          }
-
-          // TAKE PROFIT CHECK
-          if (!shouldClose && takeProfit && takeProfit > 0) {
-              if (takeProfit > pos.averageEntryPrice) {
-                  // Long TP logic
-                  if (currentPrice >= takeProfit) shouldClose = true;
-              } else {
-                  // Short TP logic
-                  if (currentPrice <= takeProfit) shouldClose = true;
-              }
-          }
-
-          if (shouldClose) {
-            console.log(`[VIGILANTE] Closing position ${pos.symbol} at ${currentPrice} (SL: ${stopLoss}, TP: ${takeProfit})`);
+          if (checkTrigger(currentPrice, pos, stopLoss, takeProfit)) {
+            console.log(`[VIGILANTE-WS] Closing ${pos.symbol} at ${currentPrice}`);
             onAddToClosingPositionSymbols(pos.symbol);
-            closeMutation.mutate({ 
+            closeMutationRef.current.mutate({ 
                 symbol: pos.symbol, 
                 price: currentPrice, 
                 marketType: marketType 
@@ -140,16 +151,58 @@ export const useVigilante = ({
       };
 
       ws.onerror = (error) => {
-        console.error(`[GLOBAL_VIGILANTE] WebSocket Error for ${symbol}:`, error);
+        // Just log, the Polling strategy will pick it up
+        console.warn(`[VIGILANTE-WS] Error for ${symbol}. Polling will handle updates.`);
       };
 
       sockets.push(ws);
     });
 
+    // --- STRATEGY 2: POLLING (Robust, Fallback) ---
+    // Runs every 3 seconds to fetch prices via API Proxy (Server-side)
+    // This bypasses client-side WebSocket blocks (CORS, ISP, etc.)
+    const pollingInterval = setInterval(async () => {
+        for (const symbol of symbols) {
+            if (closeMutationRef.current.isPending) continue;
+            
+            const pos = positionsBySymbol[symbol];
+            if (!pos) continue;
+            if (closingSymbolsRef.current.has(pos.symbol)) continue;
+
+            const stopLoss = getNumericValue(pos.stopLoss);
+            const takeProfit = getNumericValue(pos.takeProfit);
+
+            if ((!stopLoss || stopLoss === 0) && (!takeProfit || takeProfit === 0)) continue;
+
+            const marketType = pos.marketType || 'spot';
+            const apiPath = marketType === 'futures' ? 'futures-price' : 'price';
+
+            try {
+                const res = await fetch(`/api/binance/${apiPath}?symbol=${symbol}`);
+                if (!res.ok) continue;
+                const data = await res.json();
+                const currentPrice = parseFloat(data.price);
+
+                if (checkTrigger(currentPrice, pos, stopLoss, takeProfit)) {
+                    console.log(`[VIGILANTE-POLL] Closing ${pos.symbol} at ${currentPrice}`);
+                    onAddToClosingPositionSymbols(pos.symbol);
+                    closeMutationRef.current.mutate({ 
+                        symbol: pos.symbol, 
+                        price: currentPrice, 
+                        marketType: marketType 
+                    });
+                }
+            } catch (err) {
+                console.error(`[VIGILANTE-POLL] Error fetching price for ${symbol}:`, err);
+            }
+        }
+    }, 3000); // Check every 3 seconds
+
     return () => {
       sockets.forEach(ws => ws.close());
+      clearInterval(pollingInterval);
     };
-  // Re-run if the structure of positions (symbols or SL/TP values) changes substantially
+  // Re-run if positions change
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openPositionsString, enabled, closeMutation, closingPositionSymbols, onAddToClosingPositionSymbols]);
+  }, [openPositionsString, enabled, onAddToClosingPositionSymbols]);
 };
