@@ -96,7 +96,7 @@ const Testimonials = () => {
               <div className={styles.divider} />
               <div className={styles.statItem}>
                 <div className={styles.statValue}>100%</div>
-                <div className={styles.statLabel}>Satisfação</div>
+                <div className={styles.statLabel}>Clientes Satisfeitos</div>
               </div>
             </div>
           </div>
