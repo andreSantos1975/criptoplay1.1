@@ -13,22 +13,27 @@ import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
 import { CryptoList } from '@/components/dashboard/CryptoList/CryptoList'; // Import CryptoList
 import { useVigilante, SimulatorPosition } from '@/hooks/useVigilante';
+import { Alert, AlertType } from '@prisma/client';
 
 /// --- Tipos ---
 type PositionSide = 'LONG' | 'SHORT';
 
+// Interface atualizada para refletir a agregação do backend
 interface FuturesPosition {
-  id: string;
+  id: string; // ID de referência
+  ids: string[]; // Lista de todos os IDs agregados
   symbol: string;
   side: PositionSide;
   quantity: number;
   leverage: number;
-  entryPrice: number;
+  entryPrice: number; // Preço médio
   liquidationPrice: number;
+  margin: number;
   pnl: number | null;
   createdAt: string;
-  stopLoss?: number | null;
-  takeProfit?: number | null;
+  stopLoss: number | null;
+  takeProfit: number | null;
+  marketType: 'futures';
 }
 
 interface CreatePositionPayload {
@@ -42,7 +47,7 @@ interface CreatePositionPayload {
 }
 
 interface ClosePositionPayload {
-  positionId: string;
+  positionIds: string[]; // Alterado para aceitar múltiplos IDs
   exitPrice: number;
 }
 
@@ -53,8 +58,6 @@ interface BinanceKlineData {
   3: string; // Low
   4: string; // Close
 }
-
-import { Alert, AlertType } from '@prisma/client';
 
 // --- API Hooks ---
 const fetchOpenPositions = async (): Promise<FuturesPosition[]> => {
@@ -109,21 +112,6 @@ const closePosition = async (payload: ClosePositionPayload) => {
 };
 
 // --- Componentes ---
-// ... (FuturesTradeForm and FuturesPositionRow remain unchanged) ...
-// (Omitting them here for brevity in replace call, assuming replace context handles it if I target carefully or re-include entire file content if safe. 
-// Given replace tool constraints, I should target specific blocks. 
-// BUT the prompt asks to implement logic which spans across imports, hook definitions and component body.
-// I will target the Imports/API section first, then the Component Body.)
-
-// Step 1: Replace imports and API functions
-// Step 2: Replace Component Body logic
-
-// Let's try to target the FuturesSimulator component body primarily.
-
-// REPLACING ENTIRE FILE CONTENT IS SAFER IF I HAVE IT ALL, BUT I NEED TO BE CAREFUL.
-// I will target the `FuturesSimulator` component definition to inject state and logic.
-
-// --- Componentes ---
 
 const FuturesTradeForm = ({ 
   symbol, 
@@ -151,16 +139,11 @@ const FuturesTradeForm = ({
   const [quantity, setQuantity] = useState(0.01);
   const [leverage, setLeverage] = useState(10);
   
-  // Local state for inputs to allow commas and flexible typing
-  // We initialize as string to allow "empty" state and "trailing comma" state
   const [slInput, setSlInput] = useState(tradeLevels.stopLoss > 0 ? tradeLevels.stopLoss.toString().replace('.', ',') : '');
   const [tpInput, setTpInput] = useState(tradeLevels.takeProfit > 0 ? tradeLevels.takeProfit.toString().replace('.', ',') : '');
 
-  // Sync local inputs when tradeLevels change externally (e.g. from chart drag)
-  // We only update if the numeric value is significantly different to avoid cursor jumping while typing
   useEffect(() => {
     const currentSlNumeric = parseFloat(slInput.replace(',', '.')) || 0;
-    // Tolerance for floating point comparison or just check strict inequality if handling integers mostly
     if (Math.abs(tradeLevels.stopLoss - currentSlNumeric) > 0.000001) {
        setSlInput(tradeLevels.stopLoss > 0 ? tradeLevels.stopLoss.toString().replace('.', ',') : '');
     }
@@ -173,16 +156,12 @@ const FuturesTradeForm = ({
     }
   }, [tradeLevels.takeProfit]);
 
-  // Handler for Stop Loss Input
   const handleSlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let rawValue = e.target.value;
-      
-      // Allow only numbers, commas and dots
       if (!/^[0-9.,]*$/.test(rawValue)) return;
 
-      setSlInput(rawValue); // Update display immediately
+      setSlInput(rawValue); 
       
-      // Normalize for calculation: replace comma with dot
       const normalized = rawValue.replace(',', '.');
       const numValue = parseFloat(normalized);
       
@@ -192,14 +171,11 @@ const FuturesTradeForm = ({
       });
   };
 
-  // Handler for Take Profit Input
   const handleTpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let rawValue = e.target.value;
-
-      // Allow only numbers, commas and dots
       if (!/^[0-9.,]*$/.test(rawValue)) return;
 
-      setTpInput(rawValue); // Update display immediately
+      setTpInput(rawValue); 
       
       const normalized = rawValue.replace(',', '.');
       const numValue = parseFloat(normalized);
@@ -210,17 +186,14 @@ const FuturesTradeForm = ({
       });
   };
 
-  // Cálculos de Estimativa
   const notionalValueUSDT = quantity * currentPrice;
   const marginRequiredUSDT = notionalValueUSDT / leverage;
   const marginRequiredBRL = marginRequiredUSDT * exchangeRate;
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-  // Cálculos de Risco/Recompensa em BRL
   const entryPriceBRL = tradeLevels.entry > 0 ? tradeLevels.entry : (currentPrice * exchangeRate);
   
-  // Cálculo explícito do risco
   let riskAmountBRL = 0;
   if (entryPriceBRL > 0 && tradeLevels.stopLoss > 0) {
      const pnlPerUnit = side === 'LONG' 
@@ -228,10 +201,8 @@ const FuturesTradeForm = ({
         : tradeLevels.stopLoss - entryPriceBRL;
      riskAmountBRL = pnlPerUnit * quantity;
   }
-  // Exibir risco apenas se for positivo (perda)
   const showRisk = riskAmountBRL > 0;
 
-  // Cálculo explícito do ganho
   let rewardAmountBRL = 0;
   if (entryPriceBRL > 0 && tradeLevels.takeProfit > 0) {
       const pnlPerUnit = side === 'LONG'
@@ -243,7 +214,6 @@ const FuturesTradeForm = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Usa o preço atual passado via prop se disponível, senão busca (fallback)
     let entryPrice = currentPrice;
 
     if (!entryPrice) {
@@ -263,7 +233,6 @@ const FuturesTradeForm = ({
     toast.dismiss();
     toast.loading('Abrindo posição...');
     
-    // Convertendo SL/TP de volta para a moeda original (USDT) se necessário
     let finalStopLoss = tradeLevels.stopLoss > 0 ? tradeLevels.stopLoss : undefined;
     let finalTakeProfit = tradeLevels.takeProfit > 0 ? tradeLevels.takeProfit : undefined;
 
@@ -392,7 +361,8 @@ const FuturesPositionRow = ({ position, closePositionMutation, exchangeRate, isL
             return;
         }
         toast.loading('Fechando posição...');
-        closePositionMutation.mutate({ positionId: position.id, exitPrice: currentPrice });
+        // Alterado para enviar positionIds (array)
+        closePositionMutation.mutate({ positionIds: position.ids, exitPrice: currentPrice });
     };
     
     const formatBRL = (value: number) => {
@@ -400,15 +370,15 @@ const FuturesPositionRow = ({ position, closePositionMutation, exchangeRate, isL
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value * exchangeRate);
     }
 
+    // Calcula margem total baseada no valor investido
     const initialMargin = (position.entryPrice * position.quantity) / position.leverage;
 
-    // Calculate projected PnL (Risk/Reward) in BRL
     let riskValue = 0;
     if (position.stopLoss) {
         const pnl = position.side === 'LONG' 
             ? position.stopLoss - position.entryPrice 
             : position.entryPrice - position.stopLoss;
-        riskValue = pnl * position.quantity * exchangeRate; // Convert to BRL explicitly
+        riskValue = pnl * position.quantity * exchangeRate;
     }
 
     let rewardValue = 0;
@@ -419,7 +389,6 @@ const FuturesPositionRow = ({ position, closePositionMutation, exchangeRate, isL
         rewardValue = pnl * position.quantity * exchangeRate;
     }
 
-    // Helper to format BRL directly from BRL value
     const formatMoney = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
     return (
@@ -456,7 +425,7 @@ const FuturesPositionsList = ({ positions, isLoading, closePositionMutation, exc
                             <tr>
                                 <th>Símbolo</th><th>Lado</th><th>Qtd.</th><th>Alav.</th>
                                 <th>Margem</th>
-                                <th>Preço Entrada</th>
+                                <th>Preço Médio</th>
                                 <th>Risco (SL)</th>
                                 <th>Retorno (TP)</th>
                                 <th>PnL (Não Realizado)</th>
@@ -483,15 +452,13 @@ const FuturesSimulator = () => {
   const [watchedSymbols, setWatchedSymbols] = useState<string[]>(['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'ADATUSD', 'DOGEUSDT', 'SHIBUSDT', 'BNBUSDT']);
   const [newSymbol, setNewSymbol] = useState('');
   
-  // Ref para controlar a aplicação única dos valores padrão
   const defaultsAppliedRef = useRef(false);
 
-  // Resetar a aplicação de padrões quando o lado mudar
   useEffect(() => {
     defaultsAppliedRef.current = false;
   }, [side]);
 
-  // Busca a taxa de câmbio no componente pai para ser distribuída
+  // MOVED: Hooks de dados movidos para o topo para garantir inicialização antes do uso
   const { data: exchangeRateData, isLoading: isLoadingRate } = useQuery({
     queryKey: ['usdtToBrlRate'],
     queryFn: async () => {
@@ -503,7 +470,17 @@ const FuturesSimulator = () => {
   });
   const exchangeRate = exchangeRateData?.usdtToBrl || 1;
 
-  // Lógica de busca de dados para o gráfico (reutilizada do Simulator.tsx)
+  const { data: positions, isLoading } = useQuery<FuturesPosition[]>({
+    queryKey: ['futuresPositions'],
+    queryFn: fetchOpenPositions,
+    refetchInterval: 10000,
+  });
+
+  const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[], Error>({
+    queryKey: ['alerts'],
+    queryFn: fetchAlerts,
+  });
+
   const { data: initialChartData, isFetching: isChartLoading } = useQuery({
     queryKey: ["binanceKlines", 'futures', interval, symbol],
     queryFn: async () => {
@@ -523,7 +500,6 @@ const FuturesSimulator = () => {
     enabled: true,
   });
 
-  // Convert chart data to BRL
   const chartDataInBRL = useMemo(() => {
     if (!initialChartData) return undefined;
     if (symbol.endsWith('BRL')) return initialChartData;
@@ -556,47 +532,45 @@ const FuturesSimulator = () => {
     return { ...lastCandle, close: realtimeChartUpdate?.close || lastCandle.close };
   }, [initialChartData, realtimeChartUpdate]);
 
-  // Efeito para aplicar Stop Loss e Take Profit padrão (Futuros)
+  const prevPositionsLengthRef = useRef(0);
+
+  // Efeito para detectar o FECHAMENTO de posições e permitir reaplicar os defaults
+  useEffect(() => {
+      const currentLength = positions?.length || 0;
+      // Se tínhamos posições antes (> 0) e agora não temos (0), significa que fechou tudo.
+      if (prevPositionsLengthRef.current > 0 && currentLength === 0) {
+          defaultsAppliedRef.current = false;
+      }
+      prevPositionsLengthRef.current = currentLength;
+  }, [positions]);
+
+  // Efeito para aplicar Stop Loss e Take Profit padrão (apenas se defaultsAppliedRef for false)
   useEffect(() => {
     let currentPrice = assetHeaderData.close;
-
-    // Se não for par BRL, converter para BRL para alinhar com o gráfico
     if (!symbol.endsWith('BRL') && exchangeRate > 0) {
         currentPrice = currentPrice * exchangeRate;
     }
 
-    if (currentPrice > 0 && !defaultsAppliedRef.current) {
+    // Só aplica se não tiver aplicado ainda E se não tiver posições abertas
+    if (currentPrice > 0 && !defaultsAppliedRef.current && (!positions || positions.length === 0)) {
         if (side === 'LONG') {
             setTradeLevels(prev => ({ 
                 ...prev, 
-                entry: currentPrice, // Opcional: define também a entrada para referência visual
-                stopLoss: currentPrice * 0.99, // 1% abaixo
-                takeProfit: currentPrice * 1.02 // 2% acima
+                entry: currentPrice, 
+                stopLoss: currentPrice * 0.99, 
+                takeProfit: currentPrice * 1.02 
             }));
         } else {
-            // Short: Stop acima, Take abaixo
             setTradeLevels(prev => ({ 
                 ...prev, 
                 entry: currentPrice,
-                stopLoss: currentPrice * 1.01, // 1% acima
-                takeProfit: currentPrice * 0.98 // 2% abaixo
+                stopLoss: currentPrice * 1.01, 
+                takeProfit: currentPrice * 0.98 
             }));
         }
         defaultsAppliedRef.current = true;
     }
-  }, [assetHeaderData.close, side, symbol, exchangeRate]);
-
-  // Lógica de busca de dados e mutações para as posições
-  const { data: positions, isLoading } = useQuery<FuturesPosition[]>({
-    queryKey: ['futuresPositions'],
-    queryFn: fetchOpenPositions,
-    refetchInterval: 10000,
-  });
-
-  const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[], Error>({
-    queryKey: ['alerts'],
-    queryFn: fetchAlerts,
-  });
+  }, [assetHeaderData.close, side, symbol, exchangeRate, positions]); // 'positions' is now safe to use here
 
   const createAlertMutation = useMutation<Alert, Error, Partial<Alert>>({
     mutationFn: createAlert,
@@ -616,6 +590,8 @@ const FuturesSimulator = () => {
       queryClient.invalidateQueries({ queryKey: ['futuresPositions'] });
       queryClient.invalidateQueries({ queryKey: ['trades'] });
       queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
+      // Limpa as linhas de rascunho (prospectivas) após o sucesso da operação
+      setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 });
     },
     onError: (error: Error) => {
       toast.dismiss();
@@ -649,56 +625,58 @@ const FuturesSimulator = () => {
     setClosingPositionSymbols(prev => new Set(prev).add(symbol));
   };
 
-  // Prepare positions for the Vigilante (Auto-Close)
+  // Mapeamento para o Vigilante (Lógica de Backend - USDT)
   const vigilantePositions: SimulatorPosition[] = useMemo(() => {
     if (!positions) return [];
-    const mappedPositions = positions.map(pos => ({
+    return positions.map(pos => ({
       symbol: pos.symbol,
-      totalQuantity: pos.quantity, // FuturesPosition uses quantity directly
+      totalQuantity: pos.quantity,
       averageEntryPrice: pos.entryPrice,
       stopLoss: pos.stopLoss || 0,
       takeProfit: pos.takeProfit || 0,
-      tradeIds: [pos.id], // Using position ID as trade ID reference
+      tradeIds: pos.ids,
       marketType: 'futures'
     }));
-    console.log("DEBUG: Original Futures Positions:", positions);
-    console.log("DEBUG: Mapped Vigilante Positions:", mappedPositions);
-    return mappedPositions;
   }, [positions]);
 
-  // Activate Vigilante
+  // Mapeamento para o Gráfico (Visualização - BRL)
+  const chartPositions = useMemo(() => {
+    return vigilantePositions.map(pos => {
+      // Se já for BRL ou exchangeRate inválido, mantém original
+      if (pos.symbol.endsWith('BRL') || !exchangeRate) return pos;
+      
+      return {
+        ...pos,
+        averageEntryPrice: pos.averageEntryPrice * exchangeRate,
+        stopLoss: pos.stopLoss > 0 ? pos.stopLoss * exchangeRate : 0,
+        takeProfit: pos.takeProfit > 0 ? pos.takeProfit * exchangeRate : 0,
+      };
+    });
+  }, [vigilantePositions, exchangeRate]);
+
+  // Ativando o Vigilante com a nova lógica de fechamento
   useVigilante({
-    openPositions: vigilantePositions,
+    openPositions: vigilantePositions, // Mantém dados originais (USDT) para lógica correta
     closeMutation: {
       ...closePositionMutation,
       mutate: (payload) => {
-        // Vigilante agora passa { symbol, price, marketType }
-        // Não precisamos mais buscar o preço! Usamos o preço exato do trigger.
         const pos = positions?.find(p => p.symbol === payload.symbol);
         
         if (pos) {
            console.log(`[FuturesSimulator] Auto-closing ${pos.symbol} at ${payload.price}`);
            closePositionMutation.mutate({ 
-               positionId: pos.id, 
+               positionIds: pos.ids,
                exitPrice: payload.price 
            });
         }
       }
-    } as any, // Cast necessário pois a assinatura do mutate varia
+    } as any,
     enabled: true,
     closingPositionSymbols,
     onAddToClosingPositionSymbols: handleAddToClosing,
   });
 
-  // Handlers para Alertas
   const handleStartCreateAlert = () => {
-    const currentPrice = assetHeaderData.close; // Já está em BRL se exchangeRate for aplicado no assetHeaderData?
-    // Verificar assetHeaderData.close acima. Ele pega do initialChartData RAW ou realtimeChartUpdate RAW?
-    // initialChartData é RAW (USDT). chartDataInBRL é convertido.
-    // assetHeaderData usa initialChartData RAW.
-    // Precisamos do preço em BRL se o gráfico estiver em BRL.
-    
-    // CORREÇÃO: Pegar o último preço do `chartDataInBRL` se disponível
     const lastCloseBRL = chartDataInBRL && chartDataInBRL.length > 0 
         ? chartDataInBRL[chartDataInBRL.length - 1].close 
         : (assetHeaderData.close * exchangeRate);
@@ -710,14 +688,6 @@ const FuturesSimulator = () => {
 
   const handleSaveAlert = () => {
     if (prospectiveAlert) {
-      // Se o símbolo for USDT, precisamos converter o preço do alerta de volta para USDT para salvar no banco?
-      // OU salvamos em BRL e o backend lida? O sistema de alertas parece simples.
-      // Assumindo que o alerta deve ser no valor do par. Se o par é BTCUSDT, o alerta é em USDT.
-      // Mas o usuário vê em BRL.
-      // Para simplificar, se o usuário está vendo em BRL, ele quer ser alertado naquele preço em BRL.
-      // MAS, o preço da Binance vem em USDT. O alerta precisa comparar maçãs com maçãs.
-      
-      // SOLUÇÃO: Converter o preço alvo de volta para a moeda do par (USDT) antes de salvar
       let targetPrice = prospectiveAlert.price;
       if (!symbol.endsWith('BRL')) {
           targetPrice = targetPrice / exchangeRate;
@@ -728,7 +698,7 @@ const FuturesSimulator = () => {
         config: {
           symbol: symbol,
           targetPrice: targetPrice,
-          operator: 'gt', // Simplificação, backend ou lógica complexa poderia determinar
+          operator: 'gt', 
         }
       });
     }
@@ -740,9 +710,9 @@ const FuturesSimulator = () => {
   
   const handleCryptoSelect = (s: string) => {
     setSymbol(s);
-    setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 }); // Reset levels when changing symbol
-    setProspectiveAlert(null); // Clear prospective alert
-    defaultsAppliedRef.current = false; // Permitir reaplicar defaults
+    setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 }); 
+    setProspectiveAlert(null); 
+    defaultsAppliedRef.current = false;
   };
 
   const handleDeleteSymbol = (symbolToDelete: string) => {
@@ -752,7 +722,7 @@ const FuturesSimulator = () => {
   const handleAddSymbol = async () => {
     if (!newSymbol) return;
     const s = newSymbol.trim().toUpperCase();
-    const formattedSymbol = s.endsWith('USDT') ? s : `${s}USDT`; // Assume USDT for futures
+    const formattedSymbol = s.endsWith('USDT') ? s : `${s}USDT`; 
 
     if (watchedSymbols.includes(formattedSymbol)) {
         toast.error('Ativo já está na lista.');
@@ -760,7 +730,6 @@ const FuturesSimulator = () => {
         return;
     }
     try {
-        // Verify symbol exists in futures market
         const res = await fetch(`/api/binance/futures-klines?symbol=${formattedSymbol}&interval=1m&limit=1`);
         if (!res.ok) throw new Error('Ativo não encontrado no mercado de Futuros da Binance.');
         
@@ -797,7 +766,7 @@ const FuturesSimulator = () => {
           onLevelsChange={setTradeLevels}
           tipoOperacao={side === 'LONG' ? 'compra' : 'venda'}
           alerts={alerts}
-          openPositions={vigilantePositions} // Passando posições reais para desenhar as linhas fixas
+          openPositions={chartPositions} // Passando posições convertidas para BRL
           prospectiveAlert={prospectiveAlert}
           onProspectiveAlertChange={setProspectiveAlert}
           onStartCreateAlert={handleStartCreateAlert}

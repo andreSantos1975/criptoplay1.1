@@ -121,11 +121,81 @@ export async function GET(req: Request) {
         status: 'OPEN',
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: 'asc', // Processar do mais antigo para o mais novo
       },
     });
 
-    return NextResponse.json(openPositions, { status: 200 });
+    // Agregação de posições por Símbolo e Lado (Side)
+    const positionsMap = new Map<string, any>();
+
+    for (const pos of openPositions) {
+      const key = `${pos.symbol}-${pos.side}`;
+
+      if (!positionsMap.has(key)) {
+        positionsMap.set(key, {
+          symbol: pos.symbol,
+          side: pos.side,
+          quantity: 0,
+          totalValue: 0, // Para calcular preço médio
+          margin: 0,
+          leverage: pos.leverage, // Assume a alavancagem da primeira (ou atualiza com a última)
+          stopLoss: pos.stopLoss ? pos.stopLoss.toNumber() : null,
+          takeProfit: pos.takeProfit ? pos.takeProfit.toNumber() : null,
+          ids: [],
+          createdAt: pos.createdAt, // Data da primeira abertura
+        });
+      }
+
+      const aggregated = positionsMap.get(key);
+      const qty = pos.quantity.toNumber();
+      const price = pos.entryPrice.toNumber();
+      
+      aggregated.quantity += qty;
+      aggregated.totalValue += (qty * price);
+      aggregated.margin += pos.margin.toNumber();
+      aggregated.ids.push(pos.id);
+
+      // Atualiza Alavancagem, SL e TP com a operação mais recente (comportamento padrão de adicionar margem)
+      aggregated.leverage = pos.leverage;
+      if (pos.stopLoss) aggregated.stopLoss = pos.stopLoss.toNumber();
+      if (pos.takeProfit) aggregated.takeProfit = pos.takeProfit.toNumber();
+    }
+
+    const aggregatedPositions = Array.from(positionsMap.values()).map(pos => {
+      const averageEntryPrice = pos.totalValue / pos.quantity;
+      
+      // Recalcular preço de liquidação baseado no preço médio e alavancagem atual
+      // Liquidação Long = Entry - (Entry / Leverage)
+      // Liquidação Short = Entry + (Entry / Leverage)
+      let liquidationPrice = 0;
+      const priceChangePerLeverage = averageEntryPrice / pos.leverage;
+
+      if (pos.side === 'LONG') {
+        liquidationPrice = averageEntryPrice - priceChangePerLeverage;
+      } else {
+        liquidationPrice = averageEntryPrice + priceChangePerLeverage;
+      }
+      if (liquidationPrice < 0) liquidationPrice = 0;
+
+      return {
+        id: pos.ids[0], // ID de referência (usa o primeiro para chaves de lista, mas o array 'ids' para operações)
+        ids: pos.ids, // Lista completa de IDs agregados
+        symbol: pos.symbol,
+        side: pos.side,
+        quantity: pos.quantity,
+        leverage: pos.leverage,
+        entryPrice: averageEntryPrice,
+        liquidationPrice: liquidationPrice,
+        margin: pos.margin,
+        stopLoss: pos.stopLoss,
+        takeProfit: pos.takeProfit,
+        pnl: null, // PnL é calculado em tempo real no front ou via atualização de preço
+        createdAt: pos.createdAt,
+        marketType: 'futures', // Identificador importante para o hook useVigilante
+      };
+    });
+
+    return NextResponse.json(aggregatedPositions, { status: 200 });
 
   } catch (error) {
     console.error('Erro ao buscar posições de futuros:', error);
