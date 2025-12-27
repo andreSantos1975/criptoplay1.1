@@ -38,7 +38,7 @@ const Navbar = () => {
 
               </div>
 
-              <span className={styles.logoText}>CriptoGame</span>
+              <span className={styles.logoText}>CriptoPlay</span>
 
             </div>
 

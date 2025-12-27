@@ -84,7 +84,7 @@ const Footer = () => {
             <div className={styles.list}>
               <div className={styles.contactItem}>
                 <Mail />
-                <span className={styles.contactText}>contato@cryptogame.com.br</span>
+                <span className={styles.contactText}>contato@cryptoplay.com.br</span>
               </div>
               <div className={styles.contactItem}>
                 <Phone />
@@ -102,7 +102,7 @@ const Footer = () => {
         <div className={styles.bottomSection}>
           <div className={styles.bottomContent}>
             <div className={styles.copyright}>
-              © 2024 CryptoGame. Todos os direitos reservados.
+              © 2024 CryptoPlay. Todos os direitos reservados.
             </div>
             <div className={styles.legalLinks}>
               <a href="#" className={styles.legalLink}>

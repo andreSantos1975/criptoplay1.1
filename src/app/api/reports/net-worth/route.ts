@@ -22,9 +22,46 @@ export async function GET(request: Request) {
   try {
     const userId = session.user.id;
 
-    // 1. Fetch all necessary data
-    const trades = await prisma.trade.findMany({ where: { userId } });
-    const capitalMovements = await prisma.capitalMovement.findMany({ where: { userId } });
+    // 1. Fetch all necessary data (Simulator Only)
+    const spotTradesPromise = prisma.trade.findMany({ 
+      where: { 
+        userId,
+        isSimulator: true
+      } 
+    });
+    
+    const futuresPositionsPromise = prisma.futuresPosition.findMany({
+      where: { userId }
+    });
+
+    const [spotTrades, futuresPositions] = await Promise.all([spotTradesPromise, futuresPositionsPromise]);
+
+    // Normalize Futures to Trade interface
+    const futuresAsTrades = futuresPositions.map(pos => ({
+        id: pos.id,
+        symbol: pos.symbol,
+        type: pos.side === 'LONG' ? 'BUY' : 'SELL',
+        status: pos.status === 'LIQUIDATED' ? 'CLOSED' : pos.status, // Treat LIQUIDATED as CLOSED for PnL
+        entryDate: pos.createdAt,
+        exitDate: pos.closedAt,
+        entryPrice: pos.entryPrice,
+        exitPrice: null,
+        quantity: pos.quantity,
+        pnl: pos.pnl,
+        userId: pos.userId,
+        // Helper properties for type compatibility if needed
+        marketType: 'FUTURES',
+        isSimulator: true
+    }));
+
+    // Combine and sort
+    const allTrades = [...spotTrades, ...futuresAsTrades].sort((a, b) => {
+        return new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime();
+    });
+
+    // Capital Movements are currently for Personal Finance only, not Simulator.
+    // We should not include them in the Simulator Portfolio Evolution.
+    const capitalMovements: CapitalMovement[] = [];
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     // 2. Fetch the current USDT to BRL exchange rate
@@ -38,7 +75,7 @@ export async function GET(request: Request) {
 
     // 4. Call the centralized portfolio calculator
     const portfolioData = generatePortfolioData(
-      trades as unknown as Trade[],
+      allTrades as unknown as Trade[],
       capitalMovements as unknown as CapitalMovement[],
       granularity,
       usdtToBrlRate.toNumber(),
