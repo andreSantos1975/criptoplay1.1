@@ -30,8 +30,10 @@ export async function GET(request: Request) {
     // 2. Fetch the current USDT to BRL exchange rate
     const usdtToBrlRate = await getCurrentPrice("USDTBRL");
 
-    // 3. Get the user's initial balance or default to 1000
-    const initialBalance = user?.virtualBalance ? user.virtualBalance.toNumber() : 10000;
+    // 3. Set the simulation initial balance (Simulador starts with 10k)
+    // We cannot use user.virtualBalance because that is the CURRENT balance (End State).
+    // Using current balance as initial would double-count all profits during the replay.
+    const initialBalance = 10000;
 
 
     // 4. Call the centralized portfolio calculator

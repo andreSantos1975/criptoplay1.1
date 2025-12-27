@@ -793,19 +793,11 @@ const FuturesSimulator = () => {
           interval={interval}
           onIntervalChange={setInterval}
           realtimeChartUpdate={realtimeUpdateInBRL}
-          // A linha de entrada deve seguir o preço atual (Ordem a Mercado)
-          // SL e TP continuam vindo do estado (fixos/arrastáveis)
-          tradeLevels={{
-            entry: (!symbol.endsWith('BRL') && exchangeRate > 0) 
-              ? assetHeaderData.close * exchangeRate 
-              : assetHeaderData.close,
-            stopLoss: tradeLevels.stopLoss,
-            takeProfit: tradeLevels.takeProfit
-          }}
+          tradeLevels={tradeLevels}
           onLevelsChange={setTradeLevels}
           tipoOperacao={side === 'LONG' ? 'compra' : 'venda'}
           alerts={alerts}
-          openPositions={[]} // Mantemos vazio pois o futures mostra posições na tabela abaixo, não desenha linhas (por enquanto)
+          openPositions={vigilantePositions} // Passando posições reais para desenhar as linhas fixas
           prospectiveAlert={prospectiveAlert}
           onProspectiveAlertChange={setProspectiveAlert}
           onStartCreateAlert={handleStartCreateAlert}

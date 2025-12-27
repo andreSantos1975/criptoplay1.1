@@ -104,12 +104,9 @@ export const useTradeLines = ({
         }
     
         // Desenha as linhas para a operação prospectiva (tradeLevels)
-        // Linha de Entrada Prospectiva
-        if (tradeLevels.entry > 0) {
-          const line = series.createPriceLine(createLineOptions(tradeLevels.entry, '#42A5F5', 'Entrada Prev.', false));
-          priceLinesRef.current.push(line);
-          prospectivePriceLinesRef.current.entry = line;
-        }
+        // A linha de Entrada Prospectiva foi removida para comportamento profissional (limpeza visual).
+        // O usuário se baseia no preço atual (candle/ticker).
+        
         // Linha de Take Profit Prospectiva
         if (tradeLevels.takeProfit > 0) {
           const line = series.createPriceLine(createLineOptions(tradeLevels.takeProfit, '#66BB6A', 'TP Prev.', true));

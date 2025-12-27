@@ -91,12 +91,12 @@ const Testimonials = () => {
               <div className={styles.divider} />
               <div className={styles.statItem}>
                 <div className={styles.statValue}>Simulador Profissional</div>
-                <div className={styles.statLabel}>aleta de preço ilimitado</div>
+                <div className={styles.statLabel}>aletas de preço ilimitados</div>
               </div>
               <div className={styles.divider} />
               <div className={styles.statItem}>
-                <div className={styles.statValue}>5%</div>
-                <div className={styles.statLabel}>Trade de Elite</div>
+                <div className={styles.statValue}>100%</div>
+                <div className={styles.statLabel}>Satisfação</div>
               </div>
             </div>
           </div>

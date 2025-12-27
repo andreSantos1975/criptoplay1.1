@@ -1,5 +1,6 @@
 .container {
   padding: 2rem;
+  padding-top: 6rem; /* Added padding-top to account for fixed navbar */
   color: #1f2937; /* Texto escuro para fundo claro */
   max-width: 1200px;
   margin: 0 auto;

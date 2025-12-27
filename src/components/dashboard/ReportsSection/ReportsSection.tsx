@@ -243,7 +243,9 @@ export const ReportsSection = () => {
   );
 
   const kpiData = useMemo(() => {
-    const initialBalance = Number(simulatorProfile?.virtualBalance) || 0; 
+    // virtualBalance do backend JÁ INCLUI o PnL dos trades fechados.
+    // Não devemos somar totalPnl novamente.
+    const patrimonioAtual = Number(simulatorProfile?.virtualBalance) || 0; 
 
     const totalPnl = trades
       .filter((t) => t.status === 'CLOSED' && t.pnl != null)
@@ -253,8 +255,6 @@ export const ReportsSection = () => {
           : Number(t.pnl) * brlRate;
         return acc + pnlInBrl;
       }, 0);
-
-    const patrimonioAtual = initialBalance + totalPnl;
 
     return {
       patrimonioAtual,
