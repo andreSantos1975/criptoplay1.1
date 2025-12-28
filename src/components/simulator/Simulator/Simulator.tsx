@@ -468,6 +468,7 @@ const Simulator = () => {
         />
         <div className={styles.chartWrapper}>
             <SimulatorChart
+                key={selectedCrypto}
                 symbol={selectedCrypto}
                 tradeLevels={tradeLevelsForChart}
                 onLevelsChange={handleLevelsChange}

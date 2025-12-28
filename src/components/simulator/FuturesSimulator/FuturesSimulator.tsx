@@ -756,6 +756,7 @@ const FuturesSimulator = () => {
       
       <div className={styles.chartWrapper}>
         <SimulatorChart
+          key={symbol}
           symbol={symbol}
           initialChartData={chartDataInBRL}
           isChartLoading={isChartLoading}
