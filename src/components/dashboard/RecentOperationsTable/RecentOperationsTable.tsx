@@ -224,8 +224,15 @@ export const RecentOperationsTable = () => {
     if (filteredTrades.length === 0) return <TableRow><TableCell colSpan={activeTab === 'open' ? 12 : 9} className="text-center">Nenhuma operação encontrada para esta categoria.</TableCell></TableRow>;
 
     return filteredTrades.map((trade) => {
-      const { currencyCode, locale } = getCurrencyDetails(trade);
+      const { currencyCode: originalCurrency } = getCurrencyDetails(trade);
       const brlRate = exchangeRateData?.usdtToBrl || 1;
+      const isUSD = originalCurrency === 'USD';
+      
+      // Conversion logic: if it's USD, multiply by rate, otherwise keep as is.
+      // We always want to display in BRL per user request.
+      const rate = isUSD ? brlRate : 1;
+      const displayCurrency = 'BRL';
+      const displayLocale = 'pt-BR';
 
       // Current crypto price in its original currency (USD or BRL)
       const currentCryptoData = cryptoData?.find(c => c.symbol === trade.symbol);
@@ -234,34 +241,42 @@ export const RecentOperationsTable = () => {
         currentPriceInOriginalCurrency = parseFloat(currentCryptoData.lastPrice);
       }
       
-      let pnl = null;
+      let pnlInOriginalCurrency = null;
       if (trade.status === 'CLOSED') {
-        pnl = trade.pnl;
+        pnlInOriginalCurrency = trade.pnl;
       } else if (trade.status === 'OPEN' && currentPriceInOriginalCurrency !== undefined) {
         const isBuy = trade.type.toLowerCase() === 'compra' || trade.type.toLowerCase() === 'buy';
-        pnl = (isBuy ? (currentPriceInOriginalCurrency - trade.entryPrice) : (trade.entryPrice - currentPriceInOriginalCurrency)) * trade.quantity;
+        pnlInOriginalCurrency = (isBuy ? (currentPriceInOriginalCurrency - trade.entryPrice) : (trade.entryPrice - currentPriceInOriginalCurrency)) * trade.quantity;
       }
 
-      const isProfit = pnl != null && pnl >= 0;
+      const isProfit = pnlInOriginalCurrency != null && pnlInOriginalCurrency >= 0;
 
-      const stopValue = trade.stopLoss ? Math.abs(trade.entryPrice - trade.stopLoss) * trade.quantity : null;
-      const takeValue = trade.takeProfit ? Math.abs(trade.takeProfit - trade.entryPrice) * trade.quantity : null;
+      // Calculate displayed values (converted to BRL)
+      const displayedEntryPrice = trade.entryPrice * rate;
+      const displayedExitPrice = trade.exitPrice ? trade.exitPrice * rate : undefined;
+      const displayedPnl = pnlInOriginalCurrency != null ? pnlInOriginalCurrency * rate : null;
+
+      const stopValueOriginal = trade.stopLoss ? Math.abs(trade.entryPrice - trade.stopLoss) * trade.quantity : null;
+      const takeValueOriginal = trade.takeProfit ? Math.abs(trade.takeProfit - trade.entryPrice) * trade.quantity : null;
+
+      const displayedStopValue = stopValueOriginal != null ? stopValueOriginal * rate : null;
+      const displayedTakeValue = takeValueOriginal != null ? takeValueOriginal * rate : null;
 
       return (
         <TableRow key={trade.id} onClick={() => handleRowClick(trade)} className={styles.clickableRow}>
           <TableCell>{trade.symbol.replace("USDT", "")}</TableCell>
           <TableCell>{`${trade.type} (${trade.marketType})`}</TableCell>
           <TableCell>{trade.quantity}</TableCell>
-          <TableCell>{formatCurrency(trade.entryPrice, currencyCode, locale)}</TableCell>
-          <TableCell>{formatCurrency(trade.exitPrice, currencyCode, locale)}</TableCell>
-          <TableCell className={pnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
-            {formatTotalCurrency(pnl, currencyCode, locale)}
+          <TableCell>{formatCurrency(displayedEntryPrice, displayCurrency, displayLocale)}</TableCell>
+          <TableCell>{formatCurrency(displayedExitPrice, displayCurrency, displayLocale)}</TableCell>
+          <TableCell className={displayedPnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
+            {formatTotalCurrency(displayedPnl, displayCurrency, displayLocale)}
           </TableCell>
-          <TableCell className={pnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
+          <TableCell className={displayedPnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
             {calculatePnlPercent(trade, currentPriceInOriginalCurrency)}
           </TableCell>
-          <TableCell className={styles.loss}>{formatTotalCurrency(stopValue, currencyCode, locale)}</TableCell>
-          <TableCell className={styles.profit}>{formatTotalCurrency(takeValue, currencyCode, locale)}</TableCell>
+          <TableCell className={styles.loss}>{formatTotalCurrency(displayedStopValue, displayCurrency, displayLocale)}</TableCell>
+          <TableCell className={styles.profit}>{formatTotalCurrency(displayedTakeValue, displayCurrency, displayLocale)}</TableCell>
           <TableCell>
             <span className={`${styles.status} ${trade.status === 'CLOSED' ? styles.statusPaid : styles.statusPending}`}>
               {trade.status === 'CLOSED' ? 'Fechada' : 'Aberta'}
@@ -360,16 +375,28 @@ export const RecentOperationsTable = () => {
       </Modal>
 
       {isModalOpen && selectedTrade && (() => {
-        const { currencyCode, locale } = getCurrencyDetails(selectedTrade);
+        const { currencyCode: originalCurrency } = getCurrencyDetails(selectedTrade);
+        const brlRate = exchangeRateData?.usdtToBrl || 1;
+        const isUSD = originalCurrency === 'USD';
+        const rate = isUSD ? brlRate : 1;
+        const displayCurrency = 'BRL';
+        const displayLocale = 'pt-BR';
+
         const isBuy = selectedTrade.type.toLowerCase() === 'compra' || selectedTrade.type.toLowerCase() === 'buy';
 
-        const potentialLoss = (isBuy)
+        const potentialLossOriginal = (isBuy)
           ? (selectedTrade.stopLoss - selectedTrade.entryPrice) * selectedTrade.quantity
           : (selectedTrade.entryPrice - selectedTrade.stopLoss) * selectedTrade.quantity;
 
-        const potentialProfit = (isBuy)
+        const potentialProfitOriginal = (isBuy)
           ? (selectedTrade.takeProfit - selectedTrade.entryPrice) * selectedTrade.quantity
           : (selectedTrade.entryPrice - selectedTrade.takeProfit) * selectedTrade.quantity;
+
+        const potentialLoss = potentialLossOriginal * rate;
+        const potentialProfit = potentialProfitOriginal * rate;
+        const displayedEntryPrice = selectedTrade.entryPrice * rate;
+        const totalCost = (selectedTrade.entryPrice * selectedTrade.quantity) * rate;
+
 
         return (
           <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Detalhes da Operação">
@@ -378,14 +405,14 @@ export const RecentOperationsTable = () => {
               <div className={styles.modalGrid}>
                 <div><strong>Ativo / Par:</strong> {selectedTrade.symbol}</div>
                 <div><strong>Tipo:</strong> {selectedTrade.type} ({selectedTrade.marketType})</div>
-                <div><strong>Preço de Entrada:</strong> {formatCurrency(selectedTrade.entryPrice, currencyCode, locale)}</div>
+                <div><strong>Preço de Entrada:</strong> {formatCurrency(displayedEntryPrice, displayCurrency, displayLocale)}</div>
                 <div><strong>Quantidade:</strong> {selectedTrade.quantity}</div>
-                <div><strong>Custo Total ({currencyCode}):</strong> {formatCurrency(selectedTrade.entryPrice * selectedTrade.quantity, currencyCode, locale)}</div>
+                <div><strong>Custo Total ({displayCurrency}):</strong> {formatCurrency(totalCost, displayCurrency, displayLocale)}</div>
               </div>
               <h4>Gestão de Risco</h4>
               <div className={styles.modalGrid}>
-                <div><strong>Perda Potencial ({currencyCode}):</strong> <span className={potentialLoss < 0 ? styles.loss : ''}>{formatCurrency(potentialLoss, currencyCode, locale)}</span></div>
-                <div><strong>Lucro Potencial ({currencyCode}):</strong> <span className={potentialProfit > 0 ? styles.profit : ''}>{formatCurrency(potentialProfit, currencyCode, locale)}</span></div>
+                <div><strong>Perda Potencial ({displayCurrency}):</strong> <span className={potentialLoss < 0 ? styles.loss : ''}>{formatCurrency(potentialLoss, displayCurrency, displayLocale)}</span></div>
+                <div><strong>Lucro Potencial ({displayCurrency}):</strong> <span className={potentialProfit > 0 ? styles.profit : ''}>{formatCurrency(potentialProfit, displayCurrency, displayLocale)}</span></div>
               </div>
               {selectedTrade.notes && (
                 <>

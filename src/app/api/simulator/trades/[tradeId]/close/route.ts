@@ -17,59 +17,106 @@ export async function POST(
     const userId = session.user.id;
     const { tradeId } = params;
 
-    // 1. Encontrar a operação que o usuário quer fechar
+    // 1. Tentar encontrar a operação na tabela Trade (Spot)
     const trade = await prisma.trade.findUnique({
       where: { id: tradeId },
     });
 
-    // 2. Validar a operação
-    if (!trade) {
-      return new NextResponse(JSON.stringify({ message: 'Operação não encontrada' }), { status: 404 });
-    }
-    if (trade.userId !== userId) {
-      return new NextResponse(JSON.stringify({ message: 'Você não tem permissão para fechar esta operação' }), { status: 403 });
-    }
-    if (trade.status !== 'OPEN') {
-      return new NextResponse(JSON.stringify({ message: 'Esta operação já está fechada' }), { status: 400 });
-    }
+    if (trade) {
+      // --- LÓGICA PARA TRADE SPOT ---
+      if (trade.userId !== userId) {
+        return new NextResponse(JSON.stringify({ message: 'Você não tem permissão para fechar esta operação' }), { status: 403 });
+      }
+      if (trade.status !== 'OPEN') {
+        return new NextResponse(JSON.stringify({ message: 'Esta operação já está fechada' }), { status: 400 });
+      }
 
-    // 3. Obter o preço atual para o fechamento
-    const exitPrice = await getCurrentPrice(trade.symbol);
+      const exitPrice = await getCurrentPrice(trade.symbol);
 
-    // 4. Calcular o Lucro ou Prejuízo (PnL)
-    let pnl;
-    if (trade.type === 'BUY') {
-      // Para uma operação de compra (long), o lucro é (preço de saída - preço de entrada) * quantidade
-      pnl = exitPrice.sub(trade.entryPrice).mul(trade.quantity);
-    } else { // Presume-se que seja 'SELL'
-      // Para uma operação de venda (short), o lucro é (preço de entrada - preço de saída) * quantidade
-      pnl = trade.entryPrice.sub(exitPrice).mul(trade.quantity);
-    }
+      let pnl;
+      if (trade.type === 'BUY') {
+        pnl = exitPrice.sub(trade.entryPrice).mul(trade.quantity);
+      } else { 
+        pnl = trade.entryPrice.sub(exitPrice).mul(trade.quantity);
+      }
 
-    // 5. Executar as atualizações no banco de dados como uma transação
-    const [updatedTrade, updatedUser] = await prisma.$transaction([
-      // a) Atualizar a operação para 'CLOSED'
-      prisma.trade.update({
-        where: { id: tradeId },
-        data: {
-          status: 'CLOSED',
-          exitPrice: exitPrice,
-          exitDate: new Date(),
-          pnl: pnl,
-        },
-      }),
-      // b) Atualizar o saldo virtual do usuário
-      prisma.user.update({
-        where: { id: userId },
-        data: {
-          virtualBalance: {
-            increment: pnl, // Adiciona o PnL (que pode ser negativo)
+      // No Spot (nesta implementação), o saldo não foi debitado na abertura, então apenas adicionamos o lucro/prejuízo.
+      const [updatedTrade, updatedUser] = await prisma.$transaction([
+        prisma.trade.update({
+          where: { id: tradeId },
+          data: {
+            status: 'CLOSED',
+            exitPrice: exitPrice,
+            exitDate: new Date(),
+            pnl: pnl,
           },
-        },
-      }),
-    ]);
+        }),
+        prisma.user.update({
+          where: { id: userId },
+          data: {
+            virtualBalance: {
+              increment: pnl, 
+            },
+          },
+        }),
+      ]);
 
-    return NextResponse.json(updatedTrade);
+      return NextResponse.json(updatedTrade);
+    }
+
+    // 2. Se não achou em Trade, tentar em FuturesPosition
+    const futuresPosition = await prisma.futuresPosition.findUnique({
+      where: { id: tradeId },
+    });
+
+    if (futuresPosition) {
+      // --- LÓGICA PARA FUTURES ---
+      if (futuresPosition.userId !== userId) {
+        return new NextResponse(JSON.stringify({ message: 'Você não tem permissão para fechar esta operação' }), { status: 403 });
+      }
+      if (futuresPosition.status !== 'OPEN') {
+        return new NextResponse(JSON.stringify({ message: 'Esta posição já está fechada' }), { status: 400 });
+      }
+
+      const exitPrice = await getCurrentPrice(futuresPosition.symbol);
+      const quantity = futuresPosition.quantity;
+      const entryPrice = futuresPosition.entryPrice;
+
+      let pnl;
+      if (futuresPosition.side === 'LONG') {
+        pnl = exitPrice.sub(entryPrice).mul(quantity);
+      } else { // SHORT
+        pnl = entryPrice.sub(exitPrice).mul(quantity);
+      }
+
+      // Em Futuros, a margem foi debitada do saldo na abertura.
+      // Ao fechar, devolvemos a Margem + PnL.
+      const returnAmount = futuresPosition.margin.add(pnl);
+
+      const [updatedPosition, updatedUser] = await prisma.$transaction([
+        prisma.futuresPosition.update({
+          where: { id: tradeId },
+          data: {
+            status: 'CLOSED',
+            closedAt: new Date(),
+            pnl: pnl,
+          },
+        }),
+        prisma.user.update({
+          where: { id: userId },
+          data: {
+            virtualBalance: {
+              increment: returnAmount,
+            },
+          },
+        }),
+      ]);
+
+      return NextResponse.json(updatedPosition);
+    }
+
+    // Se não achou em nenhum lugar
+    return new NextResponse(JSON.stringify({ message: 'Operação não encontrada' }), { status: 404 });
 
   } catch (error) {
     console.error(`Erro ao fechar operação ${params.tradeId}:`, error);
