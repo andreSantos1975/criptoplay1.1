@@ -18,53 +18,6 @@ const AlertasPage = () => {
   const { data: alerts, isLoading: isLoadingAlerts, error: errorAlerts, refetch: mutateAlerts } = useAlerts();
   const { data: budgetCategories, isLoading: isLoadingCategories, error: errorCategories } = useBudgetCategories();
   const { notificationCount, mutate: mutateNotifications } = useAlertNotification();
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const { data: exchangeRateData } = useQuery({
-    queryKey: ['usdtToBrlRate'],
-    queryFn: async () => {
-      const response = await fetch('/api/exchange-rate');
-      if (!response.ok) throw new Error('Falha ao buscar taxa de câmbio.');
-      return response.json();
-    },
-    staleTime: 60000,
-  });
-  const usdtToBrl = exchangeRateData?.usdtToBrl || 1;
-
-  useEffect(() => {
-    const acknowledgeNotifications = async () => {
-      if (notificationCount > 0) {
-        try {
-          await fetch('/api/alerts/acknowledge', { method: 'POST' });
-          // Re-fetch the notification count to update the UI (e.g., sidebar icon)
-          mutateNotifications();
-        } catch (error) {
-          console.error('Failed to acknowledge notifications:', error);
-        }
-      }
-    };
-
-    acknowledgeNotifications();
-  }, [notificationCount, mutateNotifications]);
-
-  const handleManualCheck = async () => {
-    setIsProcessing(true);
-    try {
-      const response = await fetch('/api/alerts/manual-trigger', { method: 'POST' });
-      if (!response.ok) {
-        throw new Error('Falha ao acionar o processador de alertas.');
-      }
-      alert('Verificação de alertas concluída com sucesso! A lista será atualizada.');
-      // Re-fetch both the alerts list and the notification count
-      mutateAlerts();
-      mutateNotifications();
-    } catch (error) {
-      console.error('Error during manual alert check:', error);
-      alert('Ocorreu um erro ao verificar os alertas.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleOpenModal = () => {
     setEditingAlert(null);
@@ -109,9 +62,6 @@ const AlertasPage = () => {
         </Link>
         <h1>Meus Alertas</h1>
         <div className={styles.headerActions}>
-          <button onClick={handleManualCheck} className={styles.manualCheckButton} disabled={isProcessing}>
-            {isProcessing ? 'Verificando...' : 'Forçar Verificação'}
-          </button>
           <button onClick={handleOpenModal} className={styles.addButton}>+ Novo Alerta</button>
         </div>
       </header>
