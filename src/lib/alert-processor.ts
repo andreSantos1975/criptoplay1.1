@@ -35,6 +35,16 @@ export async function processAlerts() {
     const symbolsToMonitor = Array.from(new Set(priceAlerts.map(alert => (alert.config as any).symbol)));
     const prices: { [key: string]: number } = {};
     const failedSymbols: Set<string> = new Set();
+    let brlRate = 1; // Taxa de conversão padrão (fallback)
+
+    // Tenta buscar a cotação do Dólar (USDT) para Real (BRL)
+    try {
+        const usdtBrl = await getCurrentPrice('USDTBRL');
+        brlRate = parseFloat(usdtBrl.toString());
+        console.log(`[AlertProcessor] Taxa USDT/BRL obtida: ${brlRate}`);
+    } catch (error) {
+        console.error('[AlertProcessor] Falha ao obter taxa USDTBRL, usando conversão 1:1:', error);
+    }
 
     try {
       const pricePromises = symbolsToMonitor.map(async (symbol) => {
@@ -122,12 +132,16 @@ export async function processAlerts() {
 
         // 2. Envia o e-mail via Resend
         if (alert.user && alert.user.email) {
+            // Converte para BRL para exibição no email
+            const priceInBrl = currentPrice * brlRate;
+            const targetPriceInBrl = targetPrice * brlRate;
+
             await sendPriceAlertEmail({
                 to: alert.user.email,
                 userName: alert.user.name || alert.user.username || 'Investidor',
                 symbol: symbol,
-                price: currentPrice,
-                targetPrice: targetPrice,
+                price: priceInBrl,
+                targetPrice: targetPriceInBrl,
                 operator: operator as 'gt' | 'lt',
             });
         } else {

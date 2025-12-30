@@ -54,18 +54,20 @@ export const authOptions: AuthOptions = {
         token.id = user.id;
         token.isAdmin = (user as any).isAdmin || false;
         token.subscriptionStatus = (user as any).subscriptionStatus || null;
+        token.createdAt = (user as any).createdAt || null; // Add createdAt here
       }
 
       // On subsequent requests, refresh token data from the database
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { id: true, isAdmin: true, subscriptionStatus: true },
+          select: { id: true, isAdmin: true, subscriptionStatus: true, createdAt: true }, // Select createdAt here
         });
 
         if (dbUser) {
           token.isAdmin = dbUser.isAdmin;
           token.subscriptionStatus = dbUser.subscriptionStatus;
+          token.createdAt = dbUser.createdAt; // Add createdAt here
         }
       }
       
@@ -87,6 +89,7 @@ export const authOptions: AuthOptions = {
         session.user.id = token.id as string;
         session.user.isAdmin = token.isAdmin as boolean;
         session.user.subscriptionStatus = token.subscriptionStatus as string | null;
+        session.user.createdAt = token.createdAt as Date; // Add createdAt here
       }
       return session;
     },

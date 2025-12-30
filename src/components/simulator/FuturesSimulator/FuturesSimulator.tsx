@@ -12,7 +12,7 @@ import SimulatorChart from '@/components/simulator/SimulatorChart/SimulatorChart
 import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
 import { CryptoList } from '@/components/dashboard/CryptoList/CryptoList'; // Import CryptoList
-import { useVigilante, SimulatorPosition } from '@/hooks/useVigilante';
+import { useVigilante, SimulatorPosition, VigilanteClosePayload } from '@/hooks/useVigilante';
 import { Alert, AlertType } from '@prisma/client';
 
 /// --- Tipos ---
@@ -659,7 +659,7 @@ const FuturesSimulator = () => {
     openPositions: vigilantePositions, // Mantém dados originais (USDT) para lógica correta
     closeMutation: {
       ...closePositionMutation,
-      mutate: (payload) => {
+      mutate: (payload: VigilanteClosePayload) => {
         const pos = positions?.find(p => p.symbol === payload.symbol);
         
         if (pos) {
@@ -817,6 +817,7 @@ const FuturesSimulator = () => {
           onCryptoSelect={handleCryptoSelect}
           onDeleteSymbol={handleDeleteSymbol}
           theme="dark"
+          exchangeRate={exchangeRate}
       />
     </div>
   );

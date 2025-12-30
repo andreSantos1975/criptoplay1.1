@@ -184,7 +184,21 @@ const DecimalInput = ({
 const Simulator = () => {
   const queryClient = useQueryClient();
   const { data: session, status } = useSession();
-  const isPremiumUser = session?.user?.subscriptionStatus === 'authorized';
+  
+  const isPremiumUser = useMemo(() => {
+    if (!session?.user) return false;
+    
+    const isTrialActive = session.user.createdAt ? 
+      Math.floor((new Date().getTime() - new Date(session.user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) < 7 : 
+      false;
+
+    return (
+      session.user.subscriptionStatus === 'authorized' || 
+      session.user.subscriptionStatus === 'lifetime' || 
+      session.user.isAdmin === true ||
+      isTrialActive
+    );
+  }, [session]);
 
   // --- GERENCIAMENTO DE ESTADO ---
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCBRL');

@@ -17,6 +17,7 @@ model User {
   password            String?
   isAdmin             Boolean           @default(false)
   virtualBalance      Decimal           @default(10000) @db.Decimal(12, 2)
+  createdAt           DateTime          @default(now())
   dailyPerformances   DailyPerformance[]
   oauthAccounts       OAuthAccount[]
   bankAccounts        BankAccount[]

@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { PriceAlertEmail } from '../emails/PriceAlertEmail';
+import { render } from '@react-email/components';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -31,17 +32,21 @@ export async function sendPriceAlertEmail({
     
     console.log(`[Mail] Tentando enviar e-mail para ${to} sobre ${symbol}...`);
 
-    const { data, error } = await resend.emails.send({
-      from: fromEmail,
-      to: [to],
-      subject: `Alerta CriptoPlay: ${symbol} atingiu o alvo de ${targetPrice}`,
-      react: PriceAlertEmail({
+    const emailHtml = await render(
+      PriceAlertEmail({
         symbol,
         price,
         targetPrice,
         operator,
         userName,
-      }),
+      })
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: fromEmail,
+      to: [to],
+      subject: `Alerta CriptoPlay: ${symbol} atingiu o alvo de ${targetPrice}`,
+      html: emailHtml,
     });
 
     if (error) {

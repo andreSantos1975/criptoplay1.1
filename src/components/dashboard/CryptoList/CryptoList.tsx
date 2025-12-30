@@ -61,9 +61,16 @@ const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
     });
 };
 
-const formatCurrency = (value: number, symbol: string): string => {
-  const currency = symbol.endsWith('USDT') ? 'USD' : 'BRL';
-  const locale = symbol.endsWith('USDT') ? 'en-US' : 'pt-BR';
+const formatCurrency = (value: number, symbol: string, exchangeRate?: number): string => {
+  let finalValue = value;
+  let currency = symbol.endsWith('USDT') ? 'USD' : 'BRL';
+  let locale = symbol.endsWith('USDT') ? 'en-US' : 'pt-BR';
+
+  if (exchangeRate && symbol.endsWith('USDT')) {
+      finalValue = value * exchangeRate;
+      currency = 'BRL';
+      locale = 'pt-BR';
+  }
 
   const options: Intl.NumberFormatOptions = {
     style: 'currency',
@@ -71,13 +78,13 @@ const formatCurrency = (value: number, symbol: string): string => {
     minimumFractionDigits: 2,
   };
 
-  if (value < 1) {
+  if (finalValue < 1) {
     options.maximumFractionDigits = 8; // For very small prices like SHIB
   } else {
     options.maximumFractionDigits = 2; // For standard prices
   }
 
-  return value.toLocaleString(locale, options);
+  return finalValue.toLocaleString(locale, options);
 };
 
 interface CryptoListProps {
@@ -85,9 +92,10 @@ interface CryptoListProps {
   onCryptoSelect: (symbol: string) => void;
   onDeleteSymbol: (symbol: string) => void; // New prop for deleting a symbol
   theme?: 'light' | 'dark';
+  exchangeRate?: number;
 }
 
-export const CryptoList = ({ watchedSymbols, onCryptoSelect, onDeleteSymbol, theme = 'dark' }: CryptoListProps) => {
+export const CryptoList = ({ watchedSymbols, onCryptoSelect, onDeleteSymbol, theme = 'dark', exchangeRate }: CryptoListProps) => {
   const { data: cryptos, isLoading, error } = useQuery<CryptoData[]>({
     queryKey: ["cryptos", watchedSymbols],
     queryFn: () => fetchCryptoData(watchedSymbols),
@@ -134,7 +142,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect, onDeleteSymbol, the
                   </div>
                 </td>
                 <td className={styles.td}>
-                  {formatCurrency(crypto.current_price, crypto.symbol)}
+                  {formatCurrency(crypto.current_price, crypto.symbol, exchangeRate)}
                 </td>
                 <td className={styles.td}>
                   <span
@@ -156,7 +164,7 @@ export const CryptoList = ({ watchedSymbols, onCryptoSelect, onDeleteSymbol, the
                   </span>
                 </td>
                 <td className={styles.td}>
-                  {formatCurrency(crypto.quote_volume, crypto.symbol)}
+                  {formatCurrency(crypto.quote_volume, crypto.symbol, exchangeRate)}
                 </td>
                 <td className={styles.td}>
                     <Button 

@@ -51,7 +51,7 @@ const AlertasPage = () => {
       );
     }
 
-    return <AlertList alerts={alerts} budgetCategories={budgetCategories || []} onEdit={handleEdit} exchangeRate={usdtToBrl} />;
+    return <AlertList alerts={alerts} budgetCategories={budgetCategories || []} onEdit={handleEdit} />;
   }
 
   return (

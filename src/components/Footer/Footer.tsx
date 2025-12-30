@@ -12,7 +12,7 @@ const Footer = () => {
               <div className={styles.brandIconContainer}>
                 <TrendingUp className={styles.brandIcon} />
               </div>
-              <span className={styles.brandName}>CryptoGame</span>
+              <span className={styles.brandName}>CryptoPlay</span>
             </div>
             <p className={styles.brandDescription}>
               A plataforma de trading de criptomoedas mais confiável e segura do Brasil. 

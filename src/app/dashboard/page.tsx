@@ -120,11 +120,78 @@ const DashboardPage = () => {
     },
   });
 
-   const addIncomeMutation = useMutation({ mutationFn: addIncome, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['incomes', year, month] }); setIsIncomeDialogOpen(false); }});
-   const updateIncomeMutation = useMutation({ mutationFn: updateIncome, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['incomes', year, month] }); setIsIncomeDialogOpen(false); }});
+   const addIncomeMutation = useMutation({ 
+    mutationFn: addIncome, 
+    onSuccess: (newIncome) => { 
+      const incomeDate = new Date(newIncome.date);
+      const incomeYear = incomeDate.getUTCFullYear();
+      const incomeMonth = incomeDate.getUTCMonth() + 1;
+      
+      // Invalidate the specific month where the income was added
+      queryClient.invalidateQueries({ queryKey: ['incomes', incomeYear, incomeMonth] });
+      
+      // Also invalidate the current view to be safe if it matches
+      queryClient.invalidateQueries({ queryKey: ['incomes', year, month] });
+      
+      setIsIncomeDialogOpen(false); 
+      toast.success('Renda adicionada com sucesso!'); 
+    }, 
+    onError: (error) => { 
+      toast.error(`Erro ao adicionar renda: ${error.message}`); 
+    }
+   });
+   const updateIncomeMutation = useMutation({ 
+    mutationFn: updateIncome, 
+    onSuccess: (updatedIncome) => { 
+      const incomeDate = new Date(updatedIncome.date);
+      const incomeYear = incomeDate.getUTCFullYear();
+      const incomeMonth = incomeDate.getUTCMonth() + 1;
+
+      queryClient.invalidateQueries({ queryKey: ['incomes', incomeYear, incomeMonth] });
+      queryClient.invalidateQueries({ queryKey: ['incomes', year, month] });
+      
+      setIsIncomeDialogOpen(false); 
+      toast.success('Renda atualizada com sucesso!'); 
+    }, 
+    onError: (error) => { 
+      toast.error(`Erro ao atualizar renda: ${error.message}`); 
+    }
+   });
    const deleteIncomeMutation = useMutation({ mutationFn: deleteIncome, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['incomes', year, month] }); toast.success('Renda deletada com sucesso!'); }, onError: () => { toast.error('Erro ao deletar renda.'); } });
-   const addExpenseMutation = useMutation({ mutationFn: addExpense, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['expenses', year, month] }); setIsExpenseDialogOpen(false); }});
-   const updateExpenseMutation = useMutation({ mutationFn: updateExpense, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['expenses', year, month] }); setIsExpenseDialogOpen(false); }});
+   const addExpenseMutation = useMutation({ 
+    mutationFn: addExpense, 
+    onSuccess: (newExpense) => { 
+      const expenseDate = new Date(newExpense.dataVencimento);
+      const expenseYear = expenseDate.getUTCFullYear();
+      const expenseMonth = expenseDate.getUTCMonth() + 1;
+
+      queryClient.invalidateQueries({ queryKey: ['expenses', expenseYear, expenseMonth] });
+      queryClient.invalidateQueries({ queryKey: ['expenses', year, month] });
+      
+      setIsExpenseDialogOpen(false); 
+      toast.success('Despesa adicionada com sucesso!'); 
+    }, 
+    onError: (error) => { 
+      toast.error(`Erro ao adicionar despesa: ${error.message}`); 
+    }
+   });
+   const updateExpenseMutation = useMutation({ 
+    mutationFn: updateExpense, 
+    onSuccess: (updatedExpense) => { 
+      const expenseDate = new Date(updatedExpense.dataVencimento);
+      const expenseYear = expenseDate.getUTCFullYear();
+      const expenseMonth = expenseDate.getUTCMonth() + 1;
+
+      queryClient.invalidateQueries({ queryKey: ['expenses', expenseYear, expenseMonth] });
+      queryClient.invalidateQueries({ queryKey: ['expenses', year, month] });
+      
+      setIsExpenseDialogOpen(false); 
+      toast.success('Despesa atualizada com sucesso!'); 
+    }, 
+    onError: (error) => { 
+      toast.error(`Erro ao atualizar despesa: ${error.message}`); 
+    }
+   });
 
   // --- MEMOIZED CALCULATIONS & EFFECTS (PERSONAL FINANCE ONLY) ---
   const processedBudgetCategories = useMemo(() => fetchedBudgetCategories.map(cat => ({ id: cat.id, name: cat.name, percentage: DEFAULT_ALLOCATION_PERCENTAGES[cat.name] || 0, amount: 0, actualSpending: 0 })), [fetchedBudgetCategories]);
@@ -202,7 +269,14 @@ const DashboardPage = () => {
                 <div className={styles.personalFinanceContainer}>
                   <IncomeTable incomes={incomes} isLoading={isLoadingIncomes} onAddIncome={handleAddIncome} onEditIncome={handleEditIncome} onDeleteIncome={handleDeleteIncome} />
                   <PersonalFinanceTable onAddExpense={handleAddExpense} onEditExpense={handleEditExpense} summary={summary} expenses={expenses} isLoading={isLoadingExpenses} isError={isErrorExpenses} budgetCategories={categoriesWithSpending} />
-                  <PersonalFinanceDialog isOpen={isExpenseDialogOpen || isIncomeDialogOpen} onClose={() => { setIsExpenseDialogOpen(false); setIsIncomeDialogOpen(false); }} onSave={handleSaveItem} item={editingExpense || editingIncome} type={isExpenseDialogOpen ? "expense" : "income"} />
+                  <PersonalFinanceDialog 
+                    isOpen={isExpenseDialogOpen || isIncomeDialogOpen} 
+                    onClose={() => { setIsExpenseDialogOpen(false); setIsIncomeDialogOpen(false); }} 
+                    onSave={handleSaveItem} 
+                    item={editingExpense || editingIncome} 
+                    type={isExpenseDialogOpen ? "expense" : "income"} 
+                    isLoading={addIncomeMutation.isPending || updateIncomeMutation.isPending || addExpenseMutation.isPending || updateExpenseMutation.isPending}
+                  />
                 </div>
               </>
             )}

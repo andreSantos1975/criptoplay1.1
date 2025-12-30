@@ -51,7 +51,7 @@
 
 .content {
   flex: 1;
-  padding: 2rem 3rem;
+  padding: 6rem 3rem 2rem 3rem; /* Added padding-top: 6rem */
   background-color: hsl(var(--background));
 }
 

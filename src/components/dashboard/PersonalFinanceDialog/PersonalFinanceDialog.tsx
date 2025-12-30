@@ -14,6 +14,7 @@ interface PersonalFinanceDialogProps {
   ) => void;
   item?: Expense | Income;
   type: "expense" | "income";
+  isLoading?: boolean;
 }
 
 export function PersonalFinanceDialog({
@@ -22,10 +23,11 @@ export function PersonalFinanceDialog({
   onSave,
   item,
   type,
+  isLoading = false,
 }: PersonalFinanceDialogProps) {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState<Date | undefined>();
+  const [dateString, setDateString] = useState("");
   const [status, setStatus] = useState<"Pendente" | "Pago">("Pendente");
   const [applySavingsCalculation, setApplySavingsCalculation] = useState(false); // Renamed state
 
@@ -35,10 +37,10 @@ export function PersonalFinanceDialog({
         const expenseItem = item as Expense;
         setDescription(expenseItem.categoria || "");
         setAmount(expenseItem.valor ? expenseItem.valor.toString() : "");
-        setDate(
+        setDateString(
           expenseItem.dataVencimento
-            ? new Date(expenseItem.dataVencimento)
-            : undefined
+            ? new Date(expenseItem.dataVencimento).toISOString().split('T')[0]
+            : ""
         );
         setStatus(expenseItem.status as "Pendente" | "Pago");
         // Initialize checkbox based on the new field
@@ -47,7 +49,11 @@ export function PersonalFinanceDialog({
         const incomeItem = item as Income;
         setDescription(incomeItem.description || "");
         setAmount(incomeItem.amount ? incomeItem.amount.toString() : "");
-        setDate(incomeItem.date ? new Date(incomeItem.date) : undefined);
+        setDateString(
+            incomeItem.date 
+            ? new Date(incomeItem.date).toISOString().split('T')[0] 
+            : ""
+        );
         setStatus("Pendente");
         setApplySavingsCalculation(false);
       }
@@ -55,17 +61,21 @@ export function PersonalFinanceDialog({
       // Reset fields for a new item
       setDescription("");
       setAmount("");
-      setDate(undefined);
+      setDateString("");
       setStatus("Pendente");
       setApplySavingsCalculation(false);
     }
   }, [item, isOpen, type]);
 
   const handleSave = () => {
-    if (!description || !amount || !date) return;
+    if (!description || !amount || !dateString) return;
 
     const numericAmount = parseFloat(amount.replace(",", "."));
     if (isNaN(numericAmount)) return;
+
+    // Parse date string to Date object using UTC Noon logic
+    const [year, month, day] = dateString.split('-').map(Number);
+    const dateObject = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 
     let payload;
 
@@ -79,7 +89,7 @@ export function PersonalFinanceDialog({
       } = {
         categoria: description,
         valor: numericAmount,
-        dataVencimento: date,
+        dataVencimento: dateObject,
         status,
         applySavingsCalculation: applySavingsCalculation, // Pass state to payload
       };
@@ -103,7 +113,7 @@ export function PersonalFinanceDialog({
       payload = {
         description,
         amount: numericAmount,
-        date,
+        date: dateObject,
       };
     }
 
@@ -120,7 +130,7 @@ export function PersonalFinanceDialog({
   const isFormValid =
     description &&
     amount &&
-    date &&
+    dateString &&
     !isNaN(parseFloat(amount.replace(",", ".")));
 
   if (!isOpen) return null;
@@ -205,16 +215,8 @@ export function PersonalFinanceDialog({
             <Input
               id="date"
               type="date"
-              value={
-                date instanceof Date && !isNaN(date.getTime())
-                  ? date.toISOString().split("T")[0]
-                  : ""
-              }
-              onChange={(e) => {
-                const date = new Date(e.target.value);
-                const userTimezoneOffset = date.getTimezoneOffset() * 60000;
-                setDate(new Date(date.getTime() + userTimezoneOffset));
-              }}
+              value={dateString}
+              onChange={(e) => setDateString(e.target.value)}
             />
           </div>
 
@@ -242,14 +244,16 @@ export function PersonalFinanceDialog({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={!isFormValid}
+            disabled={!isFormValid || isLoading}
             className={styles.saveButton}
           >
-            {item
-              ? "Salvar Alterações"
-              : type === "expense"
-              ? "Adicionar Despesa"
-              : "Adicionar Renda"}
+            {isLoading 
+              ? "Salvando..." 
+              : item
+                ? "Salvar Alterações"
+                : type === "expense"
+                ? "Adicionar Despesa"
+                : "Adicionar Renda"}
           </Button>
         </div>
       </div>
