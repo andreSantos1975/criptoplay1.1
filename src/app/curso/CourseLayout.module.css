@@ -5,7 +5,7 @@
 
 .sidebar {
   width: 320px;
-  padding: 2rem;
+  padding: 6rem 2rem 2rem 2rem; /* Added padding-top: 6rem */
   background-color: hsl(var(--sidebar-background));
   border-right: 1px solid hsl(var(--sidebar-border));
   transition: background-color 0.2s, border-color 0.2s;
