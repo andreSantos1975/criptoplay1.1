@@ -127,7 +127,7 @@ export default function HelpCenterPage() {
           ))
         ) : (
           <div className="text-center py-10 text-gray-400">
-            Nenhum resultado encontrado para "{searchTerm}".
+            Nenhum resultado encontrado para &quot;{searchTerm}&quot;.
           </div>
         )}
       </div>

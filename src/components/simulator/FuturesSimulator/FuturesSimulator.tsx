@@ -147,14 +147,14 @@ const FuturesTradeForm = ({
     if (Math.abs(tradeLevels.stopLoss - currentSlNumeric) > 0.000001) {
        setSlInput(tradeLevels.stopLoss > 0 ? tradeLevels.stopLoss.toString().replace('.', ',') : '');
     }
-  }, [tradeLevels.stopLoss]);
+  }, [tradeLevels.stopLoss, slInput]);
 
   useEffect(() => {
     const currentTpNumeric = parseFloat(tpInput.replace(',', '.')) || 0;
     if (Math.abs(tradeLevels.takeProfit - currentTpNumeric) > 0.000001) {
        setTpInput(tradeLevels.takeProfit > 0 ? tradeLevels.takeProfit.toString().replace('.', ',') : '');
     }
-  }, [tradeLevels.takeProfit]);
+  }, [tradeLevels.takeProfit, tpInput]);
 
   const handleSlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       let rawValue = e.target.value;
