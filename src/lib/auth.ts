@@ -55,19 +55,21 @@ export const authOptions: AuthOptions = {
         token.isAdmin = (user as any).isAdmin || false;
         token.subscriptionStatus = (user as any).subscriptionStatus || null;
         token.createdAt = (user as any).createdAt || null; // Add createdAt here
+        token.emailVerified = (user as any).emailVerified || null;
       }
 
       // On subsequent requests, refresh token data from the database
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { id: true, isAdmin: true, subscriptionStatus: true, createdAt: true }, // Select createdAt here
+          select: { id: true, isAdmin: true, subscriptionStatus: true, createdAt: true, emailVerified: true }, // Select createdAt here
         });
 
         if (dbUser) {
           token.isAdmin = dbUser.isAdmin;
           token.subscriptionStatus = dbUser.subscriptionStatus;
           token.createdAt = dbUser.createdAt; // Add createdAt here
+          token.emailVerified = dbUser.emailVerified;
         }
       }
       
@@ -90,6 +92,7 @@ export const authOptions: AuthOptions = {
         session.user.isAdmin = token.isAdmin as boolean;
         session.user.subscriptionStatus = token.subscriptionStatus as string | null;
         session.user.createdAt = token.createdAt as Date; // Add createdAt here
+        session.user.emailVerified = token.emailVerified as Date | null;
       }
       return session;
     },

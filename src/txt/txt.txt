@@ -331,3 +331,148 @@ Sim, você está absolutamente correto.
 
   Quer que eu implemente esse Cron Job agora? Seria uma adição valiosa para tornar o
   simulador robusto para uso comercial.
+
+  =============================================================================
+
+  02/01/2026-------------------
+
+  qui está o fluxo completo e como implementaremos tecnicamente:
+
+  1. O Fluxo do Usuário (A Experiência)
+
+   1. Clique: O usuário clica no botão na sua Landing Page.
+   2. Redirecionamento: Ele vai para o Checkout da Hotmart (uma URL específica do seu
+      produto lá).
+   3. Pagamento: Ele preenche os dados e paga.
+   4. Entrega Imediata (Hotmart): A Hotmart envia o Ebook (PDF) automaticamente por e-mail
+      (você configura isso lá dentro da Hotmart).
+   5. Acesso à Plataforma (CriptoPlay):
+       * A Hotmart avisa "silenciosamente" o seu sistema (via Webhook).
+       * Seu sistema cria o usuário no banco de dados.
+       * Seu sistema envia um e-mail automático (via Resend, por exemplo) dizendo:
+         "Parabéns! Aqui está seu acesso à CriptoPlay. Clique aqui para definir sua senha."
+
+  ---
+
+  2. Como funciona a "Mágica" (Integração Técnica)
+
+  Você não precisa ficar olhando a Hotmart. Você vai criar uma API Route no seu Next.js que
+  ficará "ouvindo" a Hotmart.
+
+  Passo A: O Botão (Frontend)
+  No OfferSection.tsx, o botão será apenas um link simples para o checkout.
+
+   1 <Button onClick={() => window.open('SEU_LINK_CHECKOUT_HOTMART', '_blank')}>
+   2    Garantir acesso...
+   3 </Button>
+
+  Passo B: O Webhook (Backend)
+  Você precisa criar uma rota na sua aplicação, por exemplo:
+  https://suaplataforma.com/api/webhooks/hotmart.
+
+  Quando uma venda é aprovada, a Hotmart manda um POST para essa URL com um JSON contendo:
+   * Nome do comprador
+   * Email do comprador
+   * Status da transação (APPROVED, REFUNDED, etc.)
+   * Token de segurança (para garantir que é a Hotmart mesmo)
+
+  3. Exemplo de Código (Next.js App Router)
+
+  Vou criar um arquivo de exemplo para você visualizar como essa lógica funciona. Não vou
+  salvar no seu projeto ainda porque precisamos das chaves reais, mas aqui está o esqueleto
+  de como você deve implementar:
+
+    1 // src/app/api/webhooks/hotmart/route.ts
+    2 
+    3 import { NextResponse } from "next/server";
+    4 
+    5 // Token que você define na Hotmart para garantir segurança
+    6 const HOTMART_TOKEN = process.env.HOTMART_WEBHOOK_SECRET;
+    7 
+    8 export async function POST(request: Request) {
+    9   try {
+   10     const data = await request.json();
+   11 
+   12     // 1. Segurança: Verificar se o chamado veio mesmo da Hotmart
+   13     // A Hotmart manda um token no header ou no corpo (depende da versão da API)
+   14     if (data.hottok !== HOTMART_TOKEN) {
+   15       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+   16     }
+   17 
+   18     // 2. Verificar o status da venda
+   19     // Normalmente queremos apenas 'APPROVED' ou 'COMPLETED'
+   20     if (data.status === 'APPROVED') {
+   21       const { email, name } = data.buyer;
+   22       
+   23       // 3. Verificar se o usuário já existe no seu banco de dados
+   24       // const user = await db.user.findUnique({ where: { email } });
+   25 
+   26       // 4. Se não existir, criar o usuário
+   27       // await db.user.create({
+   28       //   data: {
+   29       //     email,
+   30       //     name,
+   31       //     plan: 'LIFETIME', // Seta a flag de acesso vitalício
+   32       //     isEbookPurchased: true
+   33       //   }
+   34       // });
+   35 
+   36       // 5. Enviar Email de Boas Vindas com Link de Login (usando Resend)
+   37       // await resend.emails.send({
+   38       //   from: 'CriptoPlay <suporte@criptoplay.com>',
+   39       //   to: email,
+   40       //   subject: 'Seu acesso à CriptoPlay chegou!',
+   41       //   html: '<p>Clique aqui para acessar...</p>'
+   42       // });
+   43     }
+   44 
+   45     // 6. Tratar Cancelamentos/Reembolsos
+   46     if (data.status === 'REFUNDED' || data.status === 'CHARGEBACK') {
+   47       // Bloquear o acesso do usuário no banco
+   48     }
+   49 
+   50     return NextResponse.json({ received: true });
+   51 
+   52   } catch (error) {
+   53     console.error('Webhook Error:', error);
+   54     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+   55   }
+   56 }
+
+  4. O que você precisa fazer na Hotmart
+
+   1. Crie o produto lá (Tipo: Curso Online ou Ebook).
+   2. Configure o Entrega de Arquivos para enviar o PDF do Ebook (assim o cliente recebe
+      algo na hora).
+   3. Vá em Ferramentas > Webhooks (API).
+   4. Crie uma nova configuração:
+       * Evento: Compra Aprovada, Compra Cancelada.
+       * URL: https://seu-dominio-na-vercel.app/api/webhooks/hotmart (Você precisará ter o
+         site no ar para testar isso real, ou usar ferramentas como Ngrok localmente).
+  Resumo
+  O usuário compra na Hotmart -> Hotmart entrega o PDF -> Hotmart avisa seu site -> Seu site
+  cria a conta e manda a senha por email. Tudo em menos de 10 segundos.
+------------------------------------------------------------------------------
+
+
+  O Que Precisamos Implementar Agora?
+
+  Para realizar esse fluxo, precisamos criar os seguintes artefatos no código:
+
+   1. Rota de Webhook (API): src/app/api/webhooks/hotmart/route.ts.
+       * Vai escutar eventos da Hotmart (Venda Aprovada).
+       * Vai verificar o Token de Segurança (para ninguém falsificar uma compra).
+   2. Lógica de Banco de Dados:
+       * Verificar se o e-mail já existe.
+       * Se não, criar usuário com senha temporária ou token de ativação.
+       * Definir subscriptionStatus = 'lifetime'.
+   3. Template de E-mail (Resend):
+       * Criar um componente visual bonito para enviar as credenciais.
+  Devo prosseguir com a criação da rota do Webhook da Hotmart e a lógica de processamento?
+
+ Using: 1 GEMINI.md file
+
+ --------------------------------
+
+ Implementar o Webhook da Hotmart (para o Funil 1 - Ebook + Acesso
+  Vitalício). Posso prosseguir com isso?

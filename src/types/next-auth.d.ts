@@ -14,6 +14,7 @@ declare module 'next-auth' {
       subscriptionStatus?: string | null; // Adicionado status da assinatura
       isAdmin?: boolean;
       createdAt?: Date;
+      emailVerified?: Date | null;
     } & DefaultSession['user'];
   }
 }
@@ -25,5 +26,6 @@ declare module 'next-auth/jwt' {
     subscriptionStatus?: string | null; // Adicionado status da assinatura
     isAdmin?: boolean;
     createdAt?: Date;
+    emailVerified?: Date | null;
   }
 }

@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import styles from "./DashboardOverview.module.css";
 import { Button } from "@/components/ui/button";
+import { EmailVerificationAlert } from "@/components/dashboard/EmailVerificationAlert";
 
 interface PortfolioData {
   date: string;
@@ -69,6 +70,7 @@ export const DashboardOverview = () => {
 
   return (
     <div className={styles.overviewContainer}>
+      <EmailVerificationAlert />
       <Card>
         <CardHeader className={styles.cardHeader}>
           <CardTitle>Evolução do Portfólio</CardTitle>

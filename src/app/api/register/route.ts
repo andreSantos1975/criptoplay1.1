@@ -2,6 +2,8 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/prisma'
+import { generateVerificationToken } from '@/lib/tokens'
+import { sendVerificationEmail } from '@/lib/mail'
 
 // Função para gerar um username único
 async function generateUniqueUsername(): Promise<string> {
@@ -68,6 +70,10 @@ export async function POST(request: Request) {
         username: finalUsername, // Salvar o username (fornecido ou gerado)
       },
     });
+
+    // Gerar token de verificação e enviar e-mail
+    const verificationToken = await generateVerificationToken(email);
+    await sendVerificationEmail(email, verificationToken.token);
 
     return NextResponse.json({ message: 'Usuário criado com sucesso!', user }, { status: 201 });
   } catch (error) {

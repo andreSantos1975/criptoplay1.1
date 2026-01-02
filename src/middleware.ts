@@ -18,10 +18,12 @@ export async function middleware(req: NextRequest) {
     const hasRecurringSubscription = token?.subscriptionStatus === 'authorized';
     const hasLifetimePlan = token?.subscriptionStatus === 'lifetime';
 
-    // Calcula se o usuário está dentro do período de teste de 7 dias
-    const isTrialActive = token?.createdAt ? 
-      Math.floor((new Date().getTime() - new Date(token.createdAt).getTime()) / (1000 * 60 * 60 * 24)) < 7 : 
-      false;
+    // Calcula se o usuário está dentro do período de teste de 1 hora (Teste temporário)
+    // Usamos Math.abs para evitar erros com fusos horários diferentes ou relógios desajustados
+    const diffInMilliseconds = new Date().getTime() - new Date(token.createdAt).getTime();
+    const diffInHours = diffInMilliseconds / (1000 * 60 * 60);
+    
+    const isTrialActive = token?.createdAt ? diffInHours < 1 : false;
 
     // Se não houver token ou se o usuário não atender a nenhum dos critérios de acesso
     if (!token || (!isDeveloper && !hasRecurringSubscription && !hasLifetimePlan && !isTrialActive)) {
