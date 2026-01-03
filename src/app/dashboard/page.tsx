@@ -20,6 +20,7 @@ import { IncomeTable } from '@/components/dashboard/IncomeTable/IncomeTable';
 import { PersonalFinanceTable } from '@/components/dashboard/PersonalFinanceTable/PersonalFinanceTable';
 import { PersonalFinanceDialog } from '@/components/dashboard/PersonalFinanceDialog/PersonalFinanceDialog';
 import { ReportsSection } from '@/components/dashboard/ReportsSection/ReportsSection';
+import { TrialReminderBanner } from '@/components/dashboard/TrialReminderBanner/TrialReminderBanner';
 
 // Dynamically import the Simulator component for the 'analise' tab
 const Simulator = dynamic(
@@ -328,6 +329,8 @@ const DashboardPage = () => {
           <h1 className={styles.title}>Bem-vindo à sua plataforma de gestão</h1>
           <p className={styles.subtitle}>Acompanhe seus resultados, finanças e simulações em tempo real</p>
         </header>
+
+        <TrialReminderBanner /> {/* Adicionar o banner aqui */}
 
         <div className={styles.tabs}>
           <NavigationTabs activeTab={activeTab} />

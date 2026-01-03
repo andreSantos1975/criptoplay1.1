@@ -15,6 +15,7 @@ declare module 'next-auth' {
       isAdmin?: boolean;
       createdAt?: Date;
       emailVerified?: Date | null;
+      trialEndsAt?: Date | null; // Adicionado campo de término do trial
     } & DefaultSession['user'];
   }
 }
@@ -27,5 +28,6 @@ declare module 'next-auth/jwt' {
     isAdmin?: boolean;
     createdAt?: Date;
     emailVerified?: Date | null;
+    trialEndsAt?: Date | null; // Adicionado campo de término do trial
   }
 }

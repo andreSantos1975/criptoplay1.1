@@ -476,3 +476,61 @@ Sim, você está absolutamente correto.
 
  Implementar o Webhook da Hotmart (para o Funil 1 - Ebook + Acesso
   Vitalício). Posso prosseguir com isso?
+-------------------------------------------------------------------------------------------
+ 
+         --------------- PLANO PARA IMPLEMENTAR REVERSE TRIAL
+  📋 Resumo da Revisão
+
+   1. Middleware (`src/middleware.ts`): A lógica está correta. As rotas /curso, /relatorios
+      e /alertas verificam explicitamente se o trial está ativo (trialEndsAt > agora) ou se
+      há uma assinatura válida. Caso contrário, redirecionam para /assinatura.
+   2. Banner (`TrialReminderBanner.tsx`): O banner calcula corretamente os dias restantes
+      usando date-fns e só aparece para usuários em trial ativo que não possuem assinatura
+      (authorized ou lifetime).
+   3. Autenticação: O campo trialEndsAt está sendo propagado corretamente na sessão do
+      usuário, permitindo verificações tanto no servidor (middleware) quanto no cliente
+      (componentes).
+
+  ---
+
+  🧪 Como Testar o Fluxo (Passo a Passo)
+
+  Para garantir que tudo funcione como esperado, recomendo seguir este roteiro de teste
+  manual:
+
+  1. Teste do "Caminho Feliz" (Novo Usuário)
+   * Ação: Crie uma nova conta no sistema através da página de registro.
+   * Verificação:
+       * Após o login, verifique se você é redirecionado para o Dashboard.
+       * Banner: O banner deve aparecer no topo informando que faltam 7 dias (ou "X dias")
+         para o fim do teste.
+       * Acesso: Tente acessar o menu Relatórios ou Curso. Você deve conseguir entrar nessas
+         páginas normalmente.
+
+  2. Verificação no Banco de Dados
+   * Ação: Verifique o registro do usuário no banco de dados.
+   * Comando: Se estiver usando o Prisma Studio (npx prisma studio) ou um cliente SQL:
+       * Localize o usuário recém-criado.
+       * Confirme se o campo trialEndsAt está preenchido com uma data futura (7 dias a
+         partir de hoje).
+       * Confirme se subscriptionStatus está nulo ou com status padrão (não "authorized").
+
+  3. Simulação de Expiração (Bloqueio)
+  Este é o teste mais crítico para garantir que o "Reverse" do trial funcione.
+   * Ação: Altere manualmente a data de trialEndsAt no banco de dados para ontem (uma data
+     no passado).
+   * Verificação:
+       * Faça Logout e Login novamente (para atualizar a sessão/token).
+       * Banner: O banner de "Acesso Premium Gratuito" deve desaparecer.
+       * Acesso: Tente acessar /relatorios ou /curso.
+       * Resultado Esperado: O sistema deve te redirecionar imediatamente para a página
+         /assinatura.
+       * Componentes: No Dashboard, verifique se recursos como o Chatbot ou gráficos
+         avançados exibem o estado de "bloqueado" (cadeado ou mensagem de upgrade).
+  4. Teste de Assinatura (Upgrade)
+   * Ação: No banco de dados, mude o subscriptionStatus do usuário para 'authorized'.
+     (Mantenha o trialEndsAt no passado ou futuro, não deve importar).
+   * Verificação:
+       * Faça Logout e Login.
+       * Tente acessar /relatorios. O acesso deve ser liberado novamente, pois a assinatura
+         tem precedência sobre o trial expirado.

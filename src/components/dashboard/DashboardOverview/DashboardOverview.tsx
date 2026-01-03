@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import styles from "./DashboardOverview.module.css";
 import { Button } from "@/components/ui/button";
-import { EmailVerificationAlert } from "@/components/dashboard/EmailVerificationAlert";
+import { EmailVerificationAlert } from "@/components/dashboard/EmailVerificationAlert/EmailVerificationAlert";
 
 interface PortfolioData {
   date: string;

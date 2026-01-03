@@ -2,9 +2,12 @@
 
 import { useChat } from '@ai-sdk/react';
 import React, { useState, useRef, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import styles from './AIChatWidget.module.css';
 
 export const AIChatWidget: React.FC = () => {
+  const { data: session } = useSession();
   const { messages, sendMessage, status } = useChat({
     onError: (error) => {
       console.error('[ChatWidget] Error:', error);
@@ -14,7 +17,6 @@ export const AIChatWidget: React.FC = () => {
     }
   });
 
-  console.log('[ChatWidget] Messages:', messages);
   const isLoading = status === 'submitted' || status === 'streaming';
   const [input, setInput] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -37,11 +39,45 @@ export const AIChatWidget: React.FC = () => {
     setInput('');
   };
 
+  // Verifica se o usuário tem assinatura ativa ou está no período de trial
+  const isTrialActive = session?.user?.trialEndsAt ? new Date(session.user.trialEndsAt) > new Date() : false;
+
+  const hasAccess = 
+    session?.user?.isAdmin || 
+    session?.user?.subscriptionStatus === 'authorized' || 
+    session?.user?.subscriptionStatus === 'lifetime' ||
+    isTrialActive;
+
   if (!isOpen) {
     return (
       <button className={styles.floatingButton} onClick={() => setIsOpen(true)}>
         Chat AI
       </button>
+    );
+  }
+
+  // Se não tiver acesso, mostra o overlay de bloqueio
+  if (!hasAccess) {
+    const trialEnded = session?.user?.trialEndsAt && new Date(session.user.trialEndsAt) <= new Date();
+    return (
+      <div className={styles.chatContainer}>
+        <button className={styles.closeButton} onClick={() => setIsOpen(false)}>
+          X
+        </button>
+        <div className={styles.lockedContainer}>
+          <div className={styles.lockedIcon}>🔒</div>
+          <h3 className={styles.lockedTitle}>Funcionalidade Premium</h3>
+          <p className={styles.lockedText}>
+            {trialEnded
+              ? "Seu período de teste Premium gratuito terminou. Assine um plano para continuar usando o Chatbot IA."
+              : "O Chatbot IA é exclusivo para assinantes Starter, Pro ou Premium."
+            }
+          </p>
+          <Link href="/assinatura" className={styles.upgradeButton}>
+            Ver Planos
+          </Link>
+        </div>
+      </div>
     );
   }
 
@@ -59,7 +95,6 @@ export const AIChatWidget: React.FC = () => {
               if (part.type === 'text') {
                 return <span key={index}>{part.text}</span>;
               }
-              // Ignorar outros tipos de partes, como tool-calls, por enquanto
               return null;
             })}
           </div>

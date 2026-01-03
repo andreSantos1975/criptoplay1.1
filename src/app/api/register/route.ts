@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import prisma from '@/lib/prisma'
 import { generateVerificationToken } from '@/lib/tokens'
 import { sendVerificationEmail } from '@/lib/mail'
+import { addDays } from 'date-fns' // Importar addDays
 
 // Função para gerar um username único
 async function generateUniqueUsername(): Promise<string> {
@@ -67,7 +68,8 @@ export async function POST(request: Request) {
         name,
         email,
         password: hashedPassword,
-        username: finalUsername, // Salvar o username (fornecido ou gerado)
+        username: finalUsername,
+        trialEndsAt: addDays(new Date(), 7), // Define o trialEndsAt para 7 dias a partir de agora
       },
     });
 

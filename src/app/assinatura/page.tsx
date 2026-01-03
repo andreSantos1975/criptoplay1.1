@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import styles from './assinatura.module.css'; // Assume this CSS module exists
+import styles from './assinatura.module.css';
 
 interface Plan {
   id: string;
@@ -13,40 +13,73 @@ interface Plan {
   amount: number;
   description: string;
   features: string[];
-  frequency?: number; // Adicionado para suportar recorrência (em meses)
+  highlight?: boolean;
   type: 'LIFETIME' | 'RECURRING';
+  frequency?: number;
 }
 
 const plans: Plan[] = [
   {
-    id: 'premium_mensal',
-    name: 'Plano Mensal',
-    amount: 29.90,
-    description: 'Acesso completo com cobrança recorrente mensal. Cancele quando quiser.',
+    id: 'starter_mensal',
+    name: 'Starter (Early Access)',
+    amount: 19.90,
+    description: 'Para quem está começando a jornada no mundo cripto.',
     features: [
-      'Acesso ilimitado ao simulador de trading',
-      'Relatórios financeiros avançados',
-      'Alertas de mercado em tempo real',
-      'Suporte prioritário',
-      'Cobrança mensal automática'
+      'Acesso ao Dashboard Básico',
+      'Gráfico de Análise Técnica (Básico)',
+      'Relatórios de Trades (Simples)',
+      'Chatbot Assistente (Limitado)',
+      'Suporte via Email'
     ],
-    frequency: 1,
-    type: 'RECURRING'
+    type: 'RECURRING',
+    frequency: 1
   },
+  {
+    id: 'pro_mensal',
+    name: 'Pro',
+    amount: 39.90,
+    description: 'A escolha principal para traders que buscam evolução.',
+    features: [
+      'Todas as funcionalidades do Starter',
+      'Gráficos Futuros e Spot Completos',
+      'Alertas Personalizados Ilimitados',
+      'Relatórios Avançados de Performance',
+      'Chatbot Ilimitado',
+      'Prioridade no Suporte'
+    ],
+    highlight: true,
+    type: 'RECURRING',
+    frequency: 1
+  },
+  {
+    id: 'premium_mensal',
+    name: 'Premium',
+    amount: 59.90,
+    description: 'Experiência exclusiva e máxima potência.',
+    features: [
+      'Todas as funcionalidades do Pro',
+      'Acesso Antecipado a Novas Features',
+      'Mentoria Mensal em Grupo (Exclusivo)',
+      'Análise de Carteira Personalizada',
+      'Badge de Membro Fundador'
+    ],
+    type: 'RECURRING',
+    frequency: 1
+  }
 ];
 
 const AssinaturaPage = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
 
   const handleSubscribe = async (plan: Plan) => {
     if (status === 'unauthenticated') {
-      router.push('/login'); // Redirect to login if not authenticated
+      router.push('/login');
       return;
     }
 
-    setLoading(true);
+    setLoading(plan.id);
     try {
       const response = await fetch('/api/subscriptions/create', {
         method: 'POST',
@@ -70,39 +103,52 @@ const AssinaturaPage = () => {
       }
 
       if (data.init_point) {
-        router.push(data.init_point); // Redirect to Mercado Pago checkout
+        router.push(data.init_point);
       } else {
         toast.error('Não foi possível obter o link de pagamento.');
       }
     } catch (error: any) {
       toast.error(error.message);
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   };
 
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Escolha seu Plano</h1>
-      <p className={styles.subtitle}>Desbloqueie todas as funcionalidades da CriptoPlay</p>
+      <p className={styles.subtitle}>Evolua seu trading com as melhores ferramentas</p>
 
       <div className={styles.plansGrid}>
         {plans.map((plan) => (
-          <div key={plan.id} className={styles.planCard}>
+          <div 
+            key={plan.id} 
+            className={`${styles.planCard} ${plan.highlight ? styles.highlighted : ''}`}
+          >
+            {plan.highlight && <div className={styles.badge}>Recomendado</div>}
             <h2 className={styles.planName}>{plan.name}</h2>
-            <p className={styles.planAmount}>R$ {plan.amount.toFixed(2)}</p>
+            <div className={styles.priceContainer}>
+              <span className={styles.currency}>R$</span>
+              <span className={styles.amount}>{plan.amount.toFixed(2).replace('.', ',')}</span>
+              <span className={styles.period}>/mês</span>
+            </div>
             <p className={styles.planDescription}>{plan.description}</p>
             <ul className={styles.planFeatures}>
               {plan.features.map((feature, index) => (
-                <li key={index}>{feature}</li>
+                <li key={index} className={styles.featureItem}>
+                  <svg className={styles.checkIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  {feature}
+                </li>
               ))}
             </ul>
             <button
-              className={styles.subscribeButton}
+              className={`${styles.subscribeButton} ${plan.highlight ? styles.primaryButton : styles.secondaryButton}`}
               onClick={() => handleSubscribe(plan)}
-              disabled={loading}
+              disabled={loading === plan.id || !!loading}
             >
-              {loading ? 'Processando...' : 'Acessar Agora'}
+              {loading === plan.id ? 'Processando...' : 'Assinar Agora'}
             </button>
           </div>
         ))}

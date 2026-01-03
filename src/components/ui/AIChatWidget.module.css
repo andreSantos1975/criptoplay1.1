@@ -155,3 +155,49 @@
     transform: scale(1);
   }
 }
+
+/* Locked State Styles */
+.lockedContainer {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+  background-color: #f0f0f0; /* Um fundo um pouco mais claro */
+  color: #333;
+}
+
+.lockedIcon {
+  font-size: 4rem;
+  margin-bottom: 15px;
+  color: #ffc107; /* Cor de aviso */
+}
+
+.lockedTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.lockedText {
+  font-size: 1rem;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.upgradeButton {
+  display: inline-block;
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.upgradeButton:hover {
+  background-color: #0056b3;
+}

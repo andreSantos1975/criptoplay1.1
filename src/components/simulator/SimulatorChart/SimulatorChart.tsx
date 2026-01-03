@@ -5,12 +5,13 @@ import {
   createChart, ColorType, CrosshairMode, ISeriesApi,
   IChartApi, BarData, CandlestickSeries
 } from "lightweight-charts";
-import { UseMutationResult } from "@tanstack/react-query"; // This import is no longer needed here but leaving it won't hurt
 import styles from "./SimulatorChart.module.css";
 import { useTradeLines } from "../../../hooks/useTradeLines";
 import { useAlertLines } from "../../../hooks/useAlertLines";
 import { Trade, Alert } from '@prisma/client';
 import { Button } from '@/components/ui/button';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 
 interface SimulatorChartProps {
   symbol: string;
@@ -50,10 +51,43 @@ export const SimulatorChart = memo(({
   onSaveAlert,
   onCancelCreateAlert,
 }: SimulatorChartProps) => {
+  const { data: session } = useSession();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [isChartReady, setIsChartReady] = useState(false);
+
+  // Verifica se o período de trial ainda está ativo
+  const isTrialActive = session?.user?.trialEndsAt ? new Date(session.user.trialEndsAt) > new Date() : false;
+
+  // Verifica se o usuário tem acesso ao gráfico com base na assinatura ou trial
+  const hasAccess = 
+    session?.user?.isAdmin || 
+    session?.user?.subscriptionStatus === 'authorized' || 
+    session?.user?.subscriptionStatus === 'lifetime' ||
+    isTrialActive;
+
+  // Se não tiver acesso, renderiza o overlay de bloqueio
+  if (!hasAccess) {
+    const trialEnded = session?.user?.trialEndsAt && new Date(session.user.trialEndsAt) <= new Date();
+    return (
+      <div className={styles.lockedChartContainer}>
+        <div className={styles.lockedContent}>
+          <div className={styles.lockedIcon}>🔒</div>
+          <h3 className={styles.lockedTitle}>Gráfico de Análise Técnica (Premium)</h3>
+          <p className={styles.lockedText}>
+            {trialEnded
+              ? "Seu período de teste Premium gratuito terminou. Assine um plano para continuar usando este recurso avançado."
+              : "Este recurso avançado é exclusivo para assinantes Starter, Pro ou Premium."
+            }
+          </p>
+          <Link href="/assinatura" className={styles.upgradeButton}>
+            Ver Planos
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // Use the custom hook to draw and manage trade lines
   useTradeLines({
