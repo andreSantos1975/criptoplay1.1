@@ -107,14 +107,35 @@ export const useTradeLines = ({
         // A linha de Entrada Prospectiva foi removida para comportamento profissional (limpeza visual).
         // O usuário se baseia no preço atual (candle/ticker).
         
+        // Helper para verificar se a linha prospectiva é redundante (já existe na posição atual)
+        const isRedundant = (prospectiveVal: number, currentVal: number | undefined | null, label: string) => {
+            // Se não tem posição ou valor atual, não é redundante (pode desenhar)
+            if (!currentPosition || currentVal === undefined || currentVal === null) return false;
+            
+            const numCurrent = Number(currentVal);
+            // Se o valor atual não é válido, não considera redundante
+            if (isNaN(numCurrent) || numCurrent === 0) return false;
+
+            const diff = Math.abs(prospectiveVal - numCurrent);
+            
+            // AUMENTO DE TOLERÂNCIA:
+            // Considera redundante se a diferença for menor que 1% do valor atual.
+            // Isso previne que pequenas diferenças de arredondamento causem duplicação visual.
+            const isCloseEnough = diff < (numCurrent * 0.01) || diff < 0.01;
+            
+            return isCloseEnough;
+        };
+
         // Linha de Take Profit Prospectiva
-        if (tradeLevels.takeProfit > 0) {
+        // Só desenha se não for redundante com o TP da posição atual
+        if (tradeLevels.takeProfit > 0 && !isRedundant(tradeLevels.takeProfit, Number(currentPosition?.takeProfit), 'TP')) {
           const line = series.createPriceLine(createLineOptions(tradeLevels.takeProfit, '#66BB6A', 'TP Prev.', true));
           priceLinesRef.current.push(line);
           prospectivePriceLinesRef.current.takeProfit = line;
         }
         // Linha de Stop Loss Prospectiva
-        if (tradeLevels.stopLoss > 0) {
+        // Só desenha se não for redundante com o SL da posição atual
+        if (tradeLevels.stopLoss > 0 && !isRedundant(tradeLevels.stopLoss, Number(currentPosition?.stopLoss), 'SL')) {
           const line = series.createPriceLine(createLineOptions(tradeLevels.stopLoss, '#FF7043', 'SL Prev.', true));
           priceLinesRef.current.push(line);
           prospectivePriceLinesRef.current.stopLoss = line;
