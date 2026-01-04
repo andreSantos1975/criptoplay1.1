@@ -67,28 +67,6 @@ export const SimulatorChart = memo(({
     session?.user?.subscriptionStatus === 'lifetime' ||
     isTrialActive;
 
-  // Se não tiver acesso, renderiza o overlay de bloqueio
-  if (!hasAccess) {
-    const trialEnded = session?.user?.trialEndsAt && new Date(session.user.trialEndsAt) <= new Date();
-    return (
-      <div className={styles.lockedChartContainer}>
-        <div className={styles.lockedContent}>
-          <div className={styles.lockedIcon}>🔒</div>
-          <h3 className={styles.lockedTitle}>Gráfico de Análise Técnica (Premium)</h3>
-          <p className={styles.lockedText}>
-            {trialEnded
-              ? "Seu período de teste Premium gratuito terminou. Assine um plano para continuar usando este recurso avançado."
-              : "Este recurso avançado é exclusivo para assinantes Starter, Pro ou Premium."
-            }
-          </p>
-          <Link href="/assinatura" className={styles.upgradeButton}>
-            Ver Planos
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   // Use the custom hook to draw and manage trade lines
   useTradeLines({
     chartRef,
@@ -117,6 +95,9 @@ export const SimulatorChart = memo(({
 
   // Effect to create and cleanup the chart
   useEffect(() => {
+    // Se não tiver acesso, nem tenta criar o gráfico
+    if (!hasAccess) return;
+
     const chartElement = chartContainerRef.current;
     if (!chartElement) return;
 
@@ -154,7 +135,7 @@ export const SimulatorChart = memo(({
       seriesRef.current = null;
       setIsChartReady(false);
     };
-  }, [symbol]);
+  }, [symbol, hasAccess]); // Adicionado hasAccess como dependência
 
   // Load initial data
   useEffect(() => {
@@ -196,6 +177,28 @@ export const SimulatorChart = memo(({
       },
     });
   }, [isChartReady, initialChartData]);
+
+  // Se não tiver acesso, renderiza o overlay de bloqueio
+  if (!hasAccess) {
+    const trialEnded = session?.user?.trialEndsAt && new Date(session.user.trialEndsAt) <= new Date();
+    return (
+      <div className={styles.lockedChartContainer}>
+        <div className={styles.lockedContent}>
+          <div className={styles.lockedIcon}>🔒</div>
+          <h3 className={styles.lockedTitle}>Gráfico de Análise Técnica (Premium)</h3>
+          <p className={styles.lockedText}>
+            {trialEnded
+              ? "Seu período de teste Premium gratuito terminou. Assine um plano para continuar usando este recurso avançado."
+              : "Este recurso avançado é exclusivo para assinantes Starter, Pro ou Premium."
+            }
+          </p>
+          <Link href="/assinatura" className={styles.upgradeButton}>
+            Ver Planos
+          </Link>
+        </div>
+      </div>
+    );
+  }
     
   return (
     <div>

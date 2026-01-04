@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
+import { useSession } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { hasPremiumAccess } from "@/lib/permissions";
 
 // PERSONAL FINANCE IMPORTS
 import { Income, Expense, Category } from "@/types/personal-finance";
@@ -76,6 +79,8 @@ const updateExpense = async (updatedExpense: Expense): Promise<Expense> => {
 
 // --- MAIN COMPONENT ---
 const DashboardPage = () => {
+  const { data: session } = useSession();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab') || "painel";
@@ -252,6 +257,19 @@ const DashboardPage = () => {
   const handleSaveItem = (item: Omit<Expense, "id"> | Omit<Income, "id">, type: "expense" | "income") => { if (type === 'income') { const payload = { ...item as Omit<Income, "id"> }; payload.date = new Date(payload.date || selectedDate); editingIncome ? updateIncomeMutation.mutate({ ...payload, id: editingIncome.id }) : addIncomeMutation.mutate(payload); } else if (type === 'expense') { const payload = { ...item as Omit<Expense, "id"> }; payload.dataVencimento = new Date(payload.dataVencimento || selectedDate); editingExpense ? updateExpenseMutation.mutate({ ...payload, id: editingExpense.id }) : addExpenseMutation.mutate(payload); } };
 
 
+  const renderLockedContent = () => (
+    <div className={styles.lockedContainer}>
+      <div className={styles.lockedContent}>
+        <h2>Funcionalidade Premium</h2>
+        <p>Esta funcionalidade é exclusiva para assinantes ou durante o período de testes.</p>
+        <p>Atualize sua conta para ter acesso completo ao Simulador de Trade, Relatórios Avançados e Cursos Exclusivos.</p>
+        <Button onClick={() => router.push('/assinatura')} className={styles.upgradeButton}>
+          Assinar Agora
+        </Button>
+      </div>
+    </div>
+  );
+
   // --- RENDER LOGIC ---
   const renderTabContent = () => {
     switch (activeTab) {
@@ -284,6 +302,8 @@ const DashboardPage = () => {
           </>
         );
       case "analise": {
+        if (!hasPremiumAccess(session)) return renderLockedContent();
+
         // Renaming original simulator for clarity
         const SpotSimulator = dynamic(
           () => import('@/components/simulator/Simulator/Simulator'),
@@ -316,6 +336,7 @@ const DashboardPage = () => {
         );
       }
       case "relatorios":
+        if (!hasPremiumAccess(session)) return renderLockedContent();
         return <ReportsSection />;
       default:
         return <DashboardOverview />;

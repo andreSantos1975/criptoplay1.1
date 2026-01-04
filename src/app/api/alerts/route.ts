@@ -3,11 +3,16 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { AlertStatus } from '@prisma/client';
+import { hasPremiumAccess } from '@/lib/permissions';
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!hasPremiumAccess(session)) {
+    return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
   }
 
   try {
@@ -33,6 +38,10 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!hasPremiumAccess(session)) {
+    return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
   }
 
   try {
@@ -93,6 +102,10 @@ export async function PUT(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
+  if (!hasPremiumAccess(session)) {
+    return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
     const { id, ...dataToUpdate } = body;
@@ -120,6 +133,10 @@ export async function DELETE(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!hasPremiumAccess(session)) {
+    return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
   }
 
   try {

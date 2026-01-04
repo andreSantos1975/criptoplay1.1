@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { Decimal } from '@prisma/client/runtime/library';
 import { getCurrentPrice } from '@/lib/binance';
+import { hasPremiumAccess } from '@/lib/permissions';
 
 
 // Rota para BUSCAR todas as operações de simulação de um usuário (Spot e Futuros unificados)
@@ -12,6 +13,10 @@ export async function GET(request: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return new NextResponse(JSON.stringify({ message: 'Não autorizado' }), { status: 401 });
+    }
+
+    if (!hasPremiumAccess(session)) {
+      return new NextResponse(JSON.stringify({ message: 'Assinatura necessária ou período de teste expirado.' }), { status: 403 });
     }
 
     const userId = session.user.id;
@@ -77,6 +82,10 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return new NextResponse(JSON.stringify({ message: 'Não autorizado' }), { status: 401 });
+    }
+
+    if (!hasPremiumAccess(session)) {
+      return new NextResponse(JSON.stringify({ message: 'Assinatura necessária ou período de teste expirado.' }), { status: 403 });
     }
 
     const userId = session.user.id;

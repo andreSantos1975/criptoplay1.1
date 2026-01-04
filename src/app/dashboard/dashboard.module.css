@@ -97,3 +97,38 @@
   color: white;
   border-color: #c3073f;
 }
+
+/* Locked Content Styles */
+.lockedContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.lockedContent h2 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: hsl(var(--primary));
+}
+
+.lockedContent p {
+  font-size: 1.1rem;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 0.5rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.upgradeButton {
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+  padding: 1.5rem 3rem;
+}
