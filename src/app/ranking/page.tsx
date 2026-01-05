@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import useSWR from 'swr';
+import { useSession } from 'next-auth/react';
 import { 
   Trophy, 
   TrendingUp, 
@@ -19,175 +21,79 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import styles from "./ranking.module.css";
 
-// Mock data - simulating different user states
-const MOCK_USER = {
-  isLoggedIn: true, // Change to false to test not-logged state
-  plan: "pro" as const, // Change to "free" | "starter" | "pro" | "premium"
-  id: "user-5",
-};
-
-const MOCK_TRADERS = [
-  {
-    id: "user-1",
-    position: 1,
-    nickname: "CryptoMaster",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=CryptoMaster",
-    roi: 245.67,
-    profit: 24567.89,
-    trades: 342,
-    winRate: 78.5,
-    drawdown: 12.3,
-    plan: "premium" as const,
-    badges: ["top10", "proTrader", "streak"],
-  },
-  {
-    id: "user-2",
-    position: 2,
-    nickname: "TradingPro",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=TradingPro",
-    roi: 189.34,
-    profit: 18934.12,
-    trades: 256,
-    winRate: 72.1,
-    drawdown: 15.8,
-    plan: "pro" as const,
-    badges: ["top10", "proTrader"],
-  },
-  {
-    id: "user-3",
-    position: 3,
-    nickname: "BullRunner",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=BullRunner",
-    roi: 156.78,
-    profit: 15678.45,
-    trades: 198,
-    winRate: 69.8,
-    drawdown: 18.2,
-    plan: "pro" as const,
-    badges: ["top10", "streak"],
-  },
-  {
-    id: "user-4",
-    position: 4,
-    nickname: "DiamondHands",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=DiamondHands",
-    roi: 134.56,
-    profit: 13456.78,
-    trades: 167,
-    winRate: 66.4,
-    drawdown: 20.1,
-    plan: "premium" as const,
-    badges: ["proTrader"],
-  },
-  {
-    id: "user-5",
-    position: 5,
-    nickname: "MoonShot",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=MoonShot",
-    roi: 112.89,
-    profit: 11289.34,
-    trades: 145,
-    winRate: 64.2,
-    drawdown: 22.5,
-    plan: "pro" as const,
-    badges: [],
-    isCurrentUser: true,
-  },
-  {
-    id: "user-6",
-    position: 6,
-    nickname: "AltcoinKing",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=AltcoinKing",
-    roi: 98.45,
-    profit: 9845.67,
-    trades: 132,
-    winRate: 61.8,
-    drawdown: 24.3,
-    plan: "pro" as const,
-    badges: [],
-  },
-  {
-    id: "user-7",
-    position: 7,
-    nickname: "SwingTrader",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=SwingTrader",
-    roi: 87.23,
-    profit: 8723.45,
-    trades: 118,
-    winRate: 59.5,
-    drawdown: 26.8,
-    plan: "premium" as const,
-    badges: ["proTrader"],
-  },
-  {
-    id: "user-8",
-    position: 8,
-    nickname: "LeverageKing",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=LeverageKing",
-    roi: 76.89,
-    profit: 7689.12,
-    trades: 256,
-    winRate: 55.2,
-    drawdown: 35.4,
-    plan: "pro" as const,
-    badges: ["streak"],
-  },
-  {
-    id: "user-9",
-    position: 9,
-    nickname: "PatientBear",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=PatientBear",
-    roi: 65.34,
-    profit: 6534.89,
-    trades: 89,
-    winRate: 70.8,
-    drawdown: 14.2,
-    plan: "pro" as const,
-    badges: [],
-  },
-  {
-    id: "user-10",
-    position: 10,
-    nickname: "ScalpMaster",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=ScalpMaster",
-    roi: 54.67,
-    profit: 5467.23,
-    trades: 512,
-    winRate: 58.3,
-    drawdown: 28.9,
-    plan: "premium" as const,
-    badges: ["top10"],
-  },
-];
-
 const PERIOD_OPTIONS = [
-  { value: "7d", label: "7 dias" },
-  { value: "30d", label: "30 dias" },
-  { value: "90d", label: "90 dias" },
-  { value: "all", label: "Histórico" },
+  { label: '7 Dias', value: '7d' },
+  { label: '30 Dias', value: '30d' },
+  { label: '90 Dias', value: '90d' },
+  { label: 'Tudo', value: 'all' },
 ];
 
 const MARKET_OPTIONS = [
-  { value: "spot", label: "Spot" },
-  { value: "futures", label: "Futuros" },
+  { label: 'Spot', value: 'spot' },
+  { label: 'Futuros', value: 'futures' },
+  { label: 'Todos', value: 'all' },
 ];
 
 const SORT_OPTIONS = [
-  { value: "roi", label: "ROI" },
-  { value: "profit", label: "Lucro" },
-  { value: "consistency", label: "Consistência" },
+  { label: 'Maior ROI', value: 'roi' },
+  { label: 'Maior Lucro', value: 'profit' },
+  { label: 'Consistência', value: 'consistency' },
 ];
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export default function RankingPage() {
+  const { data: session } = useSession();
+  
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
   const [selectedMarket, setSelectedMarket] = useState("spot");
   const [selectedSort, setSelectedSort] = useState("roi");
   const [isPublicProfile, setIsPublicProfile] = useState(true);
 
-  const isPro = MOCK_USER.plan === "pro" || MOCK_USER.plan === "premium";
-  const isLoggedIn = MOCK_USER.isLoggedIn;
+  // Fetch com parâmetros dinâmicos
+  const { data, error, isLoading } = useSWR(
+    `/api/ranking?period=${selectedPeriod}&market=${selectedMarket}&sort=${selectedSort}`, 
+    fetcher
+  );
 
-  const currentUserData = MOCK_TRADERS.find(t => t.isCurrentUser);
+  // Skeleton Loading Component
+  if (isLoading) {
+    return (
+      <div className={styles.container}>
+        <section className={styles.heroSection}>
+           <div className="h-48 animate-pulse bg-gray-800/20 rounded-xl mb-8" />
+        </section>
+        <main className={styles.mainContent}>
+          {/* Metrics Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-32 bg-gray-200 dark:bg-gray-800 rounded-xl animate-pulse" />
+            ))}
+          </div>
+          {/* Filters Skeleton */}
+          <div className="h-12 bg-gray-200 dark:bg-gray-800 rounded-lg mb-8 animate-pulse" />
+          {/* Table Skeleton */}
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-20 bg-gray-200 dark:bg-gray-800 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) return <div className="text-center py-20 text-red-500">Falha ao carregar o ranking. Tente novamente mais tarde.</div>;
+
+  const traders = data?.traders || [];
+  const currentUserData = data?.currentUser || null;
+  const metrics = data?.metrics || {};
+
+  const isLoggedIn = !!session?.user?.id;
+  const userPlan = currentUserData?.plan || "free";
+  const isPro = userPlan === "pro" || userPlan === "premium";
+
+  const totalTradersRanked = metrics.totalTraders || 0;
 
   return (
     <div className={styles.container}>
@@ -220,30 +126,30 @@ export default function RankingPage() {
           <MetricCard
             icon={Trophy}
             label="Traders Ranqueados"
-            value="2,847"
-            subtext="+156 este mês"
-            trend="up"
+            value={totalTradersRanked.toLocaleString('pt-BR')}
+            subtext="" // A API não retorna esse dado no momento
+            trend="neutral" // A API não retorna esse dado no momento
           />
           <MetricCard
             icon={TrendingUp}
             label="Retorno Médio"
-            value="+42.5%"
-            subtext="Últimos 30 dias"
-            trend="up"
+            value={`${metrics.avgRoi?.toFixed(2)}%`}
+            subtext="Mês atual"
+            trend="neutral" // A API não retorna esse dado no momento
           />
           <MetricCard
             icon={Target}
             label="Taxa Média de Acerto"
-            value="62.3%"
-            subtext="Performance geral"
-            trend="neutral"
+            value={`${metrics.avgWinRate?.toFixed(2)}%`}
+            subtext="Mês atual"
+            trend="neutral" // A API não retorna esse dado no momento
           />
           <MetricCard
             icon={Flame}
             label="Trader Destaque"
-            value="CryptoMaster"
-            subtext="+245.67% ROI"
-            trend="up"
+            value={metrics.topTraderName || "-"}
+            subtext={`${metrics.topTraderRoi?.toFixed(2)}% ROI`}
+            trend="neutral" // A API não retorna esse dado no momento
           />
         </section>
 
@@ -252,7 +158,7 @@ export default function RankingPage() {
           <section>
             <UserPositionCard
               position={currentUserData.position}
-              totalTraders={2847}
+              totalTraders={totalTradersRanked}
               roi={currentUserData.roi}
               profit={currentUserData.profit}
               winRate={currentUserData.winRate}
@@ -277,7 +183,7 @@ export default function RankingPage() {
         {(!isLoggedIn || !isPro) && (
           <section>
             <CTABanner 
-              type={!isLoggedIn ? "not-logged" : (MOCK_USER.plan as string) === "free" ? "free" : "starter"} 
+              type={!isLoggedIn ? "not-logged" : userPlan === "free" ? "free" : "starter"} 
             />
           </section>
         )}
@@ -310,9 +216,9 @@ export default function RankingPage() {
           </div>
           
           <RankingTable
-            traders={MOCK_TRADERS}
-            currentUserId={MOCK_USER.id}
-            userPlan={MOCK_USER.plan}
+            traders={traders}
+            currentUserId={session?.user?.id || null}
+            userPlan={userPlan}
           />
         </section>
 

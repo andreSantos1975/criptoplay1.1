@@ -21,7 +21,7 @@ interface Trader {
 
 interface RankingTableProps {
   traders: Trader[];
-  currentUserId?: string;
+  currentUserId?: string | null;
   userPlan?: "free" | "starter" | "pro" | "premium" | null;
 }
 

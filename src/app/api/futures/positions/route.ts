@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 
 // Esquema de validação para a criação de uma posição
 const createPositionSchema = z.object({
@@ -36,12 +37,40 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: { virtualBalance: true, bankruptcyExpiryDate: true } // Selecionar apenas o necessário
     });
 
     if (!user) {
       return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
 
+    // --- Lógica de checagem de falência (cooldown de 21 dias) ---
+    if (user.bankruptcyExpiryDate) {
+      const now = new Date();
+      if (now < user.bankruptcyExpiryDate) {
+        // Usuário ainda está em cooldown
+        const remainingDays = Math.ceil((user.bankruptcyExpiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return NextResponse.json(
+          { error: `Você está em período de penalidade após falência. Tente novamente em ${remainingDays} dias.` },
+          { status: 403 }
+        );
+      } else {
+        // Cooldown expirou, resetar a banca e limpar a flag
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            virtualBalance: new Prisma.Decimal(10000),
+            bankruptcyExpiryDate: null,
+            monthlyStartingBalance: new Prisma.Decimal(10000) // Resetar também o ponto de partida mensal
+          },
+        });
+        // Atualizar o objeto user para que a lógica abaixo use os novos valores
+        user.virtualBalance = new Prisma.Decimal(10000);
+        user.bankruptcyExpiryDate = null;
+      }
+    }
+    // --- Fim da lógica de checagem de falência ---
+    
     // --- Lógica principal ---
 
     // --- Lógica principal ---

@@ -87,14 +87,41 @@ export async function POST(req: Request) {
       }
 
       // 3. Atualizar o saldo do usuário (Transação única)
-      await tx.user.update({
+      const updatedUser = await tx.user.update({
         where: { id: userId },
         data: {
           virtualBalance: {
             increment: new Prisma.Decimal(totalAmountToReturn),
           },
         },
+        select: {
+          virtualBalance: true,
+          bankruptcyExpiryDate: true,
+        }
       });
+
+      // Lógica de falência e cooldown de 21 dias
+      if (updatedUser.virtualBalance.lte(0)) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            virtualBalance: new Prisma.Decimal(0),
+            bankruptcyExpiryDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000), // 21 dias de cooldown
+          },
+        });
+        throw new Error('Sua banca virtual foi liquidada. Você não poderá operar por 21 dias.');
+      }
+
+      // Se a data de expiração de falência já passou e o usuário ainda está zerado, resetar a banca
+      if (updatedUser.bankruptcyExpiryDate && updatedUser.bankruptcyExpiryDate < new Date()) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            virtualBalance: new Prisma.Decimal(10000),
+            bankruptcyExpiryDate: null,
+          },
+        });
+      }
 
       return {
         message: 'Posições fechadas com sucesso',

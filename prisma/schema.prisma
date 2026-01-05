@@ -17,9 +17,12 @@ model User {
   password            String?
   isAdmin             Boolean           @default(false)
   virtualBalance      Decimal           @default(10000) @db.Decimal(12, 2)
+  monthlyStartingBalance Decimal        @default(10000) @db.Decimal(12, 2)
+  bankruptcyExpiryDate DateTime?
   createdAt           DateTime          @default(now())
   trialEndsAt         DateTime?
   dailyPerformances   DailyPerformance[]
+  monthlyRankings     MonthlyRanking[]
   oauthAccounts       OAuthAccount[]
   bankAccounts        BankAccount[]
   creditCards         CreditCard[]
@@ -337,4 +340,20 @@ enum PositionStatus {
   OPEN
   CLOSED
   LIQUIDATED
+}
+
+model MonthlyRanking {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month          Int
+  year           Int
+  startingBalance Decimal @db.Decimal(12, 2)
+  finalBalance   Decimal  @db.Decimal(12, 2)
+  roiPercentage  Float
+  rankPosition   Int
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, month, year])
+  @@index([month, year, rankPosition])
 }
