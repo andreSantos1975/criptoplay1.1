@@ -1,0 +1,164 @@
+.section {
+  padding: 4rem 0;
+  background: linear-gradient(to bottom, hsl(var(--background)), hsl(var(--muted) / 0.3));
+}
+
+.container {
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  max-width: 1280px;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid hsl(45 93% 47% / 0.3); /* Warning color hardcoded or use variable if exists */
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--card)) 50%, hsl(45 93% 47% / 0.05) 100%);
+  border-radius: var(--radius);
+}
+
+.decorationOne {
+  position: absolute;
+  top: -5rem;
+  right: -5rem;
+  height: 10rem;
+  width: 10rem;
+  border-radius: 9999px;
+  background-color: hsl(45 93% 47% / 0.1);
+  filter: blur(64px);
+}
+
+.decorationTwo {
+  position: absolute;
+  bottom: -2.5rem;
+  left: -2.5rem;
+  height: 8rem;
+  width: 8rem;
+  border-radius: 9999px;
+  background-color: hsl(var(--primary) / 0.1);
+  filter: blur(64px);
+}
+
+.contentWrapper {
+  position: relative;
+  z-index: 10;
+  padding: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .contentWrapper {
+    padding: 3rem;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    align-items: center;
+  }
+}
+
+.badgePro {
+  margin-bottom: 1rem;
+  border-color: transparent;
+  background-color: hsl(45 93% 47%); /* Warning/Gold */
+  color: hsl(222 47% 11%); /* Dark text */
+}
+
+.badgePro:hover {
+  background-color: hsl(45 93% 47% / 0.8);
+}
+
+.title {
+  margin-bottom: 1rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+}
+
+@media (min-width: 1024px) {
+  .title {
+    font-size: 2.25rem;
+  }
+}
+
+.textGradient {
+  background: linear-gradient(135deg, hsl(45 93% 47%) 0%, hsl(30 93% 50%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.description {
+  margin-bottom: 1.5rem;
+  font-size: 1.125rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.buttonPro {
+  background: linear-gradient(135deg, hsl(45 93% 47%) 0%, hsl(30 93% 50%) 100%) !important;
+  color: hsl(222 47% 11%) !important; /* Dark text on gold */
+  font-weight: 600 !important;
+  border: none !important;
+}
+
+.buttonPro:hover {
+  opacity: 0.9;
+}
+
+.benefitsGrid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .benefitsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.benefitItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border) / 0.5);
+  background-color: hsl(var(--card) / 0.5);
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+  transition: all 300ms;
+}
+
+.benefitItem:hover {
+  border-color: hsl(var(--primary) / 0.3);
+  box-shadow: var(--shadow-soft);
+}
+
+.benefitIconWrapper {
+  display: flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: hsl(var(--primary) / 0.1);
+}
+
+.benefitIcon {
+  height: 1.25rem;
+  width: 1.25rem;
+  color: hsl(var(--primary));
+}
+
+.benefitText {
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}

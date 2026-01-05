@@ -1,0 +1,114 @@
+.progressBarSection {
+  padding: 2rem 0;
+  border-bottom: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card) / 0.8);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 4rem;
+  z-index: 40;
+}
+
+.container {
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  max-width: 1280px;
+}
+
+.innerWrapper {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 56rem; /* 4xl */
+}
+
+.flexWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .flexWrapper {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.infoGroup {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.iconWrapper {
+  display: flex;
+  height: 3rem;
+  width: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: hsl(var(--primary) / 0.1);
+}
+
+.icon {
+  height: 1.5rem;
+  width: 1.5rem;
+  color: hsl(var(--primary));
+}
+
+.infoTextLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+
+.infoTextValue {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+}
+
+.statsGroup {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.statIcon {
+  height: 1rem;
+  width: 1rem;
+}
+
+.statTextMuted {
+  color: hsl(var(--muted-foreground));
+}
+
+.statTextSuccess {
+  font-weight: 600;
+  color: hsl(var(--success));
+}
+
+.progressContainer {
+  margin-top: 1rem;
+  height: 0.75rem;
+  width: 100%;
+  background-color: hsl(var(--secondary));
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progressIndicator {
+  height: 100%;
+  background-color: hsl(var(--primary)); /* Or success? User used primary/default. But code used bg-success for percentage text. Let's stick to primary for bar unless otherwise indicated. Shadcn Progress usually uses primary. */
+  transition: transform 0.5s ease-in-out;
+  transform-origin: left;
+}

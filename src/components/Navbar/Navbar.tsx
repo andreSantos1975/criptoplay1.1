@@ -3,87 +3,52 @@
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import styles from "./Navbar.module.css";
+import clsx from "clsx";
 
 const Navbar = () => {
-
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
   const router = useRouter();
-
+  const pathname = usePathname();
   const { status } = useSession();
 
-
+  const isAcademiaPage = pathname === "/academia-criptoplay";
 
   return (
-
     <header className={styles.header}>
-
       <div className={styles.container}>
-
         <div className={styles.flexBetween}>
-
           {/* Logo */}
-
           <Link href="/" className={styles.logoLink}>
-
             <div className={styles.logoContainer}>
-
               <div className={styles.logoIconWrapper}>
-
                 <TrendingUp className={styles.logoIcon} />
-
               </div>
-
               <span className={styles.logoText}>CriptoPlay</span>
-
             </div>
-
           </Link>
-
           {/* Desktop Navigation */}
-
           <nav className={styles.desktopNav}>
-
-                        <Link href="/" className={styles.navLink}>
-
-                          Home
-
-                        </Link>
-
-                        <Link href="/ranking" className={styles.navLink}>
-
-                          Ranking
-
-                        </Link>
-
-                                    
-
-            <Link href="/#recursos" className={styles.navLink}>
-
+            <Link href="/" className={clsx(styles.navLink, isAcademiaPage && styles.navLinkAcademia)}>
+              Home
+            </Link>
+            <Link href="/ranking" className={clsx(styles.navLink, isAcademiaPage && styles.navLinkAcademia)}>
+              Ranking
+            </Link>
+            <Link href="/#recursos" className={clsx(styles.navLink, isAcademiaPage && styles.navLinkAcademia)}>
               Recursos
-
             </Link>
-
-            <Link href="/contato" className={styles.navLink}>
-
+            <Link href="/contato" className={clsx(styles.navLink, isAcademiaPage && styles.navLinkAcademia)}>
               Contato
-
             </Link>
-
             {status === "authenticated" && (
-
-              <Link href="/curso" className={styles.navLink}>
-
-                Jornada Cripto
-
+              <Link href="/academia-criptoplay" className={clsx(styles.navLink, isAcademiaPage && styles.navLinkAcademia)}>
+                Academia
               </Link>
-
             )}
-
           </nav>
 
           {/* Desktop CTA */}
@@ -145,11 +110,11 @@ const Navbar = () => {
               </Link>
               {status === "authenticated" && (
                 <Link
-                  href="/curso"
-                  className={styles.mobileNavLink}
+                  href="/academia-criptoplay"
+                  className={clsx(styles.mobileNavLink, isAcademiaPage && styles.navLinkAcademia)}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Jornada Cripto
+                  Academia
                 </Link>
               )}
               <div className={styles.mobileCtaContainer}>

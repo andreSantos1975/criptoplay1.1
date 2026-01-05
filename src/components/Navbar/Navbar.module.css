@@ -93,6 +93,10 @@
   color: hsl(var(--primary)); /* hover:text-primary */
 }
 
+.navLinkAcademia:hover {
+  color: hsl(var(--primary-foreground));
+}
+
 .desktopCta {
   display: none; /* hidden */
   align-items: center;

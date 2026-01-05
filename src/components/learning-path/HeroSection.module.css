@@ -1,0 +1,194 @@
+.heroSection {
+  position: relative;
+  overflow: hidden;
+  background: var(--gradient-hero);
+  padding: 5rem 0;
+}
+
+@media (min-width: 1024px) {
+  .heroSection {
+    padding: 7rem 0;
+  }
+}
+
+/* Background Decorations */
+.decoration {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(64px);
+  z-index: 0;
+}
+
+.decorationTopRight {
+  top: -10rem;
+  right: -10rem;
+  height: 20rem;
+  width: 20rem;
+  background-color: hsl(var(--accent) / 0.1);
+}
+
+.decorationBottomLeft {
+  bottom: -10rem;
+  left: -10rem;
+  height: 20rem;
+  width: 20rem;
+  background-color: hsl(var(--primary) / 0.2);
+}
+
+.decorationCenter {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 24rem;
+  width: 24rem;
+  background-color: hsl(var(--accent) / 0.05);
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-10px);
+  }
+}
+
+.container {
+  position: relative;
+  z-index: 10;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  max-width: 1280px; /* equivalent to container in tailwind usually */
+}
+
+.contentWrapper {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 56rem; /* 4xl */
+  text-align: center;
+}
+
+.badge {
+  margin-bottom: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background-color: hsl(var(--primary-foreground) / 0.1);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--primary-foreground));
+  backdrop-filter: blur(4px);
+}
+
+.title {
+  margin-bottom: 1.5rem;
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: hsl(var(--primary-foreground));
+}
+
+@media (min-width: 640px) {
+  .title {
+    font-size: 3rem;
+    line-height: 1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .title {
+    font-size: 3.75rem;
+    line-height: 1;
+  }
+}
+
+.titleHighlight {
+  position: relative;
+  white-space: nowrap;
+}
+
+.titleUnderline {
+  position: absolute;
+  bottom: -0.5rem;
+  left: 0;
+  right: 0;
+  height: 0.25rem;
+  border-radius: 9999px;
+  background-color: hsl(var(--accent));
+  opacity: 0.6;
+}
+
+.subtitle {
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 2.5rem;
+  max-width: 42rem;
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  color: hsl(var(--primary-foreground) / 0.8);
+}
+
+@media (min-width: 640px) {
+  .subtitle {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+}
+
+.ctaWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .ctaWrapper {
+    flex-direction: row;
+  }
+}
+
+.primaryButton {
+  /* Adapting Button styles locally if needed or just wrapping */
+  background-color: hsl(var(--primary-foreground)) !important;
+  color: hsl(var(--primary)) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.primaryButton:hover {
+  background-color: hsl(var(--primary-foreground) / 0.9) !important;
+}
+
+.secondaryButton {
+  border-color: hsl(var(--primary-foreground) / 0.3) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  background-color: transparent !important;
+}
+
+.secondaryButton:hover {
+  background-color: hsl(var(--primary-foreground) / 0.1) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.waveWrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.waveSvg {
+  width: 100%;
+  height: auto;
+}
+
+.wavePath {
+  fill: hsl(var(--background));
+}
