@@ -67,6 +67,10 @@
   color: hsl(var(--primary)); /* text-primary */
 }
 
+.logoTextAcademia {
+  color: white;
+}
+
 .logoLink {
   text-decoration: none;
   color: inherit; /* Inherit color from parent, or set a specific color */

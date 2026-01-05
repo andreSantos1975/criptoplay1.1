@@ -96,7 +96,7 @@ export function calculateTradingStats(trades: Trade[]): TradingStats {
   
   const avgWin = winningTrades > 0 ? grossProfit / winningTrades : 0;
   const avgLoss = losingTrades > 0 ? grossLoss / losingTrades : 0;
-  const payoff = avgLoss === 0 ? 0 : avgWin / avgLoss;
+  const payoff = avgLoss === 0 ? (avgWin > 0 ? 99.99 : 0) : avgWin / avgLoss;
 
   // Expectativa Matemática = (Probabilidade de Ganho * Ganho Médio) - (Probabilidade de Perda * Perda Média)
   // WinRate decimal * AvgWin - LossRate decimal * AvgLoss

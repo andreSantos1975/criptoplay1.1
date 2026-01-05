@@ -27,7 +27,7 @@ const Navbar = () => {
               <div className={styles.logoIconWrapper}>
                 <TrendingUp className={styles.logoIcon} />
               </div>
-              <span className={styles.logoText}>CriptoPlay</span>
+              <span className={clsx(styles.logoText, isAcademiaPage && styles.logoTextAcademia)}>CriptoPlay</span>
             </div>
           </Link>
           {/* Desktop Navigation */}

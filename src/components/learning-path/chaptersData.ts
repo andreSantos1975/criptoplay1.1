@@ -5,6 +5,7 @@ export interface Chapter {
   title: string;
   description: string;
   status: ChapterStatus;
+  slug?: string;
 }
 
 // Existing chapters (active)

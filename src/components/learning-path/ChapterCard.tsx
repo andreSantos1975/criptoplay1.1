@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import {
   CheckCircle2,
   Lock,
@@ -101,13 +102,25 @@ export function ChapterCard({ chapter, index }: ChapterCardProps) {
         </p>
 
         {isInteractive ? (
-          <Button
-            size="sm"
-            className={clsx("w-full", config.buttonClass)}
-          >
-            {config.buttonText}
-            <ArrowRight className={styles.arrowIcon} />
-          </Button>
+          chapter.slug ? (
+            <Link href={`/academia-criptoplay/${chapter.slug}`} className="w-full">
+              <Button
+                size="sm"
+                className={clsx("w-full", config.buttonClass)}
+              >
+                {config.buttonText}
+                <ArrowRight className={styles.arrowIcon} />
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              size="sm"
+              className={clsx("w-full", config.buttonClass)}
+            >
+              {config.buttonText}
+              <ArrowRight className={styles.arrowIcon} />
+            </Button>
+          )
         ) : (
           <div className={styles.statusContainer}>
             <StatusIcon className="h-4 w-4" />
