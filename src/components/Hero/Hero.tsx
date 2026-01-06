@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // Import useRouter
+import { useSession } from "next-auth/react"; // Import useSession
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, TrendingUp, Play } from "lucide-react";
 // import heroImage from "@/assets/hero-crypto.jpg"; // This path will need to be verified/adjusted
@@ -10,6 +12,18 @@ import styles from "./Hero.module.css"; // Added import
 
 const Hero = () => {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const router = useRouter(); // Initialize useRouter
+  const { data: session, status } = useSession(); // Get session data and status
+
+  const handleCtaClick = () => {
+    if (status === "authenticated") {
+      router.push("/dashboard");
+    } else {
+      router.push("/cadastro");
+    }
+  };
+
+  const ctaButtonText = status === "authenticated" ? "Acessar Plataforma" : "Começar Agora";
 
   return (
     <section className={styles.heroSection}>
@@ -56,8 +70,13 @@ const Hero = () => {
 
           {/* CTA Buttons */}
           <div className={styles.ctaButtonsContainer}>
-            <Button variant="cta" size="xl" className={styles.ctaButtonPrimary}>
-              Começar Agora
+            <Button 
+              variant="cta" 
+              size="xl" 
+              className={styles.ctaButtonPrimary}
+              onClick={handleCtaClick} // Use dynamic click handler
+            >
+              {ctaButtonText} {/* Use dynamic text */}
               <ArrowRight className={styles.ctaButtonIcon} />
             </Button>
             <Button 
