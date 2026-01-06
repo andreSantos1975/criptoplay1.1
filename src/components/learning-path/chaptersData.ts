@@ -6,6 +6,7 @@ export interface Chapter {
   description: string;
   status: ChapterStatus;
   slug?: string;
+  category?: "beginner" | "intermediate" | "advanced";
 }
 
 // Existing chapters (active)
@@ -16,6 +17,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Entenda como funcionam as corretoras de criptomoedas e escolha a melhor para seu perfil.",
     status: "completed",
+    category: "beginner",
   },
   {
     id: 2,
@@ -23,6 +25,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Aprenda a proteger suas criptomoedas com carteiras físicas de máxima segurança.",
     status: "completed",
+    category: "beginner",
   },
   {
     id: 3,
@@ -30,6 +33,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Conheça as carteiras digitais para uso diário e suas melhores práticas.",
     status: "available",
+    category: "beginner",
   },
   {
     id: 4,
@@ -37,6 +41,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Explore alternativas de investimento em cripto através de ETFs e fundos.",
     status: "available",
+    category: "beginner",
   },
   {
     id: 5,
@@ -44,6 +49,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Entenda o cenário regulatório das criptomoedas no Brasil e no mundo.",
     status: "available",
+    category: "beginner",
   },
   {
     id: 6,
@@ -51,6 +57,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Aprenda a declarar e pagar impostos sobre seus ganhos com criptomoedas.",
     status: "available",
+    category: "beginner",
   },
   {
     id: 7,
@@ -58,6 +65,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Domine suas emoções e evite armadilhas psicológicas no mercado cripto.",
     status: "locked",
+    category: "beginner",
   },
   {
     id: 8,
@@ -65,6 +73,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Técnicas profissionais para proteger seu capital e maximizar retornos.",
     status: "locked",
+    category: "beginner",
   },
   {
     id: 9,
@@ -72,6 +81,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Critérios e metodologias para selecionar as melhores criptomoedas.",
     status: "locked",
+    category: "beginner",
   },
   {
     id: 10,
@@ -79,6 +89,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Descubra seu perfil de risco e crie uma estratégia personalizada.",
     status: "locked",
+    category: "beginner",
   },
   {
     id: 11,
@@ -86,6 +97,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Conheça os ativos digitais com maior segurança e estabilidade.",
     status: "locked",
+    category: "beginner",
   },
   {
     id: 12,
@@ -93,6 +105,7 @@ export const existingChapters: Chapter[] = [
     description:
       "Entenda os riscos e oportunidades de ativos altamente voláteis.",
     status: "locked",
+    category: "beginner",
   },
   {
     id: 13,
@@ -100,10 +113,11 @@ export const existingChapters: Chapter[] = [
     description:
       "Tutorial completo para configurar e usar a carteira mais popular do mercado.",
     status: "locked",
+    category: "beginner",
   },
 ];
 
-// Coming soon chapters
+// Coming soon chapters (Intermediate)
 export const comingChapters: Chapter[] = [
   {
     id: 14,
@@ -111,6 +125,7 @@ export const comingChapters: Chapter[] = [
     description:
       "Avalie projetos cripto com metodologia profissional e fundamentos sólidos.",
     status: "coming",
+    category: "intermediate",
   },
   {
     id: 15,
@@ -118,6 +133,7 @@ export const comingChapters: Chapter[] = [
     description:
       "Explore o universo das finanças descentralizadas e suas oportunidades.",
     status: "coming",
+    category: "intermediate",
   },
   {
     id: 16,
@@ -125,6 +141,7 @@ export const comingChapters: Chapter[] = [
     description:
       "Estratégias para gerar renda passiva com staking, yield farming e mais.",
     status: "coming",
+    category: "intermediate",
   },
   {
     id: 17,
@@ -132,6 +149,7 @@ export const comingChapters: Chapter[] = [
     description:
       "Entenda o ecossistema de tokens não-fungíveis e a nova internet.",
     status: "coming",
+    category: "intermediate",
   },
   {
     id: 18,
@@ -139,6 +157,7 @@ export const comingChapters: Chapter[] = [
     description:
       "Construa uma carteira sólida com visão de longo prazo e disciplina.",
     status: "coming",
+    category: "intermediate",
   },
   {
     id: 19,
@@ -146,6 +165,7 @@ export const comingChapters: Chapter[] = [
     description:
       "Proteja seus ativos com técnicas avançadas de segurança e custódia.",
     status: "coming",
+    category: "intermediate",
   },
   {
     id: 20,
@@ -153,6 +173,7 @@ export const comingChapters: Chapter[] = [
     description:
       "Integre criptomoedas ao seu planejamento financeiro pessoal.",
     status: "coming",
+    category: "intermediate",
   },
   {
     id: 21,
@@ -160,7 +181,68 @@ export const comingChapters: Chapter[] = [
     description:
       "Descubra como IA está transformando o mercado de criptomoedas.",
     status: "coming",
+    category: "intermediate",
   },
 ];
 
-export const allChapters = [...existingChapters, ...comingChapters];
+// Advanced chapters (Coming soon)
+export const advancedChapters: Chapter[] = [
+  {
+    id: 22,
+    title: "Masterclass de Futuros e Alavancagem",
+    description:
+      "Operações perpétuas, funding rates e gestão de margem.",
+    status: "coming",
+    category: "advanced",
+  },
+  {
+    id: 23,
+    title: "Análise On-Chain",
+    description:
+      "Interpretando dados direto da blockchain e fluxo de baleias.",
+    status: "coming",
+    category: "advanced",
+  },
+  {
+    id: 24,
+    title: "DeFi Avançado e Liquidez",
+    description:
+      "Yield Farming, Impermanent Loss e Piscinas de Liquidez.",
+    status: "coming",
+    category: "advanced",
+  },
+  {
+    id: 25,
+    title: "Tokenomics e Engenharia Econômica",
+    description:
+      "Análise de vesting, inflação e distribuição de tokens.",
+    status: "coming",
+    category: "advanced",
+  },
+  {
+    id: 26,
+    title: "Auditoria de Smart Contracts",
+    description:
+      "Segurança básica e identificação de riscos no código.",
+    status: "coming",
+    category: "advanced",
+  },
+  {
+    id: 27,
+    title: "Estratégias com Opções (Hedge)",
+    description:
+      "Proteção de carteira e especulação avançada.",
+    status: "coming",
+    category: "advanced",
+  },
+  {
+    id: 28,
+    title: "Psicologia de Trading Profissional",
+    description:
+      "Mindset para alta performance e gestão emocional avançada.",
+    status: "coming",
+    category: "advanced",
+  },
+];
+
+export const allChapters = [...existingChapters, ...comingChapters, ...advancedChapters];

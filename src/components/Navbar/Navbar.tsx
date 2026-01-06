@@ -15,7 +15,7 @@ const Navbar = () => {
   const pathname = usePathname();
   const { status } = useSession();
 
-  const isAcademiaPage = pathname === "/academia-criptoplay";
+
 
   return (
     <header className={styles.header}>
@@ -27,25 +27,25 @@ const Navbar = () => {
               <div className={styles.logoIconWrapper}>
                 <TrendingUp className={styles.logoIcon} />
               </div>
-              <span className={clsx(styles.logoText, isAcademiaPage && styles.logoTextAcademia)}>CriptoPlay</span>
+              <span className={styles.logoText}>CriptoPlay</span>
             </div>
           </Link>
           {/* Desktop Navigation */}
           <nav className={styles.desktopNav}>
-            <Link href="/" className={clsx(styles.navLink, isAcademiaPage && styles.navLinkAcademia)}>
+            <Link href="/" className={styles.navLink}>
               Home
             </Link>
-            <Link href="/ranking" className={clsx(styles.navLink, isAcademiaPage && styles.navLinkAcademia)}>
+            <Link href="/ranking" className={styles.navLink}>
               Ranking
             </Link>
-            <Link href="/#recursos" className={clsx(styles.navLink, isAcademiaPage && styles.navLinkAcademia)}>
+            <Link href="/#recursos" className={styles.navLink}>
               Recursos
             </Link>
-            <Link href="/contato" className={clsx(styles.navLink, isAcademiaPage && styles.navLinkAcademia)}>
+            <Link href="/contato" className={styles.navLink}>
               Contato
             </Link>
             {status === "authenticated" && (
-              <Link href="/academia-criptoplay" className={clsx(styles.navLink, isAcademiaPage && styles.navLinkAcademia)}>
+              <Link href="/academia-criptoplay" className={styles.navLink}>
                 Academia
               </Link>
             )}
@@ -111,7 +111,7 @@ const Navbar = () => {
               {status === "authenticated" && (
                 <Link
                   href="/academia-criptoplay"
-                  className={clsx(styles.mobileNavLink, isAcademiaPage && styles.navLinkAcademia)}
+                  className={styles.mobileNavLink}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Academia
