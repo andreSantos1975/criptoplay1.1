@@ -17,6 +17,7 @@ import { RankingTable } from "@/components/ranking/RankingTable";
 import { VisibilityToggle } from "@/components/ranking/VisibilityToggle";
 import { CTABanner } from "@/components/ranking/CTABanner";
 import { UserPositionCard } from "@/components/ranking/UserPositionCard";
+import { RankingPodium } from "@/components/RankingList/RankingPodium"; // Importado
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import styles from "./ranking.module.css";
@@ -86,6 +87,7 @@ export default function RankingPage() {
   if (error) return <div className="text-center py-20 text-red-500">Falha ao carregar o ranking. Tente novamente mais tarde.</div>;
 
   const traders = data?.traders || [];
+  const top3Traders = traders.slice(0, 3); // Extrair Top 3 para o Pódio
   const currentUserData = data?.currentUser || null;
   const metrics = data?.metrics || {};
 
@@ -121,6 +123,11 @@ export default function RankingPage() {
       </section>
 
       <main className={styles.mainContent}>
+        {/* Podium Section */}
+        <section className="mb-12">
+          <RankingPodium topTraders={top3Traders} />
+        </section>
+
         {/* Metric Cards */}
         <section className={styles.metricsGrid}>
           <MetricCard

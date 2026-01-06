@@ -1,0 +1,220 @@
+.podiumContainer {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1rem;
+  margin: 3rem 0;
+  height: 380px; /* Altura fixa para alinhar os pedestais */
+  width: 100%;
+}
+
+.pedestalWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.pedestalWrapper:hover {
+  transform: translateY(-5px);
+}
+
+/* Tamanhos por Posição */
+.firstPlace {
+  order: 2; /* Centro */
+  z-index: 10;
+}
+
+.secondPlace {
+  order: 1; /* Esquerda */
+}
+
+.thirdPlace {
+  order: 3; /* Direita */
+}
+
+/* Avatar Styles */
+.avatarContainer {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--card-background);
+  border: 4px solid transparent;
+}
+
+.crown {
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2rem;
+  animation: float 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+}
+
+.rankBadge {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--card-background);
+  color: var(--foreground);
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  border: 1px solid var(--border);
+}
+
+/* Variações de Cores e Tamanhos */
+/* 1º Lugar - Ouro */
+.firstPlace .avatar {
+  width: 120px;
+  height: 120px;
+  border-color: #FFD700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+.firstPlace .pedestal {
+  height: 180px;
+  background: linear-gradient(180deg, #FFD700 0%, #B8860B 100%);
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+}
+.firstPlace .rankBadge {
+  background-color: #FFD700;
+  color: #000;
+  border-color: #B8860B;
+}
+
+/* 2º Lugar - Prata */
+.secondPlace .avatar {
+  width: 100px;
+  height: 100px;
+  border-color: #C0C0C0;
+  box-shadow: 0 0 15px rgba(192, 192, 192, 0.3);
+}
+.secondPlace .pedestal {
+  height: 140px;
+  background: linear-gradient(180deg, #C0C0C0 0%, #7F8C8D 100%);
+}
+.secondPlace .rankBadge {
+  background-color: #C0C0C0;
+  color: #000;
+  border-color: #7F8C8D;
+}
+
+/* 3º Lugar - Bronze */
+.thirdPlace .avatar {
+  width: 90px;
+  height: 90px;
+  border-color: #CD7F32;
+  box-shadow: 0 0 15px rgba(205, 127, 50, 0.3);
+}
+.thirdPlace .pedestal {
+  height: 100px;
+  background: linear-gradient(180deg, #CD7F32 0%, #8B4513 100%);
+}
+.thirdPlace .rankBadge {
+  background-color: #CD7F32;
+  color: #fff;
+  border-color: #8B4513;
+}
+
+/* Pedestal */
+.pedestal {
+  width: 140px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 1rem;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Efeito de brilho no pedestal */
+.pedestal::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transform: skewX(-25deg);
+  animation: shine 4s infinite;
+}
+
+.traderInfo {
+  text-align: center;
+  z-index: 1; /* Ficar acima do brilho */
+}
+
+.nickname {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+  display: block;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roi {
+  font-size: 1.25rem;
+  font-weight: 800;
+  display: block;
+}
+
+.profit {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -10px); }
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
+}
+
+/* Responsividade */
+@media (max-width: 600px) {
+  .podiumContainer {
+    gap: 0.5rem;
+    height: 320px;
+  }
+  
+  .pedestal {
+    width: 90px;
+  }
+
+  .firstPlace .avatar { width: 80px; height: 80px; }
+  .secondPlace .avatar { width: 70px; height: 70px; }
+  .thirdPlace .avatar { width: 60px; height: 60px; }
+
+  .crown { font-size: 1.5rem; top: -25px; }
+  
+  .nickname { font-size: 0.9rem; max-width: 80px; }
+  .roi { font-size: 1rem; }
+}

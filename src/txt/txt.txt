@@ -112,7 +112,7 @@ git push
   ----------------------------------------------------------------------
 INICIAR A INTERFACE DO PRISMA CLIENTE 
 npx prisma studio
-----------------------------------------------------------------------
+--------------------------------------------------------------------------
 npx prisma migrate reset --force
  npx dotenv -e .env.local -- npx prisma migrate reset --force
   ------------------------------------------------------------------------------
@@ -534,3 +534,8 @@ Sim, você está absolutamente correto.
        * Faça Logout e Login.
        * Tente acessar /relatorios. O acesso deve ser liberado novamente, pois a assinatura
          tem precedência sobre o trial expirado.
+
+         -----------------------------06/01/2026
+
+         *card do capeao no Dashboard
+         *hall da fama

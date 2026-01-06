@@ -1,30 +1,75 @@
-/* src/components/RankingList/RankingList.module.css */
 .container {
-  max-width: 800px;
+  max-width: 1000px;
   margin: 2rem auto;
   padding: 2rem;
   background-color: var(--card-background);
-  border-radius: 8px;
+  border-radius: 12px;
   box-shadow: var(--shadow-medium);
   color: var(--foreground);
+  position: relative;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
 .title {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 1.5rem;
-  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(45deg, var(--foreground) 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  color: var(--muted-foreground);
+  font-size: 1.1rem;
+}
+
+.periodSelector {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.periodBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  padding: 0.5rem 1.5rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.periodBtn:hover {
+  background-color: var(--accent);
   color: var(--foreground);
+}
+
+.periodBtn.active {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1.5rem;
 }
 
 .th, .td {
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.5rem;
   text-align: left;
   border-bottom: 1px solid var(--border);
 }
@@ -33,16 +78,131 @@
   background-color: var(--muted);
   font-weight: 600;
   color: var(--muted-foreground);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+.tr {
+  transition: background-color 0.2s;
 }
 
 .tr:hover {
   background-color: var(--accent);
 }
 
+.currentUserRow {
+  background-color: rgba(var(--primary-rgb), 0.1);
+  border-left: 4px solid var(--primary);
+}
+
+.positionBadge {
+  background-color: var(--muted);
+  color: var(--foreground);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  min-width: 30px;
+  display: inline-block;
+  text-align: center;
+}
+
+.traderCell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.miniAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.name {
+  font-weight: 500;
+}
+
 .positive {
-  color: hsl(var(--success)); /* Green */
+  color: #22c55e;
 }
 
 .negative {
-  color: hsl(var(--destructive)); /* Red */
+  color: #ef4444;
+}
+
+.roiCell {
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.userStickyBar {
+  position: sticky;
+  bottom: 1rem;
+  margin: 0 auto;
+  max-width: 600px;
+  background-color: var(--card-background);
+  border: 1px solid var(--primary);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  border-radius: 50px;
+  padding: 1rem 2rem;
+  z-index: 50;
+  animation: slideUp 0.5s ease;
+}
+
+.userStickyContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--foreground);
+  font-size: 1.1rem;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: var(--muted-foreground);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--muted);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .mobileHide {
+    display: none;
+  }
+  
+  .container {
+    padding: 1rem;
+    margin: 1rem;
+  }
+
+  .title {
+    font-size: 1.8rem;
+  }
+
+  .th, .td {
+    padding: 0.75rem;
+  }
 }
