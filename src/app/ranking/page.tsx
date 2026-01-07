@@ -18,6 +18,7 @@ import { VisibilityToggle } from "@/components/ranking/VisibilityToggle";
 import { CTABanner } from "@/components/ranking/CTABanner";
 import { UserPositionCard } from "@/components/ranking/UserPositionCard";
 import { RankingPodium } from "@/components/RankingList/RankingPodium"; // Importado
+import { RankingRules } from "@/components/ranking/RankingRules";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import styles from "./ranking.module.css";
@@ -227,6 +228,11 @@ export default function RankingPage() {
             currentUserId={session?.user?.id || null}
             userPlan={userPlan}
           />
+        </section>
+
+        {/* Regras do Ranking */}
+        <section>
+          <RankingRules />
         </section>
 
         {/* Bottom CTA */}
