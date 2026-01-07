@@ -1,6 +1,7 @@
 // src/components/RankingList/RankingList.tsx
 'use client';
 
+import Image from 'next/image';
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import styles from './RankingList.module.css';
@@ -135,7 +136,7 @@ export const RankingList: React.FC = () => {
                 </td>
                 <td className={styles.td}>
                   <div className={styles.traderCell}>
-                    <img src={trader.avatar} alt="avatar" className={styles.miniAvatar} />
+                    <Image src={trader.avatar} alt="avatar" width={32} height={32} className={styles.miniAvatar} />
                     <span className={styles.name}>{trader.nickname}</span>
                     {trader.badges.includes('proTrader') && <span title="Pro Trader">🏆</span>}
                   </div>
