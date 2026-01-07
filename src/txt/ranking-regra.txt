@@ -1,0 +1,28 @@
+ A lógica está implementada no arquivo de cron job src/app/api/cron/monthly-reset/route.ts:
+
+   1. Gatilho Temporal: O sistema é projetado para rodar no dia 01 do mês atual (ex: 01 de
+      Fevereiro) para fechar o ciclo do mês anterior (Janeiro).
+   2. Cálculo do ROI: Ele calcula o retorno sobre o investimento (ROI) comparando o
+      virtualBalance (saldo final) com o monthlyStartingBalance (saldo que foi salvo no
+      início do mês).
+   3. Histórico: O resultado final (ranking, ROI, lucro) é salvo definitivamente na tabela
+      MonthlyRanking.
+   4. Reset para o Novo Mês: O sistema atualiza o monthlyStartingBalance de todos os
+      usuários para o saldo atual, definindo o novo ponto de partida para o mês que se
+      inicia.
+       Aqui está o que acontece no dia 1º de cada mês (baseado no arquivo
+  src/app/api/cron/monthly-reset/route.ts):
+
+   1. O Saldo (`virtualBalance`) NÃO é resetado:
+       * Se o usuário começou com 10.000 e terminou o mês com 15.000, ele continua com
+         15.000.
+       * O dinheiro não some e não volta para 10.000. O lucro é acumulado no patrimônio do
+         usuário.
+
+   2. O que é "Resetado" é a Base de Cálculo (`monthlyStartingBalance`):
+       * Para calcular quem ganhou mais neste novo mês, o sistema "tira uma foto" do saldo
+         atual (15.000) e define isso como o novo ponto de partida (0% de lucro no mês
+         novo).
+       * Se no final do novo mês ele tiver 16.500, o ranking mostrará que ele lucrou 10%
+         (1.500 sobre a base de 15.000), e não 65% (sobre os 10.000 originais).
+---------------------------------------------------------------------------------------

@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
 
-    // --- Lógica de checagem de falência (cooldown de 21 dias) ---
+    // --- Lógica de checagem de falência (até o próximo mês) ---
     if (user.bankruptcyExpiryDate) {
       const now = new Date();
       if (now < user.bankruptcyExpiryDate) {

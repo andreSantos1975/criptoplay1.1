@@ -100,16 +100,19 @@ export async function POST(req: Request) {
         }
       });
 
-      // Lógica de falência e cooldown de 21 dias
+      // Lógica de falência e cooldown (até dia 1 do próximo mês)
       if (updatedUser.virtualBalance.lte(0)) {
+        const now = new Date();
+        const nextMonthFirstDay = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
         await tx.user.update({
           where: { id: userId },
           data: {
             virtualBalance: new Prisma.Decimal(0),
-            bankruptcyExpiryDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000), // 21 dias de cooldown
+            bankruptcyExpiryDate: nextMonthFirstDay,
           },
         });
-        throw new Error('Sua banca virtual foi liquidada. Você não poderá operar por 21 dias.');
+        throw new Error('Sua banca virtual foi liquidada. Você só poderá voltar a operar no dia 1º do próximo mês.');
       }
 
       // Se a data de expiração de falência já passou e o usuário ainda está zerado, resetar a banca
@@ -136,6 +139,9 @@ export async function POST(req: Request) {
     console.error('Erro ao fechar posição de futuros:', error);
     if (error.message.includes('Nenhuma posição')) {
         return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    if (error.message.includes('liquidada')) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json({ error: 'Ocorreu um erro no servidor.' }, { status: 500 });
   }
