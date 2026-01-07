@@ -125,7 +125,7 @@ export default function RankingPage() {
 
       <main className={styles.mainContent}>
         {/* Podium Section */}
-        <section className="mb-12">
+        <section className="mb-4">
           <RankingPodium topTraders={top3Traders} />
         </section>
 

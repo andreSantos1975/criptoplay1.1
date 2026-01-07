@@ -28,7 +28,7 @@
   position: relative;
   border-bottom: 1px solid var(--border);
   background: linear-gradient(to bottom, #ffffff, #f9fafb);
-  padding: 4rem 1.5rem;
+  padding: 3rem 1.5rem; /* Reduced from 4rem */
   overflow: hidden;
   text-align: center;
 }
@@ -94,7 +94,7 @@
 .mainContent {
   max-width: 80rem; /* 7xl */
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 0.5rem 1.5rem; /* Reduced from 1rem */
   display: flex;
   flex-direction: column;
   gap: 2rem;
