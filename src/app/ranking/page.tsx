@@ -237,11 +237,15 @@ export default function RankingPage() {
 
         {/* Bottom CTA */}
         {!isPro && isLoggedIn && (
-          <section className="text-center py-8">
+          <section className="text-center py-8 mt-8">
             <p className="text-gray-500 mb-4">
               Quer aparecer no ranking público e ganhar reconhecimento?
             </p>
-            <Button size="lg" className="bg-violet-600 hover:bg-violet-700 text-white">
+            <Button 
+              size="lg" 
+              className="text-white border-0 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+              style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)' }}
+            >
               <Trophy className="w-5 h-5 mr-2" />
               Upgrade para Pro
             </Button>
