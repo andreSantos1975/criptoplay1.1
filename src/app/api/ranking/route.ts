@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
         image: true,
         virtualBalance: true,
         subscriptionStatus: true,
+        trialEndsAt: true,
         monthlyStartingBalance: true,
         trades: includeSpot ? {
             where: tradeFilter,
@@ -102,6 +103,10 @@ export async function GET(req: NextRequest) {
         ? (winningTrades / totalTradesCount) * 100 
         : 0;
 
+      // Verificar se o trial está ativo
+      const isTrialActive = user.trialEndsAt && new Date(user.trialEndsAt) > new Date();
+      const plan = (user.subscriptionStatus === 'active' || isTrialActive) ? 'pro' : 'free';
+
       // Badges
       const badges = [];
       if (roi > 50) badges.push("proTrader");
@@ -116,7 +121,7 @@ export async function GET(req: NextRequest) {
         trades: totalTradesCount,
         winRate: winRate,
         drawdown: 0, 
-        plan: user.subscriptionStatus === 'active' ? 'pro' : 'free',
+        plan: plan,
         badges: badges,
         isCurrentUser: user.id === currentUserId
       };

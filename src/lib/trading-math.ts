@@ -92,11 +92,11 @@ export function calculateTradingStats(trades: Trade[]): TradingStats {
   });
 
   const winRate = (winningTrades / totalTrades) * 100;
-  const profitFactor = grossLoss === 0 ? (grossProfit > 0 ? 99.99 : 0) : grossProfit / grossLoss; // Cap em 99.99 se infinito
+  const profitFactor = grossLoss === 0 ? (grossProfit > 0 ? Infinity : 0) : grossProfit / grossLoss;
   
   const avgWin = winningTrades > 0 ? grossProfit / winningTrades : 0;
   const avgLoss = losingTrades > 0 ? grossLoss / losingTrades : 0;
-  const payoff = avgLoss === 0 ? (avgWin > 0 ? 99.99 : 0) : avgWin / avgLoss;
+  const payoff = avgLoss === 0 ? (avgWin > 0 ? Infinity : 0) : avgWin / avgLoss;
 
   // Expectativa Matemática = (Probabilidade de Ganho * Ganho Médio) - (Probabilidade de Perda * Perda Média)
   // WinRate decimal * AvgWin - LossRate decimal * AvgLoss

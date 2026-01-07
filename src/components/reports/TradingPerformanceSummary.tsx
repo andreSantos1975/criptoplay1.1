@@ -18,11 +18,13 @@ const formatCurrency = (value: number) =>
     currency: "BRL",
   }).format(value);
 
-const formatNumber = (value: number, decimals = 2) =>
-  new Intl.NumberFormat("pt-BR", {
+const formatNumber = (value: number, decimals = 2) => {
+  if (value === Infinity) return "∞";
+  return new Intl.NumberFormat("pt-BR", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value);
+};
 
 interface TradingCardProps {
     title: string;

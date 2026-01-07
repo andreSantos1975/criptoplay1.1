@@ -202,6 +202,27 @@ export const ReportsSection = () => {
   const error = e1 || e3 || e4 || e5;
 
   const brlRate = exchangeRateData?.usdtToBrl || 1;
+  
+  // Normalizar trades para BRL uma única vez
+  const normalizedTrades = useMemo(() => {
+    return trades.map(t => {
+      // Se já fechou e tem PnL
+      if (t.status === 'CLOSED' && t.pnl !== null) {
+        const pnlNum = Number(t.pnl);
+        // Se for par USDT (ex: BTCUSDT), converte. Se for BRL (ex: BTCBRL), mantém.
+        const isBrl = t.symbol.endsWith('BRL'); 
+        const normalizedPnl = isBrl ? pnlNum : pnlNum * brlRate;
+        
+        // Retorna um novo objeto trade com o pnl ajustado (apenas para visualização)
+        return {
+          ...t,
+          pnl: normalizedPnl // Substitui o valor decimal/original pelo valor em BRL number
+        } as unknown as Trade; // Cast para Trade (pnl no prisma é Decimal, aqui virou number, mas ok para o frontend)
+      }
+      return t;
+    });
+  }, [trades, brlRate]);
+
   const openTrades = useMemo(
     () => trades.filter((t) => t.status === "OPEN"),
     [trades]
@@ -243,24 +264,17 @@ export const ReportsSection = () => {
   );
 
   const kpiData = useMemo(() => {
-    // virtualBalance do backend JÁ INCLUI o PnL dos trades fechados.
-    // Não devemos somar totalPnl novamente.
-    const patrimonioAtual = Number(simulatorProfile?.virtualBalance) || 0; 
-
-    const totalPnl = trades
-      .filter((t) => t.status === 'CLOSED' && t.pnl != null)
-      .reduce((acc, t) => {
-        const pnlInBrl = t.symbol.includes('BRL')
-          ? Number(t.pnl)
-          : Number(t.pnl) * brlRate;
-        return acc + pnlInBrl;
-      }, 0);
+    const patrimonioAtual = Number(simulatorProfile?.virtualBalance) || 10000;
+    
+    // Para consistência visual: Lucro Total = Patrimônio Atual - Banca Inicial (10k)
+    // Isso garante que (10k + Lucro) seja sempre igual ao Patrimônio exibido.
+    const totalPnl = patrimonioAtual - 10000;
 
     return {
       patrimonioAtual,
       totalPnl,
     };
-  }, [trades, brlRate, simulatorProfile?.virtualBalance]);
+  }, [simulatorProfile?.virtualBalance]);
 
   if (isLoading)
     return (
@@ -311,7 +325,7 @@ export const ReportsSection = () => {
       {/* Performance Avançada */}
       <div style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Performance Avançada</h2>
-        <TradingPerformanceSummary trades={trades} />
+        <TradingPerformanceSummary trades={normalizedTrades} />
       </div>
 
       {/* Gráficos */}
