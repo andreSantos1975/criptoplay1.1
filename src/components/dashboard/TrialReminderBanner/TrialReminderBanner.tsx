@@ -34,7 +34,7 @@ export const TrialReminderBanner: React.FC = () => {
     <div className={styles.banner}>
       <p className={styles.message}>
         Você está desfrutando de um acesso Premium gratuito! Faltam{' '}
-        <strong className={styles.daysHighlight}>{daysRemaining + 1} dias</strong>{' '}
+        <strong className={styles.daysHighlight}>{daysRemaining! + 1} {daysRemaining! + 1 === 1 ? 'dia' : 'dias'}</strong>{' '}
         para seu período de teste terminar em {formattedEndDate}.
         Não perca acesso às funcionalidades avançadas.
       </p>
