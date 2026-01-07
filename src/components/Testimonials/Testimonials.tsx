@@ -13,14 +13,14 @@ const testimonials = [
     name: "Carlos Roberto",
     role: "Trader Profissional",
     avatar: "CR",
-    content: "Migrei para esta plataforma após testar várias outras. O rank tipo que da uma nota para o seu operacional. As ferramentas são intuítivas e a execução é muito rápida.",
+    content: "Migrei para esta plataforma após testar várias outras. O ranking me da um feedback da minha evoluçao no mercado financeiro. As ferramentas são intuítivas e a execução é muito rápida.",
     rating: 5
   },
   {
     name: "Ana Paula Silva",
     role: "Desenvolvedora de Sofware",
     avatar: "AS",
-    content: "Finalmente encontrei uma plataforma intuitiva para aprender a operar no mercado de criptomoedas. Segurança e simplicidade em primeiro lugar.",
+    content: "Finalmente encontrei uma plataforma intuitiva para aprender a operar no mercado de criptomoedas. Simplicidade em primeiro lugar.",
     rating: 5
   }
 ];

@@ -21,7 +21,7 @@ const steps = [
   {
     icon: Shield,
     title: "Acompanhe Resultados",
-    description: "Monitore seu portfólio, e otimize suas estratégias de investimento."
+    description: "Monitore seu portfólio, e otimize suas estratégias de investimento com um tutor alimentado por inteligência artificial."
   }
 ];
 
