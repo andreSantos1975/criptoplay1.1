@@ -3,7 +3,7 @@
     justify-content: center;
     align-items: center;
     min-height: 100vh; /* Changed from calc(100vh - 80px) */
-    margin-top: 40px; /* Added margin-top */
+    margin-top: 80px; /* Added margin-top */
     background-color: #f9f9f9;
   }
   
@@ -58,6 +58,54 @@
     background-color: #005bb5;
   }
   
+  .googleButton {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #333;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .googleButton:hover {
+    background-color: #f8f9fa;
+    border-color: #c1c1c1;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    color: #888;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .divider::before {
+    margin-right: 15px;
+  }
+  
+  .divider::after {
+    margin-left: 15px;
+  }
+
   .error {
     color: #e53e3e;
     margin-top: 1rem;

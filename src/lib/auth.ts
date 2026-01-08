@@ -107,5 +107,23 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: "jwt",
   },
+  events: {
+    async createUser({ user }) {
+      if (user.email) {
+        const baseName = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+        const suffix = Math.floor(1000 + Math.random() * 9000).toString();
+        const username = `${baseName}${suffix}`;
+        
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { username },
+          });
+        } catch (error) {
+          console.error("Error auto-generating username:", error);
+        }
+      }
+    },
+  },
   secret: process.env.NEXTAUTH_SECRET,
 };

@@ -542,4 +542,13 @@ Sim, você está absolutamente correto.
 
          ---------------------------------08/01/2026
 
+           3. Atenção Pós-Deploy: Assim que o deploy terminar e a Vercel gerar o link (ex:
+      projeto-legal.vercel.app), você precisará ir no Google Cloud Console (onde pegou o ID e
+      Secret do Google) e adicionar essa nova URL nas "Authorized redirect URIs" (URIs de
+      redirecionamento autorizadas), com o final /api/auth/callback/google.
+
+   * O GOOGLE_CLIENT_ID (será gerado lá).
+   * O GOOGLE_CLIENT_SECRET (será gerado lá).
+   * Os "URIs de redirecionamento autorizados" (Authorized redirect URIs), que são os endereços
+     que mencionei anteriormente (para localhost e para a URL da Vercel).
          
