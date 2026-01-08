@@ -1,24 +1,26 @@
 "use client";
 
-import { useChat } from '@ai-sdk/react';
+// import { useChat } from '@ai-sdk/react'; // Removido por falha crítica
 import React, { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import styles from './AIChatWidget.module.css';
 
+// Definição manual de tipos para compatibilidade
+type ChatMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  parts: { type: 'text'; text: string }[];
+};
+
 export const AIChatWidget: React.FC = () => {
   const { data: session } = useSession();
-  const { messages, sendMessage, status } = useChat({
-    onError: (error) => {
-      console.error('[ChatWidget] Error:', error);
-    },
-    onFinish: (message) => {
-      console.log('[ChatWidget] Finished message:', message);
-    }
-  });
-
-  const isLoading = status === 'submitted' || status === 'streaming';
-  const [input, setInput] = useState('');
+  
+  // Estado manual
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [localInput, setLocalInput] = useState('');
+  
   const [isOpen, setIsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -28,15 +30,87 @@ export const AIChatWidget: React.FC = () => {
     }
   }, [messages, isLoading]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submitMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    await sendMessage({ text: input });
-    setInput('');
+    if (!localInput.trim() || isLoading) return;
+
+    const userText = localInput;
+    setLocalInput('');
+    setIsLoading(true);
+
+    // Adiciona mensagem do usuário
+    const userMsg: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      parts: [{ type: 'text', text: userText }]
+    };
+    
+    // Adiciona mensagem placeholder da IA
+    const aiMsgId = (Date.now() + 1).toString();
+    const aiMsgPlaceholder: ChatMessage = {
+      id: aiMsgId,
+      role: 'assistant',
+      parts: [{ type: 'text', text: '' }]
+    };
+
+    setMessages(prev => [...prev, userMsg, aiMsgPlaceholder]);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, userMsg].map(m => ({
+            role: m.role,
+            content: m.parts[0].text
+          }))
+        }),
+      });
+
+      if (!response.ok) throw new Error(response.statusText);
+
+      if (!response.body) throw new Error('Sem corpo de resposta');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aiText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        // O stream do AI SDK pode vir formatado. Simplificação: assumir texto bruto ou tentar limpar
+        // Em Vercel AI SDK 3.x, o stream é texto puro se usar streamText().toTextStreamResponse()
+        // Mas pode conter protocolos. Vamos acumular tudo por enquanto e limpar se necessário.
+        
+        // Se o chunk for parte de um protocolo (ex: "0: texto"), precisaríamos de parse.
+        // Mas vamos assumir stream de texto simples por hora. 
+        // Se vier sujo, ajustaremos.
+        
+        // Tratamento básico para remover prefixos de protocolo se existirem (ex: "0:" das versões antigas)
+        // Mas o streamText novo geralmente manda texto limpo ou data chunks.
+        
+        aiText += chunk;
+        
+        // Atualiza a UI progressivamente
+        setMessages(prev => prev.map(msg => 
+          msg.id === aiMsgId 
+            ? { ...msg, parts: [{ type: 'text', text: aiText }] }
+            : msg
+        ));
+      }
+
+    } catch (error) {
+      console.error('[ChatWidget] Erro fetch:', error);
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMsgId 
+          ? { ...msg, parts: [{ type: 'text', text: "Erro ao conectar com a IA. Tente novamente." }] }
+          : msg
+      ));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Verifica se o usuário tem assinatura ativa ou está no período de trial
@@ -51,7 +125,7 @@ export const AIChatWidget: React.FC = () => {
   if (!isOpen) {
     return (
       <button className={styles.floatingButton} onClick={() => setIsOpen(true)}>
-        Chat AI
+        Assistente Cripto
       </button>
     );
   }
@@ -108,13 +182,12 @@ export const AIChatWidget: React.FC = () => {
         )}
         <div ref={messagesEndRef} />
       </div>
-      <form onSubmit={handleSubmit} className={styles.inputForm}>
+      <form onSubmit={submitMessage} className={styles.inputForm}>
         <input
           className={styles.textInput}
-          value={input}
+          value={localInput}
           placeholder="Diga algo..."
-          onChange={handleInputChange}
-          disabled={isLoading}
+          onChange={(e) => setLocalInput(e.target.value)}
         />
         <button type="submit" className={styles.sendButton} disabled={isLoading}>
           Enviar

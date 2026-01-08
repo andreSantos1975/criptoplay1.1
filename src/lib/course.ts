@@ -6,6 +6,11 @@ import html from 'remark-html';
 
 const postsDirectory = path.join(process.cwd(), 'content/jornada-cripto');
 
+// Função auxiliar para normalizar texto (remover acentos e converter para minúsculas)
+function normalizeText(text: string): string {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 export function getSortedCourseData() {
   // Get file names under /content/jornada-cripto
   const fileNames = fs.readdirSync(postsDirectory);
@@ -70,8 +75,12 @@ export async function getCourseData(slug: string) {
 
 export function searchCourseContent(query: string): string {
   const fileNames = fs.readdirSync(postsDirectory);
-  const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 3);
+  const normalizedQuery = normalizeText(query);
+  const searchTerms = normalizedQuery.split(' ').filter(term => term.length >= 3);
   
+  console.log(`[RAG] Query original: "${query}"`);
+  console.log(`[RAG] Termos de busca: [${searchTerms.join(', ')}]`);
+
   if (searchTerms.length === 0) return '';
 
   let results: { content: string; score: number; title: string }[] = [];
@@ -85,13 +94,42 @@ export function searchCourseContent(query: string): string {
     // Split content into paragraphs for better granularity
     const paragraphs = content.split(/\n\s*\n/);
 
-    paragraphs.forEach(paragraph => {
+    paragraphs.forEach((paragraph) => {
       let score = 0;
-      const lowerParagraph = paragraph.toLowerCase();
+      const normalizedParagraph = normalizeText(paragraph);
+      const matches: string[] = [];
       
       searchTerms.forEach(term => {
-        if (lowerParagraph.includes(term)) {
+        let matched = false;
+        
+        // 1. Correspondência direta
+        if (normalizedParagraph.includes(term)) {
+          matched = true;
+        } 
+        // 2. Tratamento de "ação" vs "ar" (valorização <-> valorizar)
+        else if (term.endsWith('acao')) {
+          const baseTerm = term.slice(0, -4); 
+          if (normalizedParagraph.includes(baseTerm + 'ar')) {
+            matched = true;
+          }
+        } else if (term.endsWith('ar')) {
+          const baseTerm = term.slice(0, -2);
+          if (normalizedParagraph.includes(baseTerm + 'acao')) {
+            matched = true;
+          }
+        }
+        // 3. Tratamento básico de plural (ignora 's' final na busca ou no texto)
+        else if (term.endsWith('s')) {
+             const singular = term.slice(0, -1);
+             if (normalizedParagraph.includes(singular)) matched = true;
+        } else {
+             // Se o termo é singular, tenta achar plural no texto
+             if (normalizedParagraph.includes(term + 's')) matched = true;
+        }
+
+        if (matched) {
           score += 1;
+          matches.push(term);
         }
       });
 
@@ -101,6 +139,10 @@ export function searchCourseContent(query: string): string {
           score,
           title
         });
+        // Log para debug de parágrafos com alta pontuação
+        if (score >= 2) {
+            // console.log(`[RAG Match] Score: ${score} | Termos: [${matches.join(', ')}] | Trecho: ${paragraph.substring(0, 50)}...`);
+        }
       }
     });
   });
@@ -115,6 +157,8 @@ export function searchCourseContent(query: string): string {
     console.log(`[RAG] Nenhum resultado encontrado para: ${query}`);
     return '';
   }
+
+  console.log(`[RAG] Top resultado (Score ${topResults[0].score}): ${topResults[0].content.substring(0, 100)}...`);
 
   return topResults.map(r => `[Fonte: ${r.title}]\n${r.content}`).join('\n\n---\n\n');
 }
