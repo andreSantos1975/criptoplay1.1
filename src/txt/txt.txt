@@ -3,8 +3,8 @@ ngrok http 3000
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Mercado Pago Teste
 
-TESTUSER4990136881583821796@testuser.com
-5hDgmb17ij
+TESTUSER4672285030243367220@testuser.com
+seIVZhqvey
 
 numero do cartao de teste
 5031 4332 1540 6351
