@@ -54,34 +54,44 @@ export const authOptions: AuthOptions = {
         token.id = user.id;
         token.isAdmin = (user as any).isAdmin || false;
         token.subscriptionStatus = (user as any).subscriptionStatus || null;
-                  token.createdAt = (user as any).createdAt || null;
-                  token.emailVerified = (user as any).emailVerified || null;
-                  token.trialEndsAt = (user as any).trialEndsAt || null; // Add trialEndsAt here
-              }
-        
-              // On subsequent requests, refresh token data from the database
-              if (token.id) {
-                const dbUser = await prisma.user.findUnique({
-                  where: { id: token.id as string },
-                  select: { id: true, isAdmin: true, subscriptionStatus: true, createdAt: true, emailVerified: true, trialEndsAt: true }, // Select trialEndsAt here
-                });
-        
-                if (dbUser) {
-                  token.isAdmin = dbUser.isAdmin;
-                  token.subscriptionStatus = dbUser.subscriptionStatus;
-                  token.createdAt = dbUser.createdAt; // Add createdAt here
-                  token.emailVerified = dbUser.emailVerified;
-                  token.trialEndsAt = dbUser.trialEndsAt; // Add trialEndsAt here
-                }
-              }
-              
-              // Allow dev user to bypass subscription checks
-              if (process.env.NODE_ENV === 'development' && token.email === process.env.DEV_USER_EMAIL) {
-                token.isAdmin = true;
-                token.subscriptionStatus = 'authorized';
-                // Dev user also gets full trial access indefinitely
-                token.trialEndsAt = new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000); // 10 years for dev
-              }
+        token.username = (user as any).username || null;
+        token.createdAt = (user as any).createdAt || null;
+        token.emailVerified = (user as any).emailVerified || null;
+        token.trialEndsAt = (user as any).trialEndsAt || null; // Add trialEndsAt here
+      }
+
+      // On subsequent requests, refresh token data from the database
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { 
+            id: true, 
+            isAdmin: true, 
+            subscriptionStatus: true, 
+            username: true, 
+            createdAt: true, 
+            emailVerified: true, 
+            trialEndsAt: true 
+          }, // Select trialEndsAt here
+        });
+
+        if (dbUser) {
+          token.isAdmin = dbUser.isAdmin;
+          token.subscriptionStatus = dbUser.subscriptionStatus;
+          token.username = dbUser.username;
+          token.createdAt = dbUser.createdAt; // Add createdAt here
+          token.emailVerified = dbUser.emailVerified;
+          token.trialEndsAt = dbUser.trialEndsAt; // Add trialEndsAt here
+        }
+      }
+      
+      // Allow dev user to bypass subscription checks
+      if (process.env.NODE_ENV === 'development' && token.email === process.env.DEV_USER_EMAIL) {
+        token.isAdmin = true;
+        token.subscriptionStatus = 'authorized';
+        // Dev user also gets full trial access indefinitely
+        token.trialEndsAt = new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000); // 10 years for dev
+      }
       // Allow lifetime user to bypass subscription checks
       if (token.email === process.env.LIFETIME_USER_EMAIL) {
         token.subscriptionStatus = 'lifetime';
@@ -94,6 +104,7 @@ export const authOptions: AuthOptions = {
         session.user.id = token.id as string;
         session.user.isAdmin = token.isAdmin as boolean;
         session.user.subscriptionStatus = token.subscriptionStatus as string | null;
+        session.user.username = token.username as string | null;
         session.user.createdAt = token.createdAt as Date; // Add createdAt here
         session.user.emailVerified = token.emailVerified as Date | null;
         session.user.trialEndsAt = token.trialEndsAt as Date | null; // Add trialEndsAt here

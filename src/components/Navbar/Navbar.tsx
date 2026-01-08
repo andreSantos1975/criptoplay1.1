@@ -56,6 +56,7 @@ const Navbar = () => {
             {status === "authenticated" ? (
               <>
                 <Button variant="ghost" onClick={() => router.push('/dashboard')}>Dashboard</Button>
+                <Button variant="ghost" onClick={() => router.push('/dashboard/profile')}>Perfil</Button>
                 <Button variant="cta" onClick={() => signOut()}>Sair</Button>
               </>
             ) : (
@@ -122,6 +123,9 @@ const Navbar = () => {
                   <>
                     <Button variant="ghost" className={styles.mobileCtaButton} onClick={() => { router.push('/dashboard'); setIsMenuOpen(false); }}>
                       Dashboard
+                    </Button>
+                    <Button variant="ghost" className={styles.mobileCtaButton} onClick={() => { router.push('/dashboard/profile'); setIsMenuOpen(false); }}>
+                      Perfil
                     </Button>
                     <Button variant="cta" className={styles.mobileCtaButton} onClick={() => { signOut(); setIsMenuOpen(false); }}>
                       Sair
