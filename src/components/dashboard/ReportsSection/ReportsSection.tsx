@@ -30,6 +30,10 @@ interface BinanceTicker {
   lastPrice: string;
 }
 
+interface ExtendedTrade extends Trade {
+  margin?: number | string | any;
+}
+
 // Data Fetching
 const fetchTrades = async (): Promise<Trade[]> => {
   const res = await fetch("/api/simulator/trades");
@@ -153,7 +157,7 @@ const generateMonthlyReportData = (
 
 interface SimulatorProfile {
   virtualBalance: number;
-  openTrades: Trade[]; // Adicionei openTrades porque é usado em Simulator.tsx
+  openPositions: any[]; 
 }
 
 const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
@@ -187,6 +191,7 @@ export const ReportsSection = () => {
   } = useQuery<BinanceTicker[]>({
     queryKey: ["binanceTickers"],
     queryFn: fetchBinanceTickers,
+    refetchInterval: 10000,
   });
 
   const {
@@ -228,6 +233,44 @@ export const ReportsSection = () => {
     [trades]
   );
 
+  const unrealizedPnl = useMemo(() => {
+    if (!openTrades.length || !binanceTickers.length) return 0;
+    
+    return openTrades.reduce((acc, trade) => {
+        const ticker = binanceTickers.find(t => t.symbol === trade.symbol);
+        if (!ticker) return acc;
+        
+        const currentPrice = parseFloat(ticker.lastPrice);
+        const entryPrice = parseFloat(trade.entryPrice.toString());
+        const quantity = parseFloat(trade.quantity.toString());
+        
+        let pnl = (currentPrice - entryPrice) * quantity;
+        
+        // Adjust for Short if implemented (assuming BUY for now)
+        if (trade.type === 'SELL') {
+             pnl = (entryPrice - currentPrice) * quantity;
+        }
+
+        // Convert to BRL if needed
+        if (!trade.symbol.endsWith('BRL')) {
+             pnl = pnl * brlRate;
+        }
+        
+        return acc + pnl;
+    }, 0);
+  }, [openTrades, binanceTickers, brlRate]);
+
+  // Calculate total margin locked in open futures trades
+  const totalMargin = useMemo(() => {
+    return openTrades.reduce((acc, trade) => {
+        const t = trade as unknown as ExtendedTrade;
+        if (t.marketType === 'FUTURES' && t.margin) {
+            return acc + Number(t.margin);
+        }
+        return acc;
+    }, 0);
+  }, [openTrades]);
+
   const performanceData = useMemo(
     () => generatePortfolioPerformanceData(trades, brlRate),
     [trades, brlRate]
@@ -264,7 +307,9 @@ export const ReportsSection = () => {
   );
 
   const kpiData = useMemo(() => {
-    const patrimonioAtual = Number(simulatorProfile?.virtualBalance) || 10000;
+    const balance = Number(simulatorProfile?.virtualBalance) || 10000;
+    // Patrimônio Atual = Available Balance + Locked Margin + Unrealized PnL
+    const patrimonioAtual = balance + totalMargin + unrealizedPnl;
     
     // Para consistência visual: Lucro Total = Patrimônio Atual - Banca Inicial (10k)
     // Isso garante que (10k + Lucro) seja sempre igual ao Patrimônio exibido.
@@ -274,7 +319,7 @@ export const ReportsSection = () => {
       patrimonioAtual,
       totalPnl,
     };
-  }, [simulatorProfile?.virtualBalance]);
+  }, [simulatorProfile?.virtualBalance, unrealizedPnl, totalMargin]);
 
   if (isLoading)
     return (

@@ -52,6 +52,7 @@ export async function GET(request: Request) {
       stopLoss: pos.stopLoss,
       takeProfit: pos.takeProfit,
       pnl: pos.pnl,
+      margin: pos.margin,
       notes: `Alavancagem: ${pos.leverage}x`,
       createdAt: pos.createdAt,
       updatedAt: pos.updatedAt,

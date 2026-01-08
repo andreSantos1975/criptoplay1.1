@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import AuthProvider from "@/components/AuthProvider";
 import QueryProvider from "@/components/QueryProvider";
 import Navbar from "@/components/Navbar/Navbar";
-// import { AIChatWidget } from '@/components/ui/AIChatWidget';
+import { AIChatWidget } from '@/components/ui/AIChatWidget';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,7 +32,7 @@ export default function RootLayout({
             >
                 <Navbar />
                 {children}
-                {/* <AIChatWidget /> */}
+                <AIChatWidget />
             </ThemeProvider>
           </QueryProvider>
         </AuthProvider>

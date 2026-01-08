@@ -7,32 +7,22 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { useVigilante, SimulatorPosition } from '@/hooks/useVigilante';
 import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
-import { Alert, AlertType } from '@prisma/client';
+import { Alert, AlertType, Trade } from '@prisma/client';
 
 // Componentes do simulador e dashboard
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
 import SimulatorChart from '@/components/simulator/SimulatorChart/SimulatorChart';
 import { PositionRow } from '@/components/simulator/PositionRow/PositionRow';
 import { CryptoList } from '@/components/dashboard/CryptoList/CryptoList';
+import { TradeJournalModal } from '@/components/trade-journal/TradeJournalModal';
+import { DecimalInput } from '@/components/ui/DecimalInput'; // Importar o DecimalInput
 
 import styles from './Simulator.module.css';
 
-// --- DEFINIÇÕES DE TIPO ---
-interface Trade {
-  id: string;
-  symbol: string;
-  quantity: number;
-  entryPrice: number;
-  exitPrice?: number;
-  openDate: string;
-  closeDate?: string;
-  status: 'OPEN' | 'CLOSED';
-  marketType?: 'spot' | 'futures';
-}
-
-interface SimulatorProfile {
-  balance: number;
-  openPositions: SimulatorPosition[]; 
+interface TradeLevels {
+  entry: number;
+  stopLoss: number;
+  takeProfit: number;
 }
 
 interface CurrentPrice {
@@ -47,27 +37,29 @@ interface BinanceKlineData {
   4: string; // Close
 }
 
-interface TradeLevels {
-  entry: number;
-  stopLoss: number;
-  takeProfit: number;
+interface SimulatorProfile {
+  virtualBalance: number;
+  openPositions: SimulatorPosition[];
 }
 
-
-// --- FUNÇÕES DE BUSCA DE API ---
 const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
   const response = await fetch('/api/simulator/profile');
+  if (!response.ok) throw new Error('Falha ao buscar perfil do simulador.');
+  return response.json();
+};
+
+const fetchCurrentPrice = async (symbol: string): Promise<CurrentPrice> => {
+  if (!symbol) throw new Error("Símbolo é necessário");
+  const response = await fetch(`/api/binance/price?symbol=${symbol}`);
   if (!response.ok) {
-    throw new Error('Falha ao buscar perfil do simulador');
+    throw new Error('Falha ao buscar preço atual');
   }
   return response.json();
 };
 
 const fetchAlerts = async (): Promise<Alert[]> => {
     const response = await fetch('/api/alerts');
-    if (!response.ok) {
-        throw new Error('Falha ao buscar alertas');
-    }
+    if (!response.ok) throw new Error('Falha ao buscar alertas');
     return response.json();
 };
 
@@ -84,31 +76,8 @@ const createAlert = async (alertData: Partial<Alert>): Promise<Alert> => {
     return response.json();
 };
 
-
-const fetchCurrentPrice = async (symbol: string): Promise<CurrentPrice> => {
-  if (!symbol) throw new Error("Símbolo é necessário");
-  const response = await fetch(`/api/binance/price?symbol=${symbol}`);
-  if (!response.ok) {
-    throw new Error('Falha ao buscar preço atual');
-  }
-  return response.json();
-};
-
-const createSimulatorTrade = async (tradeData: { symbol: string, quantity: number, type: 'BUY' | 'SELL', entryPrice: number, stopLoss?: number, takeProfit?: number, marketType: 'spot' | 'futures' }): Promise<Trade> => {
-    const response = await fetch('/api/simulator/trades', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tradeData),
-    });
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Falha ao criar ordem de simulação');
-    }
-    return response.json();
-};
-
-const closeSimulatorPosition = async (symbol: string): Promise<{ message: string }> => {
-    const response = await fetch(`/api/simulator/positions/close`, {
+const closeSimulatorPosition = async (symbol: string) => {
+    const response = await fetch('/api/simulator/positions/close', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symbol }),
@@ -119,67 +88,6 @@ const closeSimulatorPosition = async (symbol: string): Promise<{ message: string
     }
     return response.json();
 };
-
-// Componente auxiliar para Input Decimal
-const DecimalInput = ({
-  value,
-  onChange,
-  className,
-  id,
-  required = false
-}: {
-  value: number;
-  onChange: (val: number) => void;
-  className?: string;
-  id?: string;
-  required?: boolean;
-}) => {
-  const [displayValue, setDisplayValue] = useState(value === 0 ? '' : value.toString().replace('.', ','));
-
-  useEffect(() => {
-    // Convert current displayValue to a number for comparison
-    const currentNum = parseFloat(displayValue.replace(',', '.'));
-    
-    // Only update displayValue from 'value' prop if it's truly different
-    // This prevents cursor jumps while typing.
-    // Small epsilon for float comparison
-    const epsilon = 0.00000001; 
-    if (Math.abs(value - (isNaN(currentNum) ? 0 : currentNum)) > epsilon) {
-      setDisplayValue(value === 0 ? '' : value.toString().replace('.', ','));
-    }
-  }, [value, displayValue]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVal = e.target.value;
-    
-    // Filtra para permitir apenas números, vírgula e ponto
-    if (!/^[0-9.,]*$/.test(newVal)) {
-      return; 
-    }
-
-    setDisplayValue(newVal);
-
-    // Normaliza para ponto para o parseFloat
-    const normalized = newVal.replace(',', '.');
-    const parsed = parseFloat(normalized);
-    // Envia 0 se não for um número válido (ex: apenas "-")
-    onChange(isNaN(parsed) ? 0 : parsed);
-  };
-
-  return (
-    <input
-      id={id}
-      type="text"
-      inputMode="decimal"
-      value={displayValue}
-      onChange={handleChange}
-      className={className}
-      required={required}
-      autoComplete="off"
-    />
-  );
-};
-
 
 const Simulator = () => {
   const queryClient = useQueryClient();
@@ -211,6 +119,8 @@ const Simulator = () => {
   const [watchedSymbols, setWatchedSymbols] = useState(['BTCBRL', 'ETHBRL', 'SOLBRL', 'ADABRL', 'DOGEBRL', 'SHIBBRL', 'BNBBRL']);
   const [newSymbol, setNewSymbol] = useState('');
   const [prospectiveAlert, setProspectiveAlert] = useState<{ price: number } | null>(null);
+  const [isJournalModalOpen, setIsJournalModalOpen] = useState(false); // Estado do modal do diário
+  const [journalTradeId, setJournalTradeId] = useState<string | null>(null); // ID da trade para o diário
   
   // Ref para controlar a aplicação única dos valores padrão
   const defaultsAppliedRef = useRef(false);
@@ -262,9 +172,23 @@ const Simulator = () => {
     enabled: isPremiumUser && !!selectedCrypto,
   });
 
+  const createSimulatorTrade = async (tradeData: { symbol: string, quantity: number, type: 'BUY' | 'SELL', entryPrice: number, stopLoss?: number, takeProfit?: number, marketType: 'spot' | 'futures' }): Promise<Trade> => {
+    const response = await fetch('/api/simulator/trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tradeData),
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Falha ao criar ordem de simulação');
+    }
+    // Retorna a trade criada com seu ID
+    return response.json();
+  };
+
   const createSimulatorTradeMutation = useMutation({
     mutationFn: createSimulatorTrade,
-    onSuccess: () => {
+    onSuccess: (newTrade: Trade) => { // Receber o objeto da nova trade
       toast.success('Ordem de simulação aberta com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
       queryClient.invalidateQueries({ queryKey: ['trades'] });
@@ -272,6 +196,10 @@ const Simulator = () => {
       setQuantity(0.01);
       setStopLoss(0);
       setTakeProfit(0);
+
+      // Abrir o modal do diário
+      setJournalTradeId(newTrade.id);
+      setIsJournalModalOpen(true);
     },
     onError: (error) => toast.error(`Erro ao abrir ordem: ${error.message}`),
   });
@@ -595,6 +523,18 @@ const Simulator = () => {
           onDeleteSymbol={handleDeleteSymbol}
           theme="light"
       />
+      
+      {journalTradeId && (
+        <TradeJournalModal 
+          isOpen={isJournalModalOpen}
+          onClose={() => {
+            setIsJournalModalOpen(false);
+            setJournalTradeId(null);
+          }}
+          tradeType="spot"
+          tradeId={journalTradeId}
+        />
+      )}
     </div>
   );
 };

@@ -73,7 +73,47 @@ export async function GET(request: Request) {
     const initialBalance = 10000;
 
 
-    // 4. Call the centralized portfolio calculator
+    // 4. Calculate Unrealized PnL for Open Positions
+    let unrealizedPnl = 0;
+    const openTrades = allTrades.filter(t => t.status === 'OPEN');
+    
+    if (openTrades.length > 0) {
+       // Fetch prices and calculate (simplified loop)
+       const symbols = Array.from(new Set(openTrades.map(t => t.symbol)));
+       const priceMap = new Map<string, number>();
+
+       await Promise.all(symbols.map(async (symbol) => {
+           try {
+               const priceDec = await getCurrentPrice(symbol);
+               priceMap.set(symbol, priceDec.toNumber());
+           } catch (e) {
+               console.error(`Error fetching price for ${symbol}`, e);
+           }
+       }));
+
+       for (const trade of openTrades) {
+           const currentPrice = priceMap.get(trade.symbol);
+           if (currentPrice !== undefined) {
+               const entryPrice = Number(trade.entryPrice);
+               const quantity = Number(trade.quantity);
+               let pnl = 0;
+               // Simple Long/Short logic
+               if (trade.type === 'BUY') {
+                   pnl = (currentPrice - entryPrice) * quantity;
+               } else {
+                   pnl = (entryPrice - currentPrice) * quantity;
+               }
+               
+               if (trade.symbol.endsWith('BRL')) {
+                   unrealizedPnl += pnl;
+               } else {
+                   unrealizedPnl += pnl * usdtToBrlRate.toNumber();
+               }
+           }
+       }
+    }
+
+    // 5. Call the centralized portfolio calculator (Historical/Realized)
     const portfolioData = generatePortfolioData(
       allTrades as unknown as Trade[],
       capitalMovements as unknown as CapitalMovement[],
@@ -82,11 +122,16 @@ export async function GET(request: Request) {
       initialBalance
     );
 
-    // 5. Format the data for the frontend chart
+    // 6. Format and Adjust with Unrealized PnL
     const chartData = portfolioData.map(dataPoint => ({
       date: dataPoint.date,
       "Patrimônio Líquido": dataPoint.portfolio,
     }));
+
+    // Add unrealized PnL to the last data point to reflect current Equity
+    if (chartData.length > 0) {
+        chartData[chartData.length - 1]["Patrimônio Líquido"] += unrealizedPnl;
+    }
 
     return NextResponse.json(chartData);
   } catch (error) {

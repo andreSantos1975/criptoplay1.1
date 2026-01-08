@@ -12,6 +12,7 @@ import SimulatorChart from '@/components/simulator/SimulatorChart/SimulatorChart
 import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
 import { CryptoList } from '@/components/dashboard/CryptoList/CryptoList'; // Import CryptoList
+import { TradeJournalModal } from '@/components/trade-journal/TradeJournalModal';
 import { useVigilante, SimulatorPosition, VigilanteClosePayload } from '@/hooks/useVigilante';
 import { Alert, AlertType } from '@prisma/client';
 
@@ -44,6 +45,11 @@ interface CreatePositionPayload {
   entryPrice: number;
   stopLoss?: number;
   takeProfit?: number;
+}
+
+interface CreatePositionResponse { // Adicionar interface para o retorno da mutação
+  id: string;
+  // Outros campos relevantes, se houver
 }
 
 interface ClosePositionPayload {
@@ -85,7 +91,7 @@ const createAlert = async (alertData: Partial<Alert>): Promise<Alert> => {
     return response.json();
 };
 
-const createPosition = async (payload: CreatePositionPayload) => {
+const createPosition = async (payload: CreatePositionPayload): Promise<CreatePositionResponse> => {
   const response = await fetch('/api/futures/positions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -376,8 +382,8 @@ const FuturesPositionRow = ({ position, closePositionMutation, exchangeRate, isL
     let riskValue = 0;
     if (position.stopLoss) {
         const pnl = position.side === 'LONG' 
-            ? position.stopLoss - position.entryPrice 
-            : position.entryPrice - position.stopLoss;
+            ? (position.entryPrice - position.stopLoss) // LONG: SL abaixo da entrada, perda = entrada - SL
+            : (position.stopLoss - position.entryPrice); // SHORT: SL acima da entrada, perda = SL - entrada
         riskValue = pnl * position.quantity * exchangeRate;
     }
 
@@ -451,6 +457,8 @@ const FuturesSimulator = () => {
   const [side, setSide] = useState<PositionSide>('LONG');
   const [watchedSymbols, setWatchedSymbols] = useState<string[]>(['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'ADATUSD', 'DOGEUSDT', 'SHIBUSDT', 'BNBUSDT']);
   const [newSymbol, setNewSymbol] = useState('');
+  const [isJournalModalOpen, setIsJournalModalOpen] = useState(false); // Estado do modal do diário
+  const [journalPositionId, setJournalPositionId] = useState<string | null>(null); // ID da posição para o diário
   
   const defaultsAppliedRef = useRef(false);
 
@@ -584,7 +592,7 @@ const FuturesSimulator = () => {
 
   const createPositionMutation = useMutation({
     mutationFn: createPosition,
-    onSuccess: () => {
+    onSuccess: (newPosition: CreatePositionResponse) => { // Receber o objeto da nova posição
       toast.dismiss();
       toast.success('Posição aberta com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['futuresPositions'] });
@@ -592,6 +600,10 @@ const FuturesSimulator = () => {
       queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
       // Limpa as linhas de rascunho (prospectivas) após o sucesso da operação
       setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 });
+
+      // Abrir o modal do diário
+      setJournalPositionId(newPosition.id);
+      setIsJournalModalOpen(true);
     },
     onError: (error: Error) => {
       toast.dismiss();
@@ -819,6 +831,18 @@ const FuturesSimulator = () => {
           theme="dark"
           exchangeRate={exchangeRate}
       />
+
+      {journalPositionId && (
+        <TradeJournalModal // eslint-disable-line react/jsx-no-undef
+          isOpen={isJournalModalOpen}
+          onClose={() => {
+            setIsJournalModalOpen(false);
+            setJournalPositionId(null);
+          }}
+          tradeType="futures"
+          tradeId={journalPositionId}
+        />
+      )}
     </div>
   );
 };
