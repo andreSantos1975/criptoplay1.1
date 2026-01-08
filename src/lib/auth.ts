@@ -58,6 +58,8 @@ export const authOptions: AuthOptions = {
         token.createdAt = (user as any).createdAt || null;
         token.emailVerified = (user as any).emailVerified || null;
         token.trialEndsAt = (user as any).trialEndsAt || null; // Add trialEndsAt here
+        token.hasPassword = !!(user as any).password;
+        token.image = user.image;
       }
 
       // On subsequent requests, refresh token data from the database
@@ -71,8 +73,10 @@ export const authOptions: AuthOptions = {
             username: true, 
             createdAt: true, 
             emailVerified: true, 
-            trialEndsAt: true 
-          }, // Select trialEndsAt here
+            trialEndsAt: true,
+            password: true, // Needed to check existence
+            image: true
+          }, 
         });
 
         if (dbUser) {
@@ -82,6 +86,8 @@ export const authOptions: AuthOptions = {
           token.createdAt = dbUser.createdAt; // Add createdAt here
           token.emailVerified = dbUser.emailVerified;
           token.trialEndsAt = dbUser.trialEndsAt; // Add trialEndsAt here
+          token.hasPassword = !!dbUser.password;
+          token.image = dbUser.image;
         }
       }
       
@@ -108,6 +114,8 @@ export const authOptions: AuthOptions = {
         session.user.createdAt = token.createdAt as Date; // Add createdAt here
         session.user.emailVerified = token.emailVerified as Date | null;
         session.user.trialEndsAt = token.trialEndsAt as Date | null; // Add trialEndsAt here
+        session.user.hasPassword = token.hasPassword as boolean;
+        session.user.image = token.image as string | null;
       }
       return session;
     },

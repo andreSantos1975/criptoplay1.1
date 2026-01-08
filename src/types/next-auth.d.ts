@@ -16,6 +16,7 @@ declare module 'next-auth' {
       createdAt?: Date;
       emailVerified?: Date | null;
       trialEndsAt?: Date | null; // Adicionado campo de término do trial
+      hasPassword?: boolean; // Indica se o usuário possui senha definida
     } & DefaultSession['user'];
   }
 }
@@ -29,5 +30,6 @@ declare module 'next-auth/jwt' {
     createdAt?: Date;
     emailVerified?: Date | null;
     trialEndsAt?: Date | null; // Adicionado campo de término do trial
+    hasPassword?: boolean;
   }
 }
