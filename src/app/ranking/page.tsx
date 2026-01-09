@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import useSWR from 'swr';
+import { useState, useEffect } from "react";
+import useSWR, { mutate } from 'swr'; // Import mutate
 import { useSession } from 'next-auth/react';
 import { 
   Trophy, 
@@ -21,6 +21,7 @@ import { RankingPodium } from "@/components/RankingList/RankingPodium";
 import { RankingRules } from "@/components/ranking/RankingRules";
 import { Button } from "@/components/ui/button";
 import styles from "./ranking.module.css";
+import toast from 'react-hot-toast'; // Import toast
 
 const PERIOD_OPTIONS = [
   { label: '7 Dias', value: '7d' },
@@ -49,15 +50,51 @@ export default function RankingPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
   const [selectedMarket, setSelectedMarket] = useState("spot");
   const [selectedSort, setSelectedSort] = useState("roi");
-  const [isPublicProfile, setIsPublicProfile] = useState(true);
+  
+  const rankingApiUrl = `/api/ranking?period=${selectedPeriod}&market=${selectedMarket}&sort=${selectedSort}`;
+  const { data, error, isLoading, mutate: mutateRanking } = useSWR(rankingApiUrl, fetcher);
 
-  // Fetch com parâmetros dinâmicos
-  const { data, error, isLoading } = useSWR(
-    `/api/ranking?period=${selectedPeriod}&market=${selectedMarket}&sort=${selectedSort}`, 
-    fetcher
+  const [isPublicProfile, setIsPublicProfile] = useState<boolean>(
+    data?.currentUser?.isPublicProfile ?? true // Initialize from data, default to true
   );
 
-  // Skeleton Loading Component
+  useEffect(() => {
+    if (data?.currentUser !== undefined) {
+      setIsPublicProfile(data.currentUser.isPublicProfile);
+    }
+  }, [data?.currentUser]);
+
+  const handleTogglePublicProfile = async (newValue: boolean) => {
+    if (!session?.user?.id) {
+      toast.error("Você precisa estar logado para alterar esta configuração.");
+      return;
+    }
+
+    setIsPublicProfile(newValue); // Optimistic update
+
+    try {
+      const response = await fetch('/api/user/me', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isPublicProfile: newValue }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao atualizar a visibilidade do perfil.');
+      }
+
+      toast.success("Visibilidade do perfil atualizada!");
+      mutateRanking(); // Revalidate ranking data
+      // No need to mutate a separate /api/user/me endpoint here if it's not directly used by SWR elsewhere,
+      // as rankingApiUrl fetches currentUser directly.
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao atualizar visibilidade.");
+      setIsPublicProfile(!newValue); // Revert optimistic update on error
+    }
+  };
+
   if (isLoading) {
     return (
       <div className={styles.container}>
@@ -172,8 +209,8 @@ export default function RankingPage() {
               roi={currentUserData.roi}
               profit={currentUserData.profit}
               winRate={currentUserData.winRate}
-              isAnonymous={!isSubscriber}
-              nickname={isSubscriber ? currentUserData.nickname : undefined}
+              isAnonymous={!isSubscriber || !currentUserData.isPublicProfile} // isAnonymous if not subscriber OR not public
+              nickname={currentUserData.isPublicProfile ? currentUserData.nickname : undefined}
             />
           </section>
         )}
@@ -183,7 +220,7 @@ export default function RankingPage() {
           <section>
             <VisibilityToggle
               isPublic={isPublicProfile}
-              onToggle={setIsPublicProfile}
+              onToggle={handleTogglePublicProfile} // Use the new handler
               isSubscriber={isSubscriber}
             />
           </section>

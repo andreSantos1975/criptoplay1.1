@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 let cachedRate: number | null = null;
 let lastFetchTimestamp: number = 0;
 

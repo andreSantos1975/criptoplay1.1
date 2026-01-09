@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
         subscriptionStatus: true,
         trialEndsAt: true,
         monthlyStartingBalance: true,
+        isPublicProfile: true,
         trades: includeSpot ? {
             where: tradeFilter,
             select: { pnl: true }
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const traders = users.map(user => {
+    const allCalculatedUserData = users.map(user => {
       // Coletar trades filtrados
       // @ts-ignore
       const spotTrades = (user.trades as any[]) || [];
@@ -129,15 +130,22 @@ export async function GET(req: NextRequest) {
         drawdown: 0, 
         plan: plan,
         badges: badges,
-        isCurrentUser: user.id === currentUserId
+        isCurrentUser: user.id === currentUserId,
+        isPublicProfile: user.isPublicProfile // Incluir a nova propriedade
       };
     });
 
-    // Ordenação Dinâmica
-    traders.sort((a, b) => {
+    // Encontrar os dados completos do usuário atual (antes de filtrar para visibilidade pública)
+    const currentUserFullData = allCalculatedUserData.find(t => t.isCurrentUser);
+
+    // Filtrar para exibição no ranking público (apenas perfis públicos)
+    const publicTraders = allCalculatedUserData.filter(user => user.isPublicProfile);
+
+    // Ordenação Dinâmica (para traders públicos)
+    publicTraders.sort((a, b) => {
       switch (sort) {
         case 'profit':
-          return b.profit - a.profit; // Maior lucro primeiro
+          return b.profit - a.profit;
         case 'consistency':
           // Prioriza Win Rate. Desempate: Quem operou mais (evita o "sortudo de 1 trade")
           if (b.winRate === a.winRate) {
@@ -146,19 +154,39 @@ export async function GET(req: NextRequest) {
           return b.winRate - a.winRate;
         case 'roi':
         default:
-          return b.roi - a.roi; // Maior ROI primeiro (padrão)
+          return b.roi - a.roi;
       }
     });
 
-    // Atribuir Posição e Rank Badges
-    const rankedTraders = traders.map((trader, index) => {
+    // Atribuir Posição e Rank Badges aos publicTraders
+    const rankedPublicTraders = publicTraders.map((trader, index) => {
       const position = index + 1;
       if (position <= 10) trader.badges.push("top10");
       return { ...trader, position };
     });
 
-    // Calcular Métricas Gerais para o Top 100 (ou todos)
-    const activeTraders = rankedTraders.filter(t => t.trades > 0);
+    // Atualizar a posição do currentUserFullData se ele for público
+    let currentUserWithPosition: any = currentUserFullData;
+    if (currentUserFullData && currentUserFullData.isPublicProfile) {
+        const publicRankingPosition = rankedPublicTraders.findIndex(t => t.id === currentUserFullData.id);
+        if (publicRankingPosition !== -1) {
+            currentUserWithPosition = {
+                ...currentUserFullData,
+                position: publicRankingPosition + 1
+            };
+        }
+    } else if (currentUserFullData && !currentUserFullData.isPublicProfile) {
+        // Se o usuário atual não for público, mas queremos mostrar sua card,
+        // garantimos que a posição não seja exibida ou seja marcada como privada
+        currentUserWithPosition = {
+            ...currentUserFullData,
+            position: undefined // Ou null, ou um valor que indique "privado"
+        };
+    }
+
+
+    // Calcular Métricas Gerais para o Top 100 (ou todos) usando publicTraders
+    const activeTraders = rankedPublicTraders.filter(t => t.trades > 0);
     const top100 = activeTraders.slice(0, 100);
 
     const avgRoi = top100.length > 0
@@ -169,11 +197,11 @@ export async function GET(req: NextRequest) {
         ? top100.reduce((sum, t) => sum + t.winRate, 0) / top100.length
         : 0;
 
-    const topTrader = rankedTraders[0] || null;
+    const topTrader = rankedPublicTraders[0] || null;
 
     return NextResponse.json({
-      traders: rankedTraders.slice(0, 50), // Paginação simples
-      currentUser: rankedTraders.find(t => t.isCurrentUser),
+      traders: rankedPublicTraders.slice(0, 50), // Paginação simples
+      currentUser: currentUserWithPosition, // Enviar os dados completos do usuário atual com a posição potencialmente atualizada
       metrics: {
         totalTraders: users.length, // Total real de usuários na plataforma
         avgRoi,

@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/capital-movements - Fetch all capital movements for the logged-in user
 export async function GET() {
   const session = await getServerSession(authOptions);

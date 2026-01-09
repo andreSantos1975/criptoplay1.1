@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const accountSchema = z.object({
   name: z.string().min(1, 'O nome da conta é obrigatório.'),
   bankName: z.string().min(1, 'O nome do banco é obrigatório.'),

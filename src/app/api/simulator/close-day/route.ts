@@ -10,8 +10,10 @@ import { getCurrentPrice } from '@/lib/binance';
 
 export async function POST(request: Request) {
   // --- Verificação de Segurança do Cron Job ---
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const { searchParams } = new URL(request.url);
+  const secret = searchParams.get('secret');
+  
+  if (secret !== process.env.CRON_SECRET) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 

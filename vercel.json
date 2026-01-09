@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/simulator/close-day",
+      "path": "/api/simulator/close-day?secret=${CRON_SECRET}",
       "schedule": "0 0 * * *"
     },
     {

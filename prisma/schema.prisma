@@ -21,6 +21,7 @@ model User {
   bankruptcyExpiryDate DateTime?
   createdAt           DateTime          @default(now())
   trialEndsAt         DateTime?
+  isPublicProfile     Boolean           @default(true)
   dailyPerformances   DailyPerformance[]
   monthlyRankings     MonthlyRanking[]
   oauthAccounts       OAuthAccount[]
