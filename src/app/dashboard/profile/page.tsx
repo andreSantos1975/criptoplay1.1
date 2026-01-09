@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -125,7 +126,13 @@ export default function ProfilePage() {
       <div className={styles.profileHeader}>
         <div className={styles.avatarContainer}>
           {user?.image ? (
-            <img src={user.image} alt="Avatar" className={styles.avatarImage} />
+            <Image 
+              src={user.image} 
+              alt="Avatar do usuário" 
+              width={80} // Defina a largura apropriada para o seu avatar
+              height={80} // Defina a altura apropriada para o seu avatar
+              className={styles.avatarImage} 
+            />
           ) : (
             <span className={styles.avatarPlaceholder}>{initials}</span>
           )}

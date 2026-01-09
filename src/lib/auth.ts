@@ -92,12 +92,14 @@ export const authOptions: AuthOptions = {
       }
       
       // Allow dev user to bypass subscription checks
+      /* 
       if (process.env.NODE_ENV === 'development' && token.email === process.env.DEV_USER_EMAIL) {
         token.isAdmin = true;
         token.subscriptionStatus = 'authorized';
         // Dev user also gets full trial access indefinitely
         token.trialEndsAt = new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000); // 10 years for dev
-      }
+      } 
+      */
       // Allow lifetime user to bypass subscription checks
       if (token.email === process.env.LIFETIME_USER_EMAIL) {
         token.subscriptionStatus = 'lifetime';
