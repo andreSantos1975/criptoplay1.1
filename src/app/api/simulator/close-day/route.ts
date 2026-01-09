@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 import { getCurrentPrice } from '@/lib/binance';
 
+export const dynamic = 'force-dynamic';
+
 // Esta função é chamada diariamente pelo Cron Job.
 // ATUALIZADO: Agora suporta Swing Trade (Binance Futures Style).
 // Não fecha mais as posições compulsoriamente. Apenas calcula o valor de mercado (Equity)

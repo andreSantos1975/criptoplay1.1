@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { processAlerts } from '@/lib/alert-processor';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get('secret');

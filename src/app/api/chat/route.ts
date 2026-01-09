@@ -14,6 +14,8 @@ import { z } from 'zod';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+export const dynamic = 'force-dynamic';
+
 export const runtime = 'nodejs';
 
 const gemini = google('gemini-2.5-flash');

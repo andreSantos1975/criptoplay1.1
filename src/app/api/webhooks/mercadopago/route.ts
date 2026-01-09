@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago';
 import prisma from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 // Configurar Mercado Pago
 const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,

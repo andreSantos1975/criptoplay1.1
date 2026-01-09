@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 // Helper function to fetch current price from Binance
 // This should ideally be in a shared lib file, but for now, it's here for simplicity.
 async function getCurrentPrice(symbol: string): Promise<number | null> {

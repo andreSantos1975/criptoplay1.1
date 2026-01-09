@@ -6,6 +6,8 @@ import { getCurrentPrice } from '@/lib/binance';
 import { Decimal } from '@prisma/client/runtime/library';
 import { hasPremiumAccess } from '@/lib/permissions';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   request: Request,
   { params }: { params: { tradeId: string } }

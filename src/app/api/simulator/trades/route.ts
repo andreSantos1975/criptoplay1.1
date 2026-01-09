@@ -6,6 +6,8 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { getCurrentPrice } from '@/lib/binance';
 import { hasPremiumAccess } from '@/lib/permissions';
 
+export const dynamic = 'force-dynamic';
+
 
 // Rota para BUSCAR todas as operações de simulação de um usuário (Spot e Futuros unificados)
 export async function GET(request: Request) {

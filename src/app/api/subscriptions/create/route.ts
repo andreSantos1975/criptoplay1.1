@@ -6,6 +6,8 @@ import prisma from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { MercadoPagoConfig, PreApproval, Preference } from 'mercadopago';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
 

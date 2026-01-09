@@ -6,6 +6,8 @@ import { generateVerificationToken } from '@/lib/tokens'
 import { sendVerificationEmail } from '@/lib/mail'
 import { addDays } from 'date-fns' // Importar addDays
 
+export const dynamic = 'force-dynamic';
+
 // Função para gerar um username único
 async function generateUniqueUsername(): Promise<string> {
   let uniqueUsername = '';

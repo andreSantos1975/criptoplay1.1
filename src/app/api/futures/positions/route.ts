@@ -5,6 +5,8 @@ import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 
+export const dynamic = 'force-dynamic';
+
 // Esquema de validação para a criação de uma posição
 const createPositionSchema = z.object({
   symbol: z.string().min(1, "O símbolo é obrigatório."),

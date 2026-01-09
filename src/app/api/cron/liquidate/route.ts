@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { PositionStatus, PositionSide } from '@prisma/client';
 
+export const dynamic = 'force-dynamic';
+
 // Função auxiliar para buscar preço na API da Binance
 async function getPrice(symbol: string): Promise<number | null> {
   try {

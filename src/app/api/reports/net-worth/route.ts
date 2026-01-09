@@ -6,6 +6,8 @@ import { generatePortfolioData } from "@/lib/portfolio-calculator";
 import { getCurrentPrice } from "@/lib/binance";
 import { Trade, CapitalMovement } from "@/lib/portfolio-calculator";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 

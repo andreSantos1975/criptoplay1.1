@@ -4,6 +4,8 @@ import { getCurrentPrice, getCurrentFuturesPrice } from '@/lib/binance';
 import { Trade, FuturesPosition, PositionSide } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
+export const dynamic = 'force-dynamic';
+
 // Helper to validate secret
 const isValidSecret = (request: Request) => {
   const { searchParams } = new URL(request.url);

@@ -5,6 +5,8 @@ import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 
+export const dynamic = 'force-dynamic';
+
 const closePositionSchema = z.object({
   positionIds: z.array(z.string()).optional(),
   symbol: z.string().optional(),
