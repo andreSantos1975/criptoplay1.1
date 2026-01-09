@@ -585,6 +585,30 @@ Sim, você está absolutamente correto.
    * Próxima Cobrança: Mostrar a data da próxima renovação.
    * Upgrade/Downgrade: Botões fáceis para mudar de plano.
 
-  ---
+
+
+  ------------09/01/2026
+
+   Lista Obrigatória para o Deploy funcionar:
+
+   1. Banco de Dados (Essencial):
+       * DATABASE_URL: (Copie do seu arquivo .env local)
+
+   2. Autenticação (Essencial para `/api/accounts`):
+       * NEXTAUTH_SECRET: (Copie do local)
+       * NEXTAUTH_URL: Use a URL do seu site na Vercel (ex: https://seu-projeto.vercel.app)
+       * GOOGLE_CLIENT_ID: (Se não tiver, coloque texto_dummy_google_id)
+       * GOOGLE_CLIENT_SECRET: (Se não tiver, coloque texto_dummy_google_secret)
+
+   3. Mercado Pago (Essencial para o Webhook não quebrar):
+       * MERCADOPAGO_ACCESS_TOKEN: (Coloque sua chave de teste TEST-... ou um texto qualquer
+         como DUMMY_TOKEN)
+       * MERCADOPAGO_PUBLIC_KEY: (Mesma coisa)
+
+   4. E-mail e Alertas (Essencial para `mail.ts`):
+       * RESEND_API_KEY: (Copie a chave do Resend que vimos no seu arquivo local)
+
+   5. Cron Jobs (Segurança):
+       * CRON_SECRET: (Crie uma senha forte qualquer)
 
          
