@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { processAlerts } from '@/lib/alert-processor';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST() {
   const session = await getServerSession(authOptions);
 

@@ -5,6 +5,8 @@ import prisma from '@/lib/prisma';
 import { AlertStatus } from '@prisma/client';
 import { hasPremiumAccess } from '@/lib/permissions';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
