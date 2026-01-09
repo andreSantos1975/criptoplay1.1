@@ -17,10 +17,9 @@ import { RankingTable } from "@/components/ranking/RankingTable";
 import { VisibilityToggle } from "@/components/ranking/VisibilityToggle";
 import { CTABanner } from "@/components/ranking/CTABanner";
 import { UserPositionCard } from "@/components/ranking/UserPositionCard";
-import { RankingPodium } from "@/components/RankingList/RankingPodium"; // Importado
+import { RankingPodium } from "@/components/RankingList/RankingPodium";
 import { RankingRules } from "@/components/ranking/RankingRules";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import styles from "./ranking.module.css";
 
 const PERIOD_OPTIONS = [
@@ -94,7 +93,10 @@ export default function RankingPage() {
 
   const isLoggedIn = !!session?.user?.id;
   const userPlan = currentUserData?.plan || "free";
-  const isPro = userPlan === "pro" || userPlan === "premium";
+  
+  // Lógica atualizada: Qualquer plano que não seja 'free' é considerado assinante (Pro, Premium, Trial)
+  // A API já retorna 'pro' se estiver em trial ativo, mas essa verificação garante robustez.
+  const isSubscriber = userPlan !== "free";
 
   const totalTradersRanked = metrics.totalTraders || 0;
 
@@ -170,25 +172,25 @@ export default function RankingPage() {
               roi={currentUserData.roi}
               profit={currentUserData.profit}
               winRate={currentUserData.winRate}
-              isAnonymous={!isPro}
-              nickname={isPro ? currentUserData.nickname : undefined}
+              isAnonymous={!isSubscriber}
+              nickname={isSubscriber ? currentUserData.nickname : undefined}
             />
           </section>
         )}
 
-        {/* Visibility Toggle (PRO only) */}
+        {/* Visibility Toggle (Subscribers only) */}
         {isLoggedIn && (
           <section>
             <VisibilityToggle
               isPublic={isPublicProfile}
               onToggle={setIsPublicProfile}
-              isPro={isPro}
+              isSubscriber={isSubscriber}
             />
           </section>
         )}
 
-        {/* CTA Banner for non-pro users */}
-        {(!isLoggedIn || !isPro) && (
+        {/* CTA Banner for non-subscribers */}
+        {(!isLoggedIn || !isSubscriber) && (
           <section>
             <CTABanner 
               type={!isLoggedIn ? "not-logged" : userPlan === "free" ? "free" : "starter"} 
@@ -236,7 +238,7 @@ export default function RankingPage() {
         </section>
 
         {/* Bottom CTA */}
-        {!isPro && isLoggedIn && (
+        {!isSubscriber && isLoggedIn && (
           <section className="text-center py-8 mt-8">
             <p className="text-gray-500 mb-4">
               Quer aparecer no ranking público e ganhar reconhecimento?
@@ -247,7 +249,7 @@ export default function RankingPage() {
               style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)' }}
             >
               <Trophy className="w-5 h-5 mr-2" />
-              Upgrade para Pro
+              Seja um Assinante
             </Button>
           </section>
         )}

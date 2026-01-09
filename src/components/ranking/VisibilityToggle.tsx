@@ -7,11 +7,11 @@ import styles from "@/app/ranking/ranking.module.css";
 interface VisibilityToggleProps {
   isPublic: boolean;
   onToggle: (value: boolean) => void;
-  isPro: boolean;
+  isSubscriber: boolean;
 }
 
-export function VisibilityToggle({ isPublic, onToggle, isPro }: VisibilityToggleProps) {
-  if (!isPro) {
+export function VisibilityToggle({ isPublic, onToggle, isSubscriber }: VisibilityToggleProps) {
+  if (!isSubscriber) {
     return (
       <div className={styles.toggleCard}>
         <div className={cn(styles.toggleIconBox, "bg-gray-100")}>
@@ -20,7 +20,7 @@ export function VisibilityToggle({ isPublic, onToggle, isPro }: VisibilityToggle
         <div className="flex-1 opacity-60">
           <p className="font-semibold text-gray-900">Visibilidade no Ranking</p>
           <p className="text-sm text-gray-500">
-            Disponível exclusivamente para membros Pro.
+            Disponível apenas para assinantes CriptoPlay (incluindo período de teste).
           </p>
         </div>
         <Switch disabled checked={false} />

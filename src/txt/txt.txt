@@ -560,13 +560,6 @@ Sim, você está absolutamente correto.
   Aqui estão algumas sugestões de funcionalidades que podem ser adicionadas à página de perfil
   (/dashboard/profile), organizadas por complexidade e valor para o usuário:
 
-  1. Informações Pessoais e de Segurança (Básico)
-   * Foto de Perfil (Avatar): Permitir upload de uma imagem ou integração com Gravatar. Hoje em
-     dia é essencial para humanizar o perfil, especialmente no Ranking.
-   * Alterar Senha: Se o usuário se cadastrou com email/senha, deve haver uma opção para trocar
-     a senha. (Não aplicável para login social puro, mas útil para quem tem senha).
-   * Email Verificado: Exibir se o email foi verificado ou reenviar email de verificação.
-   * Data de Cadastro: Mostrar "Membro desde [Data]".
 
   2. Preferências da Plataforma (Intermediário)
    * Tema (Claro/Escuro): Se sua aplicação suportar temas, um toggle aqui seria útil.
@@ -594,11 +587,4 @@ Sim, você está absolutamente correto.
 
   ---
 
-  Minha Recomendação para Implementar Agora:
-
-   1. Avatar: É visualmente impactante e simples de implementar (pode começar apenas exibindo a
-      imagem do Google se disponível, ou um placeholder com as iniciais).
-   2. Estatísticas Rápidas: Já que você tem um simulador, mostrar o "Saldo Atual do Simulador"
-      e "Posição no Ranking" aqui daria um contexto imediato ao usuário sobre seu status.
-   3. Data de Cadastro: Simples e traz um senso de pertencimento.
          
