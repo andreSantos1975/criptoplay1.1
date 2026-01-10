@@ -19,11 +19,22 @@ export async function middleware(req: NextRequest) {
     const hasLifetimePlan = token?.subscriptionStatus === 'lifetime';
 
     // Verifica se o período de trial ainda está ativo
-    const isTrialActive = token?.trialEndsAt ? new Date(token.trialEndsAt) > new Date() : false;
-    console.log(`[Middleware] User ID: ${token?.id}, Email: ${token?.email}`);
-    console.log(`[Middleware] trialEndsAt from token: ${token?.trialEndsAt}`);
-    console.log(`[Middleware] Current date: ${new Date()}`);
-    console.log(`[Middleware] isTrialActive: ${isTrialActive}`);
+    let isTrialActive = false;
+    
+    if (token?.trialEndsAt) {
+      const trialEnd = new Date(token.trialEndsAt);
+      isTrialActive = trialEnd > new Date();
+    } else if (token?.createdAt) {
+      // Fallback: Se trialEndsAt não estiver no token (ex: cookie antigo), calcula baseado em createdAt (7 dias)
+      const createdAt = new Date(token.createdAt);
+      const now = new Date();
+      const trialPeriodMs = 7 * 24 * 60 * 60 * 1000; // 7 dias em milissegundos
+      
+      // Se a conta tem menos de 7 dias, considera trial ativo
+      if ((now.getTime() - createdAt.getTime()) < trialPeriodMs) {
+        isTrialActive = true;
+      }
+    }
 
     // Se não houver token ou se o usuário não atender a nenhum dos critérios de acesso (assinatura ou trial)
     if (!token || (!isDeveloper && !hasRecurringSubscription && !hasLifetimePlan && !isTrialActive)) {
