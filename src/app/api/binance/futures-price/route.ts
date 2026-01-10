@@ -13,7 +13,11 @@ export async function GET(request: Request) {
   try {
     // API de Futuros da Binance
     const binanceApiUrl = `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symbol}`;
-    const response = await fetch(binanceApiUrl);
+    const response = await fetch(binanceApiUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
