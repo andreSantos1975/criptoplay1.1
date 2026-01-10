@@ -611,4 +611,57 @@ Sim, você está absolutamente correto.
    5. Cron Jobs (Segurança):
        * CRON_SECRET: (Crie uma senha forte qualquer)
 
+
+       -------------------------------------------------
+       10/01/2026
+
+        A discrepância nos cálculos de Lucro/Prejuízo (PnL) foi abordada e as seguintes ações
+  foram tomadas para garantir a consistência dos dados de preço em toda a aplicação:
+
+  1. Unificação do Endpoint da API Binance:
+      - Todos os endpoints da API Binance utilizados para buscar preços (spot e klines)
+        foram atualizados para utilizar o endpoint de produção principal:
+        https://api.binance.com. Anteriormente, alguns componentes utilizavam um endpoint de
+        dados públicos (data-api.binance.vision), o que poderia causar pequenas variações e
+        atrasos nos preços em comparação com o mercado em tempo real. Os arquivos
+        atualizados incluem:
+        - src/app/api/binance/price/route.ts
+        - src/app/api/binance/klines/route.ts
+        - src/app/api/simulator/positions/close/route.ts
+        - src/lib/binance.ts
+
+  2. Centralização da Busca de Preços para Operações em Aberto:
+      - Para garantir que todos os componentes exibindo dados de operações em aberto
+        utilizem a mesma cotação, a busca de preços para múltiplos símbolos foi centralizada
+        nos componentes parentes:
+        - Dashboard (`src/app/dashboard/page.tsx`): Agora busca todos os trades e os preços
+          de todos os ativos em aberto (binanceTickers) de forma centralizada. Esses dados
+          são então passados como props para os componentes filhos RecentOperationsTable
+          (tabela de "Operações") e ReportsSection (seção de "Relatórios").
+        - Simulador (`src/components/simulator/Simulator/Simulator.tsx`): Agora busca os
+          preços de todos os ativos nas posições em aberto (simulatorProfile.openPositions)
+          em lote e cria um priceMap. Este priceMap é então passado como prop para o
+          PositionRow (cada linha da tabela "Posições Abertas (Simulador)").
+
+  3. Refatoração de Componentes para Receber Dados via Props:
+      - Os seguintes componentes foram modificados para receber os dados de trades,
+        binanceTickers e simulatorProfile (e seus respectivos estados de carregamento/erro)
+        via props, eliminando suas buscas internas de dados e garantindo que todos trabalhem
+        com a mesma fonte de informação:
+        - src/components/dashboard/RecentOperationsTable/RecentOperationsTable.tsx
+        - src/components/dashboard/ReportsSection/ReportsSection.tsx
+        - src/components/reports/TradingPerformanceSummary.tsx
+        - src/components/simulator/PositionRow/PositionRow.tsx
+  4. Otimização e Consistência de Cálculos:
+      - A deduplicação de símbolos foi implementada em RecentOperationsTable.tsx para
+        otimizar as chamadas de API em lote.
+      - A taxa de câmbio BRL/USDT (brlRate) agora é passada para
+        TradingPerformanceSummary.tsx para garantir a conversão correta de PnL para BRL nos
+        cálculos de performance.
+
+  Com essas alterações, espera-se que todas as tabelas e KPIs exibindo PnL para operações em
+  aberto apresentem valores consistentes, resolvendo a discrepância observada.
+
+ Using: 1 GEMINI.md file
+
          

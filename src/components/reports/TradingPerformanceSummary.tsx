@@ -1,16 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react"; // Removed useQuery
 import { calculateTradingStats } from "@/lib/trading-math";
 import { TrendingUp, TrendingDown, Target, Activity, DollarSign, PieChart, AlertTriangle, ArrowRightLeft } from "lucide-react";
 import { Trade } from "@prisma/client";
 import styles from "./TradingPerformanceSummary.module.css";
 
-const fetchTrades = async (): Promise<Trade[]> => {
-  const res = await fetch("/api/simulator/trades");
-  if (!res.ok) throw new Error("Falha ao buscar trades.");
-  return res.json();
-};
+// Interface for CryptoData if needed internally for new calculations.
+// For now, it's enough to pass brlRate to normalize trades.
+interface CryptoData {
+  symbol: string;
+  price: string;
+}
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
@@ -49,23 +50,34 @@ const TradingCard: React.FC<TradingCardProps> = ({ title, value, icon: Icon, des
 
 
 interface TradingPerformanceSummaryProps {
-  trades?: Trade[]; // Tornar trades um prop opcional
+  trades: Trade[];
+  brlRate: number;
 }
 
-export const TradingPerformanceSummary: React.FC<TradingPerformanceSummaryProps> = ({ trades: propTrades }) => {
-  const { data: fetchedTrades = [], isLoading, error } = useQuery<Trade[]>({
-    queryKey: ["simulatorTrades"],
-    queryFn: fetchTrades,
-    enabled: !propTrades, // Apenas busca se os trades não forem fornecidos via prop
-  });
+export const TradingPerformanceSummary: React.FC<TradingPerformanceSummaryProps> = ({ trades, brlRate }) => {
 
-  const tradesToUse = propTrades || fetchedTrades;
 
-  if (isLoading && !propTrades) return <div className={styles.loadingMessage}>Carregando métricas de trading...</div>;
-  if (error && !propTrades) return <div className={styles.errorMessage}>Erro ao carregar dados de trading.</div>;
-  if (!tradesToUse.length && !isLoading && !error) return <div className={styles.noDataMessage}>Nenhum trade para analisar.</div>;
+  // Normalizar trades para BRL uma única vez
+  const normalizedTrades = useMemo(() => {
+    return trades.map(t => {
+      // Se já fechou e tem PnL
+      if (t.status === 'CLOSED' && t.pnl !== null) {
+        const pnlNum = Number(t.pnl);
+        // Se for par USDT (ex: BTCUSDT), converte. Se for BRL (ex: BTCBRL), mantém. 
+        const isBrl = t.symbol.endsWith('BRL'); 
+        const normalizedPnl = isBrl ? pnlNum : pnlNum * brlRate;
+        
+        // Retorna um novo objeto trade com o pnl ajustado (apenas para visualização)
+        return {
+          ...t,
+          pnl: normalizedPnl // Substitui o valor decimal/original pelo valor em BRL number
+        } as unknown as Trade; // Cast para Trade (pnl no prisma é Decimal, aqui virou number, mas ok para o frontend)
+      }
+      return t;
+    });
+  }, [trades, brlRate]);
 
-  const stats = calculateTradingStats(tradesToUse);
+  const stats = calculateTradingStats(normalizedTrades);
 
   const cardsData = [
     {

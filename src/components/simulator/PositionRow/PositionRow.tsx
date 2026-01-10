@@ -1,30 +1,16 @@
 "use client";
 
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import styles from './PositionRow.module.css';
 
 import { SimulatorPosition } from '@/hooks/useVigilante';
-
-// Tipo para o preço atual
-interface CurrentPrice {
-  price: string;
-}
 
 interface PositionRowProps {
   position: SimulatorPosition;
   isClosing: boolean;
   closePositionMutation: (symbol: string) => void; // A mutação agora aceita o símbolo
+  currentPrice: number;
 }
-
-const fetchCurrentPrice = async (symbol: string): Promise<CurrentPrice> => {
-  if (!symbol) throw new Error("Símbolo é necessário");
-  const response = await fetch(`/api/binance/price?symbol=${symbol}`);
-  if (!response.ok) {
-    throw new Error('Falha ao buscar preço atual');
-  }
-  return response.json();
-};
 
 const formatCurrency = (value: number) => {
     if (typeof value !== 'number' || isNaN(value)) {
@@ -33,15 +19,9 @@ const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-export const PositionRow = ({ position, isClosing, closePositionMutation }: PositionRowProps) => {
-  const { data: currentPriceData } = useQuery<CurrentPrice, Error>({
-    queryKey: ['currentPrice', position.symbol],
-    queryFn: () => fetchCurrentPrice(position.symbol),
-    refetchInterval: 5000,
-  });
+export const PositionRow = ({ position, isClosing, closePositionMutation, currentPrice }: PositionRowProps) => {
 
   const { totalValue, pnl, pnlPercentage, investedValue, riskSL, rewardTP } = useMemo(() => {
-    const currentPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
     if (!currentPrice) return { totalValue: 0, pnl: 0, pnlPercentage: 0, investedValue: 0, riskSL: 0, rewardTP: 0 };
     
     const avgPrice = Number(position.averageEntryPrice);
@@ -65,7 +45,7 @@ export const PositionRow = ({ position, isClosing, closePositionMutation }: Posi
     }
 
     return { totalValue: currentValue, pnl, pnlPercentage, investedValue, riskSL, rewardTP };
-  }, [currentPriceData, position]);
+  }, [currentPrice, position]);
 
   const pnlClass = pnl > 0 ? styles.positivePnl : pnl < 0 ? styles.negativePnl : styles.neutralPnl;
 

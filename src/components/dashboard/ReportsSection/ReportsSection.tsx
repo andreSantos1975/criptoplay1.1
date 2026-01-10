@@ -24,28 +24,11 @@ import Modal from "@/components/ui/modal/Modal";
 import { TradingPerformanceSummary } from "@/components/reports/TradingPerformanceSummary";
 import { Trade } from "@prisma/client";
 
-// Interfaces
-interface BinanceTicker {
+// Interfaces for props
+interface CryptoData {
   symbol: string;
-  lastPrice: string;
+  price: string;
 }
-
-interface ExtendedTrade extends Trade {
-  margin?: number | string | any;
-}
-
-// Data Fetching
-const fetchTrades = async (): Promise<Trade[]> => {
-  const res = await fetch("/api/simulator/trades");
-  if (!res.ok) throw new Error("Falha ao buscar trades.");
-  return res.json();
-};
-
-const fetchBinanceTickers = async (): Promise<BinanceTicker[]> => {
-  const res = await fetch("https://api.binance.com/api/v3/ticker/24hr");
-  if (!res.ok) throw new Error("Falha ao buscar tickers da Binance.");
-  return res.json();
-};
 
 // Helpers
 const formatCurrency = (value: number) =>
@@ -100,8 +83,8 @@ const generatePortfolioDistributionData = (
     const ticker = tickers.find((t) => t.symbol === trade.symbol);
     if (ticker) {
       const value = ticker.symbol.includes('BRL')
-        ? parseFloat(trade.quantity.toString()) * parseFloat(ticker.lastPrice)
-        : parseFloat(trade.quantity.toString()) * parseFloat(ticker.lastPrice) * brlRate;
+        ? parseFloat(trade.quantity.toString()) * parseFloat(ticker.price)
+        : parseFloat(trade.quantity.toString()) * parseFloat(ticker.price) * brlRate;
       const asset = trade.symbol.replace("USDT", "");
       portfolio[asset] = (portfolio[asset] || 0) + value;
     }
@@ -160,21 +143,37 @@ interface SimulatorProfile {
   openPositions: any[]; 
 }
 
-const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
-  const response = await fetch('/api/simulator/profile');
-  if (!response.ok) throw new Error('Falha ao buscar perfil do simulador.');
-  const data = await response.json();
-  // Ensure virtualBalance is a number, as Prisma Decimal can be serialized as string
-  return { ...data, virtualBalance: Number(data.virtualBalance) };
-};
+interface ReportsSectionProps {
+  trades: Trade[];
+  binanceTickers: CryptoData[];
+  isLoadingTrades: boolean;
+  isLoadingBinanceTickers: boolean;
+  errorTrades: Error | null;
+  simulatorProfile: SimulatorProfile | undefined; // Make it optional as it might be loading
+  isLoadingSimulator: boolean;
+  errorSimulator: Error | null;
+}
 
-export const ReportsSection = () => {
+export const ReportsSection = ({
+  trades,
+  binanceTickers,
+  isLoadingTrades,
+  isLoadingBinanceTickers,
+  errorTrades,
+  simulatorProfile,
+  isLoadingSimulator,
+  errorSimulator,
+}: ReportsSectionProps) => {
 
-  const {
-    data: trades = [],
-    isLoading: l1,
-    error: e1,
-  } = useQuery<Trade[]>({ queryKey: ["trades"], queryFn: fetchTrades });
+  const openTrades = useMemo(
+    () => trades.filter((t) => t.status === "OPEN"),
+    [trades]
+  );
+  
+  const openSymbols = useMemo(() => {
+      return Array.from(new Set(openTrades.map(t => t.symbol)));
+  }, [openTrades]);
+
   const {
     data: exchangeRateData,
     isLoading: l3,
@@ -184,27 +183,9 @@ export const ReportsSection = () => {
     queryFn: async () =>
       (await fetch("/api/exchange-rate")).json(),
   });
-  const {
-    data: binanceTickers = [],
-    isLoading: l4,
-    error: e4,
-  } = useQuery<BinanceTicker[]>({
-    queryKey: ["binanceTickers"],
-    queryFn: fetchBinanceTickers,
-    refetchInterval: 10000,
-  });
-
-  const {
-    data: simulatorProfile,
-    isLoading: l5,
-    error: e5,
-  } = useQuery<SimulatorProfile>({
-    queryKey: ['simulatorProfile'],
-    queryFn: fetchSimulatorProfile,
-  });
-
-  const isLoading = l1 || l3 || l4 || l5;
-  const error = e1 || e3 || e4 || e5;
+  
+  const isLoading = isLoadingTrades || l3 || isLoadingBinanceTickers || isLoadingSimulator;
+  const error = errorTrades || e3 || errorSimulator;
 
   const brlRate = exchangeRateData?.usdtToBrl || 1;
   
@@ -228,11 +209,6 @@ export const ReportsSection = () => {
     });
   }, [trades, brlRate]);
 
-  const openTrades = useMemo(
-    () => trades.filter((t) => t.status === "OPEN"),
-    [trades]
-  );
-
   const unrealizedPnl = useMemo(() => {
     if (!openTrades.length || !binanceTickers.length) return 0;
     
@@ -240,7 +216,7 @@ export const ReportsSection = () => {
         const ticker = binanceTickers.find(t => t.symbol === trade.symbol);
         if (!ticker) return acc;
         
-        const currentPrice = parseFloat(ticker.lastPrice);
+        const currentPrice = parseFloat(ticker.price);
         const entryPrice = parseFloat(trade.entryPrice.toString());
         const quantity = parseFloat(trade.quantity.toString());
         
@@ -370,7 +346,7 @@ export const ReportsSection = () => {
       {/* Performance Avançada */}
       <div style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Performance Avançada</h2>
-        <TradingPerformanceSummary trades={normalizedTrades} />
+        <TradingPerformanceSummary trades={trades} binanceTickers={binanceTickers} brlRate={brlRate} />
       </div>
 
       {/* Gráficos */}

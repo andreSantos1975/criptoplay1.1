@@ -25,6 +25,40 @@ import { PersonalFinanceDialog } from '@/components/dashboard/PersonalFinanceDia
 import { ReportsSection } from '@/components/dashboard/ReportsSection/ReportsSection';
 import { TrialReminderBanner } from '@/components/dashboard/TrialReminderBanner/TrialReminderBanner';
 
+// --- TYPE DEFINITIONS for Trading Data ---
+interface CryptoData {
+  symbol: string;
+  price: string;
+}
+
+interface SimulatorProfile {
+  virtualBalance: number;
+  openPositions: any[]; 
+}
+
+const fetchTrades = async (): Promise<Trade[]> => {
+  const res = await fetch("/api/simulator/trades");
+  if (!res.ok) throw new Error("Falha ao buscar trades.");
+  return res.json();
+};
+
+const fetchBinancePrices = async (symbols: string[]): Promise<CryptoData[]> => {
+  if (symbols.length === 0) return [];
+  const symbolsParam = JSON.stringify(symbols);
+  const res = await fetch(`/api/binance/price?symbols=${encodeURIComponent(symbolsParam)}`);
+  if (!res.ok) throw new Error("Falha ao buscar preços da Binance.");
+  const data = await res.json();
+  if (Array.isArray(data)) return data;
+  return [];
+};
+
+const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
+  const response = await fetch('/api/simulator/profile');
+  if (!response.ok) throw new Error('Falha ao buscar perfil do simulador.');
+  const data = await response.json();
+  return { ...data, virtualBalance: Number(data.virtualBalance) };
+};
+
 // Dynamically import the Simulator component for the 'analise' tab
 const Simulator = dynamic(
   () => import('@/components/simulator/Simulator/Simulator'),
@@ -287,6 +321,34 @@ const DashboardPage = () => {
   }, [expenses, totalIncome, categoriesWithSpending]);
   
 
+  // --- TRADING DATA FETCHING ---
+  const { data: trades = [], isLoading: isLoadingTrades, error: errorTrades } = useQuery<Trade[]>({
+    queryKey: ["trades"], // Standardized key to match Simulator and other components
+    queryFn: fetchTrades,
+    enabled: hasPremiumAccess(session), // Only fetch if user has premium access
+  });
+
+  const openTradeSymbols = useMemo(() => {
+    return Array.from(new Set(trades?.filter(t => t.status === 'OPEN').map(t => t.symbol) || []));
+  }, [trades]);
+
+  const { data: binanceTickers = [], isLoading: isLoadingBinanceTickers, error: errorBinanceTickers } = useQuery<CryptoData[]>({
+    queryKey: ["dashboardBinancePrices", openTradeSymbols],
+    queryFn: () => fetchBinancePrices(openTradeSymbols),
+    enabled: hasPremiumAccess(session) && openTradeSymbols.length > 0,
+    refetchInterval: 5000, // Refresh prices every 5 seconds
+  });
+
+  const priceMap = useMemo(() => {
+    return new Map(binanceTickers.map(ticker => [ticker.symbol, parseFloat(ticker.price)]));
+  }, [binanceTickers]);
+
+  const { data: simulatorProfile, isLoading: isLoadingSimulator, error: errorSimulator } = useQuery<SimulatorProfile>({
+    queryKey: ['simulatorProfile'],
+    queryFn: fetchSimulatorProfile,
+    enabled: hasPremiumAccess(session),
+  });
+
   // --- HANDLER FUNCTIONS (PERSONAL FINANCE ONLY) ---
   const handleCategoryChange = (id: string, field: 'name' | 'percentage', value: string | number) => setBudgetCategories(prev => prev.map(cat => cat.id === id ? { ...cat, [field]: value } : cat));
   const handleAddCategory = () => setBudgetCategories(prev => [...prev, { id: Date.now().toString(), name: 'Nova Categoria', percentage: 0, amount: 0, actualSpending: 0 }]);
@@ -316,7 +378,13 @@ const DashboardPage = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case "painel":
-        return (<><DashboardOverview /><div style={{ marginTop: '2rem' }}><RecentOperationsTable /></div></>);
+        return (<><DashboardOverview /><div style={{ marginTop: '2rem' }}><RecentOperationsTable 
+          trades={trades} 
+          binanceTickers={binanceTickers} 
+          isLoadingTrades={isLoadingTrades} 
+          isLoadingBinanceTickers={isLoadingBinanceTickers} 
+          errorTrades={errorTrades || errorBinanceTickers} 
+        /></div></>);
       case "pessoal":
         return (
           <>
@@ -379,7 +447,18 @@ const DashboardPage = () => {
       }
       case "relatorios":
         // if (!hasPremiumAccess(session)) return renderLockedContent(); // Removido
-        return <ReportsSection />;
+        return (
+          <ReportsSection
+            trades={trades}
+            binanceTickers={binanceTickers}
+            isLoadingTrades={isLoadingTrades}
+            isLoadingBinanceTickers={isLoadingBinanceTickers}
+            errorTrades={errorTrades || errorBinanceTickers}
+            simulatorProfile={simulatorProfile}
+            isLoadingSimulator={isLoadingSimulator}
+            errorSimulator={errorSimulator}
+          />
+        );
       default:
         return <DashboardOverview />;
     }

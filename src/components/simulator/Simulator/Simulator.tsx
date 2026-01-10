@@ -42,6 +42,11 @@ interface SimulatorProfile {
   openPositions: SimulatorPosition[];
 }
 
+interface CryptoData {
+  symbol: string;
+  price: string;
+}
+
 const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
   const response = await fetch('/api/simulator/profile');
   if (!response.ok) throw new Error('Falha ao buscar perfil do simulador.');
@@ -55,6 +60,16 @@ const fetchCurrentPrice = async (symbol: string): Promise<CurrentPrice> => {
     throw new Error('Falha ao buscar preço atual');
   }
   return response.json();
+};
+
+const fetchBinancePrices = async (symbols: string[]): Promise<CryptoData[]> => {
+  if (symbols.length === 0) return [];
+  const symbolsParam = JSON.stringify(symbols);
+  const res = await fetch(`/api/binance/price?symbols=${encodeURIComponent(symbolsParam)}`);
+  if (!res.ok) throw new Error("Falha ao buscar preços da Binance.");
+  const data = await res.json();
+  if (Array.isArray(data)) return data;
+  return [];
 };
 
 const fetchAlerts = async (): Promise<Alert[]> => {
@@ -144,6 +159,22 @@ const Simulator = () => {
     queryFn: fetchSimulatorProfile,
     enabled: isPremiumUser,
   });
+
+  const openPositionSymbols = useMemo(() => {
+    return Array.from(new Set(simulatorProfile?.openPositions.map(p => p.symbol) || []));
+  }, [simulatorProfile?.openPositions]);
+
+  const { data: binanceTickers, isLoading: isLoadingBinanceTickers } = useQuery<CryptoData[], Error>({
+    queryKey: ['simulatorBinancePrices', openPositionSymbols],
+    queryFn: () => fetchBinancePrices(openPositionSymbols),
+    enabled: isPremiumUser && openPositionSymbols.length > 0,
+    refetchInterval: 5000,
+  });
+
+  const priceMap = useMemo(() => {
+    return new Map(binanceTickers?.map(ticker => [ticker.symbol, parseFloat(ticker.price)]));
+  }, [binanceTickers]);
+
 
   const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[], Error>({
     queryKey: ['alerts'],
@@ -442,6 +473,7 @@ const Simulator = () => {
                       <PositionRow 
                         key={position.symbol} 
                         position={position} 
+                        currentPrice={priceMap?.get(position.symbol) || 0}
                         closePositionMutation={() => closePositionMutation.mutate(position.symbol)} 
                         isClosing={closingPositionSymbol === position.symbol} 
                       />

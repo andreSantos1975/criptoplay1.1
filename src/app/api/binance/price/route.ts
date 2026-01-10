@@ -6,13 +6,18 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get('symbol');
-
-  if (!symbol) {
-    return NextResponse.json({ error: 'Symbol parameter is required' }, { status: 400 });
-  }
+  const symbols = searchParams.get('symbols');
 
   try {
-    const binanceApiUrl = `https://data-api.binance.vision/api/v3/ticker/price?symbol=${symbol}`;
+    let binanceApiUrl = 'https://api.binance.com/api/v3/ticker/price';
+    if (symbol) {
+        binanceApiUrl += `?symbol=${symbol}`;
+    } else if (symbols) {
+        // symbols must be a JSON array string e.g. ["BTCUSDT","BNBUSDT"]
+        // We assume the client passes it correctly encoded or as a string
+        binanceApiUrl += `?symbols=${symbols}`;
+    }
+
     const response = await fetch(binanceApiUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'

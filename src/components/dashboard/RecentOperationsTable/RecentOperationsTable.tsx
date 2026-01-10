@@ -1,5 +1,3 @@
-"use client";
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -15,32 +13,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal/Modal"; // Import the modal
 import styles from "./RecentOperationsTable.module.css";
+import { Trade } from "@prisma/client"; // Import Trade from prisma client
 
-// Estrutura de um Trade, conforme a API
-interface Trade {
-  id: string;
+// Estrutura para o preço atual
+interface CryptoData {
   symbol: string;
-  type: string;
-  marketType: string;
-  status: 'OPEN' | 'CLOSED';
-  entryDate: string;
-  exitDate?: string;
-  entryPrice: number;
-  exitPrice?: number;
-  quantity: number;
-  pnl?: number;
-  stopLoss: number;
-  takeProfit: number;
-  notes?: string;
+  price: string;
 }
-
-// Função para buscar os trades
-const fetchTrades = async (): Promise<Trade[]> => {
-  const response = await fetch("/api/simulator/trades");
-  if (!response.ok) throw new Error("Falha ao buscar as operações.");
-  const data = await response.json();
-  return data;
-};
 
 // Helper para formatar moeda
 const formatCurrency = (value: number | null | undefined, currencyCode: string = "BRL", locale: string = "pt-BR") => {
@@ -83,23 +62,21 @@ const formatDate = (dateString: string | undefined): string => {
   });
 };
 
-interface CryptoData {
-  symbol: string;
-  lastPrice: string;
+interface RecentOperationsTableProps {
+  trades: Trade[];
+  binanceTickers: CryptoData[];
+  isLoadingTrades: boolean;
+  isLoadingBinanceTickers: boolean;
+  errorTrades: Error | null;
 }
 
-const fetchCryptoData = async (symbols: string[]): Promise<CryptoData[]> => {
-  const response = await fetch("https://api.binance.com/api/v3/ticker/24hr");
-  if (!response.ok) {
-    throw new Error("Erro ao buscar dados da Binance API");
-  }
-  const data = await response.json();
-  return data.filter((crypto: CryptoData) => symbols.includes(crypto.symbol));
-};
-
-
-
-export const RecentOperationsTable = () => {
+export const RecentOperationsTable = ({
+  trades,
+  binanceTickers,
+  isLoadingTrades,
+  isLoadingBinanceTickers,
+  errorTrades,
+}: RecentOperationsTableProps) => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'open' | 'closed'>('open');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -116,24 +93,14 @@ export const RecentOperationsTable = () => {
     },
     refetchInterval: 60000,
   });
+  
+  const cryptoData = binanceTickers;
+  const isLoadingCrypto = isLoadingBinanceTickers;
 
-  const { data: trades, isLoading: isLoadingTrades, error: errorTrades } = useQuery<Trade[]>({
-    queryKey: ['trades', exchangeRateData],
-    queryFn: async () => {
-      const data = await fetchTrades();
-      // Não há conversão aqui, os preços permanecem em sua moeda original
-      return data;
-    },
-    enabled: !!exchangeRateData,
-  });
 
-  const symbols = trades?.filter(t => t.status === 'OPEN').map(t => t.symbol) || [];
-  const { data: cryptoData, isLoading: isLoadingCryptoData } = useQuery<CryptoData[]>({ 
-    queryKey: ['cryptoData', symbols], 
-    queryFn: () => fetchCryptoData(symbols),
-    enabled: symbols.length > 0,
-    refetchInterval: 30000,
-  });
+
+
+
 
   
 
@@ -208,7 +175,7 @@ export const RecentOperationsTable = () => {
   };
 
   const renderTableContent = () => {
-    const isLoading = isLoadingTrades || isLoadingCryptoData;
+    const isLoading = isLoadingTrades || isLoadingBinanceTickers;
     if (isLoading) return <TableRow><TableCell colSpan={activeTab === 'open' ? 12 : 9} className="text-center">Carregando...</TableCell></TableRow>;
     if (errorTrades) return <TableRow><TableCell colSpan={activeTab === 'open' ? 12 : 9} className="text-center text-red-500">Erro: {errorTrades.message}</TableCell></TableRow>;
     if (!trades || trades.length === 0) return <TableRow><TableCell colSpan={activeTab === 'open' ? 12 : 9} className="text-center">Nenhuma operação encontrada.</TableCell></TableRow>;
@@ -238,7 +205,7 @@ export const RecentOperationsTable = () => {
       const currentCryptoData = cryptoData?.find(c => c.symbol === trade.symbol);
       let currentPriceInOriginalCurrency: number | undefined;
       if (currentCryptoData) {
-        currentPriceInOriginalCurrency = parseFloat(currentCryptoData.lastPrice);
+        currentPriceInOriginalCurrency = parseFloat(currentCryptoData.price);
       }
       
       let pnlInOriginalCurrency = null;
