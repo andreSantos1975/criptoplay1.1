@@ -20,6 +20,10 @@ export async function middleware(req: NextRequest) {
 
     // Verifica se o período de trial ainda está ativo
     const isTrialActive = token?.trialEndsAt ? new Date(token.trialEndsAt) > new Date() : false;
+    console.log(`[Middleware] User ID: ${token?.id}, Email: ${token?.email}`);
+    console.log(`[Middleware] trialEndsAt from token: ${token?.trialEndsAt}`);
+    console.log(`[Middleware] Current date: ${new Date()}`);
+    console.log(`[Middleware] isTrialActive: ${isTrialActive}`);
 
     // Se não houver token ou se o usuário não atender a nenhum dos critérios de acesso (assinatura ou trial)
     if (!token || (!isDeveloper && !hasRecurringSubscription && !hasLifetimePlan && !isTrialActive)) {
