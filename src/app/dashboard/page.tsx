@@ -59,10 +59,15 @@ const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
   return { ...data, virtualBalance: Number(data.virtualBalance) };
 };
 
-// Dynamically import the Simulator component for the 'analise' tab
-const Simulator = dynamic(
+// Dynamically import the Simulator components
+const SpotSimulator = dynamic(
   () => import('@/components/simulator/Simulator/Simulator'),
   { ssr: false, loading: () => <p>Carregando Simulador...</p> }
+);
+
+const FuturesSimulator = dynamic(
+  () => import('@/components/simulator/FuturesSimulator/FuturesSimulator'),
+  { ssr: false, loading: () => <p>Carregando Simulador de Futuros...</p> }
 );
 
 // --- TYPE DEFINITIONS ---
@@ -413,17 +418,6 @@ const DashboardPage = () => {
         );
       case "analise": {
         if (!hasPremiumAccess(session)) return renderLockedContent();
-
-        // Renaming original simulator for clarity
-        const SpotSimulator = dynamic(
-          () => import('@/components/simulator/Simulator/Simulator'),
-          { ssr: false, loading: () => <p>Carregando Simulador...</p> }
-        );
-
-        const FuturesSimulator = dynamic(
-          () => import('@/components/simulator/FuturesSimulator/FuturesSimulator'),
-          { ssr: false, loading: () => <p>Carregando Simulador de Futuros...</p> }
-        );
         
         return (
           <div>
