@@ -378,7 +378,7 @@ const DashboardPage = () => {
         );
       }
       case "relatorios":
-        if (!hasPremiumAccess(session)) return renderLockedContent();
+        // if (!hasPremiumAccess(session)) return renderLockedContent(); // Removido
         return <ReportsSection />;
       default:
         return <DashboardOverview />;

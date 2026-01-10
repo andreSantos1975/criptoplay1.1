@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { AlertStatus } from '@prisma/client';
-import { hasPremiumAccess } from '@/lib/permissions';
+// import { hasPremiumAccess } from '@/lib/permissions'; // Removido pois alertas serão acessíveis a todos
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +13,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!hasPremiumAccess(session)) {
-    return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
-  }
+  // if (!hasPremiumAccess(session)) {
+  //   return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
+  // }
 
   try {
     const alerts = await prisma.alert.findMany({
@@ -42,9 +42,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!hasPremiumAccess(session)) {
-    return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
-  }
+  // Removido o check de hasPremiumAccess
+  // if (!hasPremiumAccess(session)) {
+  //   return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
+  // }
 
   try {
     const body = await request.json();
@@ -104,9 +105,10 @@ export async function PUT(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!hasPremiumAccess(session)) {
-    return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
-  }
+  // Removido o check de hasPremiumAccess
+  // if (!hasPremiumAccess(session)) {
+  //   return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
+  // }
 
   try {
     const body = await request.json();
@@ -137,9 +139,10 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!hasPremiumAccess(session)) {
-    return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
-  }
+  // Removido o check de hasPremiumAccess
+  // if (!hasPremiumAccess(session)) {
+  //   return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
+  // }
 
   try {
     const { searchParams } = new URL(request.url);
