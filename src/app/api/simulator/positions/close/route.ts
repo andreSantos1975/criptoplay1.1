@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // This should ideally be in a shared lib file, but for now, it's here for simplicity.
 async function getCurrentPrice(symbol: string): Promise<number | null> {
   try {
-    const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+    const response = await fetch(`https://data-api.binance.vision/api/v3/ticker/price?symbol=${symbol}`);
     if (!response.ok) {
       console.error(`Failed to fetch price for ${symbol}: ${response.statusText}`);
       return null;

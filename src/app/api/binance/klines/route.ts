@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
   try {
     const response = await fetch(
-      `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
+      `https://data-api.binance.vision/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
     );
 
     if (!response.ok) {

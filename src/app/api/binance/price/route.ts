@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const binanceApiUrl = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`;
+    const binanceApiUrl = `https://data-api.binance.vision/api/v3/ticker/price?symbol=${symbol}`;
     const response = await fetch(binanceApiUrl);
 
     if (!response.ok) {
