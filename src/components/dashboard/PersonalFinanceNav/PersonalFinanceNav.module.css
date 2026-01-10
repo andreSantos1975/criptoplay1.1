@@ -4,6 +4,8 @@
   gap: 0.5rem;
   border-bottom: 1px solid var(--border);
   margin-bottom: 1.5rem;
+  flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha */
+  justify-content: flex-start; /* Alinha os itens ao início */
 }
 
 .button {
@@ -29,5 +31,13 @@
 }
 
 .downloadButton {
-  margin-left: auto;
+  margin-left: 0; /* Remove o auto-margin para que ele não force o overflow */
+  margin-top: 0.5rem; /* Adiciona um pequeno espaçamento superior quando ele quebrar a linha */
+}
+
+@media (min-width: 768px) { /* Para telas maiores, mantém o layout original */
+  .downloadButton {
+    margin-left: auto; /* Em telas maiores, move para a direita */
+    margin-top: 0;
+  }
 }
