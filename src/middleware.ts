@@ -21,9 +21,16 @@ export async function middleware(req: NextRequest) {
     // Verifica se o período de trial ainda está ativo
     let isTrialActive = false;
     
+    // Log para depuração em produção
+    console.log(`[Middleware Check] Path: ${pathname}`);
+    console.log(`[Middleware Check] Token ID: ${token?.id}`);
+    console.log(`[Middleware Check] Token trialEndsAt: ${token?.trialEndsAt} (Type: ${typeof token?.trialEndsAt})`);
+    console.log(`[Middleware Check] Token createdAt: ${token?.createdAt} (Type: ${typeof token?.createdAt})`);
+    
     if (token?.trialEndsAt) {
       const trialEnd = new Date(token.trialEndsAt);
       isTrialActive = trialEnd > new Date();
+      console.log(`[Middleware Check] Trial check via trialEndsAt: ${isTrialActive}`);
     } else if (token?.createdAt) {
       // Fallback: Se trialEndsAt não estiver no token (ex: cookie antigo), calcula baseado em createdAt (7 dias)
       const createdAt = new Date(token.createdAt);
@@ -34,10 +41,12 @@ export async function middleware(req: NextRequest) {
       if ((now.getTime() - createdAt.getTime()) < trialPeriodMs) {
         isTrialActive = true;
       }
+      console.log(`[Middleware Check] Fallback check via createdAt. Diff: ${now.getTime() - createdAt.getTime()}, Allowed: ${trialPeriodMs}, Result: ${isTrialActive}`);
     }
 
     // Se não houver token ou se o usuário não atender a nenhum dos critérios de acesso (assinatura ou trial)
     if (!token || (!isDeveloper && !hasRecurringSubscription && !hasLifetimePlan && !isTrialActive)) {
+      console.log(`[Middleware Check] ACCESS DENIED. Redirecting to /assinatura`);
       const url = req.nextUrl.clone();
       url.pathname = '/assinatura';
       return NextResponse.redirect(url);

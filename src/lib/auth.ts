@@ -139,13 +139,20 @@ export const authOptions: AuthOptions = {
         const suffix = Math.floor(1000 + Math.random() * 9000).toString();
         const username = `${baseName}${suffix}`;
         
+        // Define o fim do período de teste para 7 dias a partir de agora
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+
         try {
           await prisma.user.update({
             where: { id: user.id },
-            data: { username },
+            data: { 
+              username,
+              trialEndsAt
+            },
           });
         } catch (error) {
-          console.error("Error auto-generating username:", error);
+          console.error("Error auto-generating username or setting trial:", error);
         }
       }
     },
