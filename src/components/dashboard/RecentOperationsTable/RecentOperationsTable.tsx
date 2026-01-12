@@ -211,7 +211,7 @@ export const RecentOperationsTable = ({
       }
       
       let pnlInOriginalCurrency: number | null = null;
-      if (trade.status === 'CLOSED' && trade.pnl !== null) {
+      if (trade.status === 'CLOSED' && trade.pnl != null) {
         pnlInOriginalCurrency = parseFloat(trade.pnl);
       } else if (trade.status === 'OPEN' && currentPriceInOriginalCurrency !== undefined) {
         const isBuy = trade.type.toLowerCase() === 'compra' || trade.type.toLowerCase() === 'buy';
