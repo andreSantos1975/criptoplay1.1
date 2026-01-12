@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
 import Modal from "@/components/ui/modal/Modal";
-import { TradingPerformanceSummary } from "@/components/reports/TradingPerformanceSummary";
+import { TradingPerformanceSummary, TradingPerformanceSummaryProps } from "@/components/reports/TradingPerformanceSummary";
 import type { Trade } from "@/types/trade"; // Import Trade from local DTO
 
 // Define ExtendedTrade to include margin for futures trades, if intended
@@ -161,7 +161,7 @@ interface ReportsSectionProps {
 }
 
 // Temporary Wrapper Component for type debugging
-const TradingPerformanceSummaryWrapper: React.FC<ReportsSectionProps> = ({ trades, binanceTickers, brlRate }) => {
+const TradingPerformanceSummaryWrapper: React.FC<TradingPerformanceSummaryProps> = ({ trades, binanceTickers, brlRate }) => {
   return (
     <TradingPerformanceSummary trades={trades} binanceTickers={binanceTickers} brlRate={brlRate} />
   );
