@@ -95,8 +95,8 @@ export const TradingPerformanceSummary: React.FC<TradingPerformanceSummaryProps>
         // Retorna um novo objeto trade com o pnl ajustado (apenas para visualização)
         return {
           ...t,
-          pnl: normalizedPnl // Substitui o valor decimal/original pelo valor em BRL number
-        } as unknown as Trade; // Cast para Trade (pnl no prisma é Decimal, aqui virou number, mas ok para o frontend)
+          pnl: normalizedPnl,
+        };
       }
       return t;
     });
