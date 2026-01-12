@@ -38,12 +38,19 @@ export async function getCurrentPrice(symbol: string): Promise<Decimal> {
 
       if (!response.ok) {
         const errorText = await response.text();
+        let errorJson: any = {};
         try {
-          const errorJson = JSON.parse(errorText);
-          throw new Error(`Erro na API da Binance: ${errorJson.msg || 'Erro desconhecido'}`);
-        } catch {
-          throw new Error(`Erro na API da Binance: ${response.status} - ${errorText}`);
+          errorJson = JSON.parse(errorText);
+        } catch (e) {}
+
+        // Se for erro de restrição geográfica (451), tentamos o próximo ou fallback total
+        if (response.status === 451) {
+            console.warn(`Binance 451 Restricted on ${url}.`);
+            lastError = new Error(`Binance Restricted Location (451)`);
+            continue;
         }
+
+        throw new Error(`Erro na API da Binance: ${errorJson.msg || response.statusText}`);
       }
 
       const data: TickerPrice = await response.json();
@@ -58,6 +65,34 @@ export async function getCurrentPrice(symbol: string): Promise<Decimal> {
       lastError = error as Error;
       continue; // Tenta o próximo endpoint
     }
+  }
+
+  // FALLBACK TOTAL: Se todos os endpoints da Binance falharem por restrição (451)
+  // Tentamos o Mercado Bitcoin para BRL ou Bitget para qualquer par
+  try {
+    if (symbol.toUpperCase().endsWith('BRL')) {
+        const coin = symbol.toUpperCase().replace('BRL', '');
+        console.log(`Tentando fallback Mercado Bitcoin para ${coin}...`);
+        const mbResponse = await fetch(`https://www.mercadobitcoin.net/api/${coin}/ticker/`);
+        if (mbResponse.ok) {
+            const mbData = await mbResponse.json();
+            if (mbData.ticker && mbData.ticker.last) {
+                return new Decimal(mbData.ticker.last);
+            }
+        }
+    }
+    
+    // Fallback Bitget (funciona para USDT e BRL)
+    console.log(`Tentando fallback Bitget para ${symbol}...`);
+    const bitgetRes = await fetch(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${symbol.toUpperCase()}`);
+    if (bitgetRes.ok) {
+        const bitgetData = await bitgetRes.json();
+        if (bitgetData.code === '00000' && bitgetData.data && bitgetData.data[0]) {
+            return new Decimal(bitgetData.data[0].lastPr);
+        }
+    }
+  } catch (fallbackError) {
+    console.error("Todos os fallbacks falharam:", fallbackError);
   }
 
   throw lastError || new Error(`Falha ao buscar o preço para ${symbol} em todos os endpoints.`);

@@ -49,6 +49,10 @@ export async function GET(request: Request) {
         });
 
         if (!response.ok) {
+          if (response.status === 451) {
+            lastError = new Error(`Binance Restricted (451)`);
+            continue;
+          }
           const errorText = await response.text();
           throw new Error(`Binance API error: ${response.status} - ${errorText}`);
         }
@@ -60,6 +64,47 @@ export async function GET(request: Request) {
         lastError = error;
         continue;
       }
+    }
+
+    // FALLBACK para Bitget (Sempre útil se a Binance bloquear)
+    if (symbol) {
+        try {
+            console.log(`Tentando fallback Bitget para klines de ${symbol}...`);
+            const bitgetIntervalMap: { [key: string]: string } = {
+                '1m': '1min',
+                '5m': '5min',
+                '15m': '15min',
+                '30m': '30min',
+                '1h': '1h',
+                '4h': '4h',
+                '1d': '1day',
+                '1w': '1week'
+            };
+            const bitgetInterval = bitgetIntervalMap[interval] || '1min';
+            const bitgetRes = await fetch(`https://api.bitget.com/api/v2/spot/market/history-candles?symbol=${symbol.toUpperCase()}&granularity=${bitgetInterval}&limit=${limit}`);
+            
+            if (bitgetRes.ok) {
+                const bitgetData = await bitgetRes.json();
+                if (bitgetData.code === '00000' && Array.isArray(bitgetData.data)) {
+                    // Bitget format: ["timestamp", "open", "high", "low", "close", "volume", "quoteVolume"]
+                    // Binance format: [openTime, open, high, low, close, volume, closeTime, ...]
+                    const normalizedData = bitgetData.data.map((k: any) => [
+                        parseInt(k[0]), // openTime
+                        k[1], // open
+                        k[2], // high
+                        k[3], // low
+                        k[4], // close
+                        k[5], // volume
+                        parseInt(k[0]) + 60000, // closeTime (aproximado)
+                        k[6], // quoteVolume
+                        0, 0, 0, 0
+                    ]).reverse(); // Bitget costuma retornar do mais novo para o mais antigo
+                    return NextResponse.json(normalizedData);
+                }
+            }
+        } catch (e) {
+            console.error("Bitget Fallback failed:", e);
+        }
     }
 
     const message = lastError instanceof Error ? lastError.message : 'An unknown error occurred';

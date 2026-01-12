@@ -41,7 +41,12 @@ export async function GET(request: Request) {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = await response.json().catch(() => ({}));
+          // Se for 451, continua para o próximo endpoint
+          if (response.status === 451) {
+            lastError = new Error(`Binance Restricted (451)`);
+            continue;
+          }
           throw new Error(errorData.msg || response.statusText);
         }
 
@@ -52,6 +57,57 @@ export async function GET(request: Request) {
         lastError = error;
         continue;
       }
+    }
+
+    // FALLBACK para Mercado Bitcoin ou Bitget (se a Binance bloquear)
+    if (symbol) {
+        try {
+            const s = symbol.toUpperCase();
+            if (s.endsWith('BRL')) {
+                const coin = s.replace('BRL', '');
+                const mbRes = await fetch(`https://www.mercadobitcoin.net/api/${coin}/ticker/`);
+                if (mbRes.ok) {
+                    const mbData = await mbRes.json();
+                    return NextResponse.json({ symbol: s, price: mbData.ticker.last });
+                }
+            }
+            // Fallback Bitget para qualquer símbolo
+            const bitgetRes = await fetch(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${s}`);
+            if (bitgetRes.ok) {
+                const bitgetData = await bitgetRes.json();
+                if (bitgetData.code === '00000' && bitgetData.data?.[0]) {
+                    return NextResponse.json({ symbol: s, price: bitgetData.data[0].lastPr });
+                }
+            }
+        } catch (e) {
+            console.error("Single symbol fallbacks failed:", e);
+        }
+    } else if (symbols) {
+        try {
+            const symbolsArray = JSON.parse(symbols);
+            const results = await Promise.all(symbolsArray.map(async (s: string) => {
+                const sym = s.toUpperCase();
+                // Tenta Bitget primeiro para múltiplos pois é mais rápido/robusto
+                try {
+                    const bitgetRes = await fetch(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${sym}`);
+                    const bitgetData = await bitgetRes.json();
+                    if (bitgetData.code === '00000' && bitgetData.data?.[0]) {
+                        return { symbol: sym, price: bitgetData.data[0].lastPr };
+                    }
+                } catch (e) {}
+
+                if (sym.endsWith('BRL')) {
+                    const coin = sym.replace('BRL', '');
+                    const mbRes = await fetch(`https://www.mercadobitcoin.net/api/${coin}/ticker/`).then(r => r.json()).catch(() => null);
+                    if (mbRes?.ticker) return { symbol: sym, price: mbRes.ticker.last };
+                }
+                return null;
+            }));
+            const validResults = results.filter(r => r !== null);
+            if (validResults.length > 0) return NextResponse.json(validResults);
+        } catch (e) {
+            console.error("Multiple symbols fallbacks failed:", e);
+        }
     }
 
     return NextResponse.json({ error: `Failed to fetch price from Binance API: ${lastError?.message || 'Unknown error'}` }, { status: 500 });
