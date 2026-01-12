@@ -1,3 +1,5 @@
+"use client";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -13,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal/Modal"; // Import the modal
 import styles from "./RecentOperationsTable.module.css";
-import { Trade } from "@prisma/client"; // Import Trade from prisma client
+import type { Trade } from "@/types/trade"; // Import Trade from local DTO
 
 // Estrutura para o preço atual
 interface CryptoData {
@@ -50,9 +52,9 @@ const formatTotalCurrency = (value: number | null | undefined, currencyCode: str
 };
 
 // Helper para formatar data e hora
-const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return "N/A";
-  const date = new Date(dateString);
+const formatDate = (dateValue: string | Date | undefined | null): string => {
+  if (!dateValue) return "N/A";
+  const date = new Date(dateValue);
   return date.toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -144,21 +146,21 @@ export const RecentOperationsTable = ({
 
   const calculatePnlPercent = (trade: Trade, currentPrice?: number): string => {
     // Determine the base currency for calculation (e.g., USD for USDT/FUTURES, BRL for BRL pairs)
-    const baseCurrencyEntryPrice = trade.entryPrice;
+    const baseCurrencyEntryPrice = parseFloat(trade.entryPrice);
     const baseCurrencyCurrentPrice = currentPrice; // currentPrice already comes in the trade's original currency
     
-    const initialCost = baseCurrencyEntryPrice * trade.quantity;
+    const initialCost = baseCurrencyEntryPrice * parseFloat(trade.quantity.toString());
     if (initialCost === 0) return "N/A";
 
     // Use trade.pnl which should be in the original currency, or calculate based on original currency prices
     if (trade.status === 'CLOSED' && trade.pnl !== undefined && trade.pnl !== null) {
-      const percent = (trade.pnl / initialCost) * 100;
+      const percent = (parseFloat(trade.pnl) / initialCost) * 100;
       return `${percent.toFixed(2)}%`;
     }
 
     if (trade.status === 'OPEN' && baseCurrencyCurrentPrice !== undefined) {
       const isBuy = trade.type.toLowerCase() === 'compra' || trade.type.toLowerCase() === 'buy';
-      const pnl = (isBuy ? (baseCurrencyCurrentPrice - baseCurrencyEntryPrice) : (baseCurrencyEntryPrice - baseCurrencyCurrentPrice)) * trade.quantity;
+      const pnl = (isBuy ? (baseCurrencyCurrentPrice - baseCurrencyEntryPrice) : (baseCurrencyEntryPrice - baseCurrencyCurrentPrice)) * parseFloat(trade.quantity);
       const percent = (pnl / initialCost) * 100;
       return `${percent.toFixed(2)}%`;
     }
@@ -208,23 +210,23 @@ export const RecentOperationsTable = ({
         currentPriceInOriginalCurrency = parseFloat(currentCryptoData.price);
       }
       
-      let pnlInOriginalCurrency = null;
-      if (trade.status === 'CLOSED') {
-        pnlInOriginalCurrency = trade.pnl;
+      let pnlInOriginalCurrency: number | null = null;
+      if (trade.status === 'CLOSED' && trade.pnl !== null) {
+        pnlInOriginalCurrency = parseFloat(trade.pnl);
       } else if (trade.status === 'OPEN' && currentPriceInOriginalCurrency !== undefined) {
         const isBuy = trade.type.toLowerCase() === 'compra' || trade.type.toLowerCase() === 'buy';
-        pnlInOriginalCurrency = (isBuy ? (currentPriceInOriginalCurrency - trade.entryPrice) : (trade.entryPrice - currentPriceInOriginalCurrency)) * trade.quantity;
+        pnlInOriginalCurrency = (isBuy ? (currentPriceInOriginalCurrency - parseFloat(trade.entryPrice)) : (parseFloat(trade.entryPrice) - currentPriceInOriginalCurrency)) * parseFloat(trade.quantity);
       }
 
       const isProfit = pnlInOriginalCurrency != null && pnlInOriginalCurrency >= 0;
 
       // Calculate displayed values (converted to BRL)
-      const displayedEntryPrice = trade.entryPrice * rate;
-      const displayedExitPrice = trade.exitPrice ? trade.exitPrice * rate : undefined;
+      const displayedEntryPrice = parseFloat(trade.entryPrice) * rate;
+      const displayedExitPrice = trade.exitPrice ? parseFloat(trade.exitPrice) * rate : undefined;
       const displayedPnl = pnlInOriginalCurrency != null ? pnlInOriginalCurrency * rate : null;
 
-      const stopValueOriginal = trade.stopLoss ? Math.abs(trade.entryPrice - trade.stopLoss) * trade.quantity : null;
-      const takeValueOriginal = trade.takeProfit ? Math.abs(trade.takeProfit - trade.entryPrice) * trade.quantity : null;
+      const stopValueOriginal = trade.stopLoss ? Math.abs(parseFloat(trade.stopLoss) - parseFloat(trade.entryPrice)) * parseFloat(trade.quantity) : null;
+      const takeValueOriginal = trade.takeProfit ? Math.abs(parseFloat(trade.takeProfit) - parseFloat(trade.entryPrice)) * parseFloat(trade.quantity) : null;
 
       const displayedStopValue = stopValueOriginal != null ? stopValueOriginal * rate : null;
       const displayedTakeValue = takeValueOriginal != null ? takeValueOriginal * rate : null;
@@ -233,7 +235,7 @@ export const RecentOperationsTable = ({
         <TableRow key={trade.id} onClick={() => handleRowClick(trade)} className={styles.clickableRow}>
           <TableCell>{trade.symbol.replace("USDT", "")}</TableCell>
           <TableCell>{`${trade.type} (${trade.marketType})`}</TableCell>
-          <TableCell>{trade.quantity}</TableCell>
+          <TableCell>{trade.quantity.toString()}</TableCell>
           <TableCell>{formatCurrency(displayedEntryPrice, displayCurrency, displayLocale)}</TableCell>
           <TableCell>{formatCurrency(displayedExitPrice, displayCurrency, displayLocale)}</TableCell>
           <TableCell className={displayedPnl !== null ? (isProfit ? styles.profit : styles.loss) : ''}>
@@ -352,17 +354,16 @@ export const RecentOperationsTable = ({
         const isBuy = selectedTrade.type.toLowerCase() === 'compra' || selectedTrade.type.toLowerCase() === 'buy';
 
         const potentialLossOriginal = (isBuy)
-          ? (selectedTrade.stopLoss - selectedTrade.entryPrice) * selectedTrade.quantity
-          : (selectedTrade.entryPrice - selectedTrade.stopLoss) * selectedTrade.quantity;
-
+          ? (parseFloat(selectedTrade.stopLoss) - parseFloat(selectedTrade.entryPrice)) * parseFloat(selectedTrade.quantity)
+          : (parseFloat(selectedTrade.entryPrice) - parseFloat(selectedTrade.stopLoss)) * parseFloat(selectedTrade.quantity);
         const potentialProfitOriginal = (isBuy)
-          ? (selectedTrade.takeProfit - selectedTrade.entryPrice) * selectedTrade.quantity
-          : (selectedTrade.entryPrice - selectedTrade.takeProfit) * selectedTrade.quantity;
+          ? (parseFloat(selectedTrade.takeProfit) - parseFloat(selectedTrade.entryPrice)) * parseFloat(selectedTrade.quantity)
+          : (parseFloat(selectedTrade.entryPrice) - parseFloat(selectedTrade.takeProfit)) * parseFloat(selectedTrade.quantity);
 
         const potentialLoss = potentialLossOriginal * rate;
         const potentialProfit = potentialProfitOriginal * rate;
-        const displayedEntryPrice = selectedTrade.entryPrice * rate;
-        const totalCost = (selectedTrade.entryPrice * selectedTrade.quantity) * rate;
+        const displayedEntryPrice = parseFloat(selectedTrade.entryPrice.toString()) * rate;
+        const totalCost = (parseFloat(selectedTrade.entryPrice) * parseFloat(selectedTrade.quantity)) * rate;
 
 
         return (
@@ -373,7 +374,7 @@ export const RecentOperationsTable = ({
                 <div><strong>Ativo / Par:</strong> {selectedTrade.symbol}</div>
                 <div><strong>Tipo:</strong> {selectedTrade.type} ({selectedTrade.marketType})</div>
                 <div><strong>Preço de Entrada:</strong> {formatCurrency(displayedEntryPrice, displayCurrency, displayLocale)}</div>
-                <div><strong>Quantidade:</strong> {selectedTrade.quantity}</div>
+                <div><strong>Quantidade:</strong> {selectedTrade.quantity.toString()}</div>
                 <div><strong>Custo Total ({displayCurrency}):</strong> {formatCurrency(totalCost, displayCurrency, displayLocale)}</div>
               </div>
               <h4>Gestão de Risco</h4>

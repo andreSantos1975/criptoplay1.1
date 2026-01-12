@@ -2,16 +2,16 @@
 export type Trade = {
   id: string;
   symbol: string;
-  type: string; // Adicionado de acordo com prisma/schema.prisma
+  type: string;
   status: string;
   entryDate: string; // DateTime no Prisma, string no DTO para JSON
   exitDate?: string | null;
-  entryPrice: number;
-  exitPrice?: number | null;
-  quantity: number;
-  stopLoss: number; // Adicionado de acordo com prisma/schema.prisma
-  takeProfit: number; // Adicionado de acordo com prisma/schema.prisma
-  pnl?: number | null;
+  entryPrice: string; // Decimal no Prisma, string no DTO para JSON
+  exitPrice?: string | null; // Decimal no Prisma, string no DTO para JSON
+  quantity: string; // Decimal no Prisma, string no DTO para JSON
+  stopLoss: string; // Decimal no Prisma, string no DTO para JSON
+  takeProfit: string; // Decimal no Prisma, string no DTO para JSON
+  pnl?: string | null; // Decimal no Prisma, string no DTO para JSON
   notes?: string | null;
   sentiment?: string | null;
   strategy?: string | null;
@@ -19,5 +19,5 @@ export type Trade = {
   updatedAt: string; // DateTime no Prisma, string no DTO para JSON
   userId: string;
   marketType: string; // Enum no Prisma, string no DTO
-  isSimulator: boolean; // Adicionado de acordo com prisma/schema.prisma
+  isSimulator: boolean;
 };
