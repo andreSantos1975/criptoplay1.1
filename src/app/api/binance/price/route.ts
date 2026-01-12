@@ -15,6 +15,8 @@ export async function GET(request: Request) {
           `https://api1.binance.com/api/v3/ticker/price?symbol=${symbol}`,
           `https://api2.binance.com/api/v3/ticker/price?symbol=${symbol}`,
           `https://api3.binance.com/api/v3/ticker/price?symbol=${symbol}`,
+          `https://api.binance.me/api/v3/ticker/price?symbol=${symbol}`,
+          `https://api-gcp.binance.com/api/v3/ticker/price?symbol=${symbol}`,
         ]
       : symbols 
         ? [
@@ -22,6 +24,8 @@ export async function GET(request: Request) {
             `https://api1.binance.com/api/v3/ticker/price?symbols=${symbols}`,
             `https://api2.binance.com/api/v3/ticker/price?symbols=${symbols}`,
             `https://api3.binance.com/api/v3/ticker/price?symbols=${symbols}`,
+            `https://api.binance.me/api/v3/ticker/price?symbols=${symbols}`,
+            `https://api-gcp.binance.com/api/v3/ticker/price?symbols=${symbols}`,
           ]
         : [`https://api.binance.com/api/v3/ticker/price`];
 

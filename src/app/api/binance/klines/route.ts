@@ -33,6 +33,8 @@ export async function GET(request: Request) {
       `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
       `https://api2.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
       `https://api3.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
+      `https://api.binance.me/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
+      `https://api-gcp.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
     ];
 
     let lastError: any = null;

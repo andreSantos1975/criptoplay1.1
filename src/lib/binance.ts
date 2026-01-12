@@ -21,6 +21,8 @@ export async function getCurrentPrice(symbol: string): Promise<Decimal> {
     `https://api1.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`,
     `https://api2.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`,
     `https://api3.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`,
+    `https://api.binance.me/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`,
+    `https://api-gcp.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`,
   ];
 
   let lastError: Error | null = null;
