@@ -321,6 +321,16 @@ export const ReportsSection = ({
       </Card>
     );
 
+  const tradesWithDates = useMemo(() => {
+    return trades.map(trade => ({
+      ...trade,
+      createdAt: new Date(trade.createdAt),
+      entryDate: new Date(trade.entryDate),
+      exitDate: trade.exitDate ? new Date(trade.exitDate) : undefined,
+      updatedAt: new Date(trade.updatedAt),
+    }));
+  }, [trades]);
+
   return (
     <div className={styles.reportsSection}>
       <div className={styles.headerContainer}>
@@ -352,7 +362,7 @@ export const ReportsSection = ({
       {/* Performance Avançada */}
       <div style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Performance Avançada</h2>
-        <TradingPerformanceSummary trades={trades} binanceTickers={binanceTickers} brlRate={brlRate} />
+        <TradingPerformanceSummary trades={tradesWithDates} binanceTickers={binanceTickers} brlRate={brlRate} />
       </div>
 
       {/* Gráficos */}
