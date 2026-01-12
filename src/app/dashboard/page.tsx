@@ -26,6 +26,7 @@ import { ReportsSection } from '@/components/dashboard/ReportsSection/ReportsSec
 import { TrialReminderBanner } from '@/components/dashboard/TrialReminderBanner/TrialReminderBanner';
 
 // --- TYPE DEFINITIONS for Trading Data ---
+import type { Trade } from "@/types/trade";
 interface CryptoData {
   symbol: string;
   price: string;
