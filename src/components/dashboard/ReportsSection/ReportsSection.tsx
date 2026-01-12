@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
 import Modal from "@/components/ui/modal/Modal";
-import { TradingPerformanceSummary } from "@/components/reports/TradingPerformanceSummary";
+import { TradingPerformanceSummary, ProcessedTrade } from "@/components/reports/TradingPerformanceSummary";
 import type { Trade } from "@/types/trade"; // Import Trade from local DTO
 
 // Define ExtendedTrade to include margin for futures trades, if intended
