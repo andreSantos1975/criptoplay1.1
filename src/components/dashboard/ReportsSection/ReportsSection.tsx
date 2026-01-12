@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
 import Modal from "@/components/ui/modal/Modal";
-import { TradingPerformanceSummary, ProcessedTrade } from "@/components/reports/TradingPerformanceSummary";
+import { TradingPerformanceSummary, ProcessedTrade } from "@/components/reports/TradingPerformanceSummary"; // Import ProcessedTrade
 import type { Trade } from "@/types/trade"; // Import Trade from local DTO
 
 // Define ExtendedTrade to include margin for futures trades, if intended
@@ -45,7 +45,7 @@ const formatCurrency = (value: number) =>
 
 // Data Processing
 const generatePortfolioPerformanceData = (
-  trades: Trade[],
+  trades: ProcessedTrade[], // Changed to ProcessedTrade
   brlRate: number
 ) => {
   const events = [
@@ -56,7 +56,7 @@ const generatePortfolioPerformanceData = (
           ? Number(t.pnl)
           : (Number(t.pnl) || 0) * brlRate;
         return {
-          date: new Date(t.exitDate!),
+          date: t.exitDate!,
           amount: pnlInBrl,
         };
       }),
@@ -80,7 +80,7 @@ const generatePortfolioPerformanceData = (
 };
 
 const generatePortfolioDistributionData = (
-  openTrades: Trade[],
+  openTrades: ProcessedTrade[], // Changed to ProcessedTrade
   tickers: CryptoData[],
   brlRate: number
 ) => {
@@ -89,8 +89,8 @@ const generatePortfolioDistributionData = (
     const ticker = tickers.find((t) => t.symbol === trade.symbol);
     if (ticker) {
       const value = ticker.symbol.includes('BRL')
-        ? parseFloat(trade.quantity) * parseFloat(ticker.price)
-        : parseFloat(trade.quantity) * parseFloat(ticker.price) * brlRate;
+        ? trade.quantity * parseFloat(ticker.price) // quantity is number
+        : trade.quantity * parseFloat(ticker.price) * brlRate; // quantity is number
       const asset = trade.symbol.replace("USDT", "");
       portfolio[asset] = (portfolio[asset] || 0) + value;
     }
@@ -105,7 +105,7 @@ const generatePortfolioDistributionData = (
 };
 
 const generateMonthlyReportData = (
-  trades: Trade[],
+  trades: ProcessedTrade[], // Changed to ProcessedTrade
   brlRate: number
 ) => {
   const monthlyMap: {
@@ -150,7 +150,7 @@ interface SimulatorProfile {
 }
 
 interface ReportsSectionProps {
-  trades: Trade[];
+  trades: Trade[]; // This still expects DTO Trade[]
   binanceTickers: CryptoData[];
   isLoadingTrades: boolean;
   isLoadingBinanceTickers: boolean;
@@ -161,7 +161,7 @@ interface ReportsSectionProps {
 }
 
 export const ReportsSection = ({
-  trades,
+  trades, // This is DTO Trade[]
   binanceTickers,
   isLoadingTrades,
   isLoadingBinanceTickers,
@@ -195,124 +195,16 @@ export const ReportsSection = ({
 
   const brlRate = exchangeRateData?.usdtToBrl || 1;
   
-  // Normalizar trades para BRL uma única vez
-  const normalizedTrades = useMemo(() => {
-    return trades.map(t => {
-      // Se já fechou e tem PnL
-      if (t.status === 'CLOSED' && t.pnl != null) {
-        const pnlNum = Number(t.pnl);
-        // Se for par USDT (ex: BTCUSDT), converte. Se for BRL (ex: BTCBRL), mantém.
-        const isBrl = t.symbol.endsWith('BRL'); 
-        const normalizedPnl = isBrl ? pnlNum : pnlNum * brlRate;
-        
-        // Retorna um novo objeto trade com o pnl ajustado (apenas para visualização)
-        return {
-          ...t,
-          pnl: normalizedPnl // Substitui o valor decimal/original pelo valor em BRL number
-        } as unknown as Trade; // Cast para Trade (pnl no prisma é Decimal, aqui virou number, mas ok para o frontend)
-      }
-      return t;
-    });
-  }, [trades, brlRate]);
-
-  const unrealizedPnl = useMemo(() => {
-    if (!openTrades.length || !binanceTickers.length) return 0;
-    
-    return openTrades.reduce((acc, trade) => {
-        const ticker = binanceTickers.find(t => t.symbol === trade.symbol);
-        if (!ticker) return acc;
-        
-        const currentPrice = parseFloat(ticker.price);
-        const entryPrice = parseFloat(trade.entryPrice);
-        const quantity = parseFloat(trade.quantity);
-        
-        let pnl = (currentPrice - entryPrice) * quantity;
-        
-        // Adjust for Short if implemented (assuming BUY for now)
-        if (trade.type === 'SELL') {
-             pnl = (entryPrice - currentPrice) * quantity;
-        }
-
-        // Convert to BRL if needed
-        if (!trade.symbol.endsWith('BRL')) {
-             pnl = pnl * brlRate;
-        }
-        
-        return acc + pnl;
-    }, 0);
-  }, [openTrades, binanceTickers, brlRate]);
-
-  // Calculate total margin locked in open futures trades
-  const totalMargin = useMemo(() => {
-    return openTrades.reduce((acc, trade) => {
-        const t = trade as unknown as ExtendedTrade;
-        if (t.marketType === 'FUTURES' && t.margin) {
-            return acc + Number(t.margin);
-        }
-        return acc;
-    }, 0);
-  }, [openTrades]);
-
-  const performanceData = useMemo(
-    () => generatePortfolioPerformanceData(trades, brlRate),
-    [trades, brlRate]
-  );
-  const distributionData = useMemo(() => {
-    const rawData = generatePortfolioDistributionData(openTrades, binanceTickers, brlRate);
-
-    const MIN_PERCENTAGE = 0.01; // 1% do total
-    const total = rawData.reduce((acc, d) => acc + d.value, 0);
-
-    let aggregated = 0;
-    const filtered = rawData.filter(d => {
-      const percent = d.value / total;
-      if (percent < MIN_PERCENTAGE) {
-        aggregated += d.value;
-        return false;
-      }
-      return true;
-    });
-
-    if (aggregated > 0) {
-      filtered.push({
-        name: "Outros",
-        value: aggregated,
-        color: "#cccccc", // cinza padrão
-      });
-    }
-
-    return filtered;
-  }, [openTrades, binanceTickers, brlRate]);
-  const monthlyReportData = useMemo(
-    () => generateMonthlyReportData(trades, brlRate),
-    [trades, brlRate]
-  );
-
-  const kpiData = useMemo(() => {
-    const balance = Number(simulatorProfile?.virtualBalance) || 10000;
-    // Patrimônio Atual = Available Balance + Locked Margin + Unrealized PnL
-    const patrimonioAtual = balance + totalMargin + unrealizedPnl;
-    
-    // Para consistência visual: Lucro Total = Patrimônio Atual - Banca Inicial (10k)
-    // Isso garante que (10k + Lucro) seja sempre igual ao Patrimônio exibido.
-    const totalPnl = patrimonioAtual - 10000;
-
-    return {
-      patrimonioAtual,
-      totalPnl,
-    };
-  }, [simulatorProfile?.virtualBalance, unrealizedPnl, totalMargin]);
-
   const tradesWithDates = useMemo(() => {
     return trades.map((trade: Trade) => ({ // Explicitly type 'trade' as 'Trade' from DTO
       ...trade,
       createdAt: new Date(trade.createdAt),
       entryDate: new Date(trade.entryDate),
-      exitDate: trade.exitDate ? new Date(trade.exitDate) : null, // Change undefined to null for consistency
+      exitDate: trade.exitDate ? new Date(trade.exitDate) : null,
       updatedAt: new Date(trade.updatedAt),
       quantity: parseFloat(trade.quantity),
       entryPrice: parseFloat(trade.entryPrice),
-      exitPrice: trade.exitDate ? parseFloat(trade.exitDate) : null, // exitDate in DTO is string | null
+      exitPrice: trade.exitDate ? parseFloat(trade.exitDate) : null,
       stopLoss: parseFloat(trade.stopLoss),
       takeProfit: parseFloat(trade.takeProfit),
       pnl: trade.pnl ? parseFloat(trade.pnl) : null,
