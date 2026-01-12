@@ -160,6 +160,13 @@ interface ReportsSectionProps {
   errorSimulator: Error | null;
 }
 
+// Temporary Wrapper Component for type debugging
+const TradingPerformanceSummaryWrapper: React.FC<ReportsSectionProps> = ({ trades, binanceTickers, brlRate }) => {
+  return (
+    <TradingPerformanceSummary trades={trades} binanceTickers={binanceTickers} brlRate={brlRate} />
+  );
+};
+
 export const ReportsSection = ({
   trades,
   binanceTickers,
@@ -352,7 +359,8 @@ export const ReportsSection = ({
       {/* Performance Avançada */}
       <div style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Performance Avançada</h2>
-        <TradingPerformanceSummary trades={trades as Trade[]} binanceTickers={binanceTickers} brlRate={brlRate} />
+        {/* Wrapper temporário para depuração de tipos */}
+        <TradingPerformanceSummaryWrapper trades={trades} binanceTickers={binanceTickers} brlRate={brlRate} />
       </div>
 
       {/* Gráficos */}
