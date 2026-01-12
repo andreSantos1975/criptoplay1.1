@@ -63,4 +63,8 @@ export async function GET(request: Request) {
     const message = lastError instanceof Error ? lastError.message : 'An unknown error occurred';
     return NextResponse.json({ error: message }, { status: 500 });
   } catch (error) {
+    console.error('Error fetching futures klines from Binance:', error);
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
