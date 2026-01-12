@@ -310,6 +310,15 @@ export const ReportsSection = ({
       entryDate: new Date(trade.entryDate),
       exitDate: trade.exitDate ? new Date(trade.exitDate) : undefined,
       updatedAt: new Date(trade.updatedAt),
+      // Convert Decimal fields from string to number
+      quantity: parseFloat(trade.quantity),
+      entryPrice: parseFloat(trade.entryPrice),
+      exitPrice: trade.exitPrice ? parseFloat(trade.exitPrice) : null,
+      stopLoss: parseFloat(trade.stopLoss),
+      takeProfit: parseFloat(trade.takeProfit),
+      pnl: trade.pnl ? parseFloat(trade.pnl) : null,
+      // Ensure strategy is string | null, not undefined
+      strategy: trade.strategy === undefined ? null : trade.strategy,
     }));
   }, [trades]);
 
