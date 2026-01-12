@@ -36,12 +36,6 @@ interface CryptoData {
   price: string;
 }
 
-// Define ExtendedTrade to include margin for futures trades, if intended
-// This type is used when casting 'trade' to access 'margin', which is typically on FuturesPosition
-type ExtendedTrade = Trade & {
-  margin?: string; // Prisma Decimal type is often represented as string in client
-};
-
 // Helpers
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
