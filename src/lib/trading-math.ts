@@ -2,7 +2,15 @@ import type { Trade } from "@/types/trade";
 import { ProcessedTrade } from "@/components/reports/TradingPerformanceSummary";
 
 export interface TradingStats {
-  // ...
+  totalTrades: number;
+  winRate: number; // Porcentagem 0-100
+  profitFactor: number;
+  payoff: number;
+  maxDrawdown: number; // Valor absoluto ou porcentagem
+  totalProfit: number;
+  bestTrade: number;
+  worstTrade: number;
+  expectancy: number; // Expectativa matemática por trade
 }
 
 export function calculateTradingStats(trades: ProcessedTrade[]): TradingStats {
