@@ -1,4 +1,4 @@
-import { Trade } from "@prisma/client";
+import type { Trade } from "@/types/trade";
 
 export interface TradingStats {
   totalTrades: number;
