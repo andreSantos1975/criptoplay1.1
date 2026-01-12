@@ -303,6 +303,16 @@ export const ReportsSection = ({
     };
   }, [simulatorProfile?.virtualBalance, unrealizedPnl, totalMargin]);
 
+  const tradesWithDates = useMemo(() => {
+    return trades.map(trade => ({
+      ...trade,
+      createdAt: new Date(trade.createdAt),
+      entryDate: new Date(trade.entryDate),
+      exitDate: trade.exitDate ? new Date(trade.exitDate) : undefined,
+      updatedAt: new Date(trade.updatedAt),
+    }));
+  }, [trades]);
+
   if (isLoading)
     return (
       <Card>
@@ -320,16 +330,6 @@ export const ReportsSection = ({
         <CardContent>{(error as Error).message}</CardContent>
       </Card>
     );
-
-  const tradesWithDates = useMemo(() => {
-    return trades.map(trade => ({
-      ...trade,
-      createdAt: new Date(trade.createdAt),
-      entryDate: new Date(trade.entryDate),
-      exitDate: trade.exitDate ? new Date(trade.exitDate) : undefined,
-      updatedAt: new Date(trade.updatedAt),
-    }));
-  }, [trades]);
 
   return (
     <div className={styles.reportsSection}>
