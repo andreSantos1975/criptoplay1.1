@@ -22,13 +22,25 @@ import { Button } from "@/components/ui/button";
 import styles from "./ReportsSection.module.css";
 import Modal from "@/components/ui/modal/Modal";
 import { TradingPerformanceSummary } from "@/components/reports/TradingPerformanceSummary";
-import { Trade } from "@prisma/client";
+import type { Trade } from "@/types/trade"; // Import Trade from local DTO
+
+// Define ExtendedTrade to include margin for futures trades, if intended
+// This type is used when casting 'trade' to access 'margin', which is typically on FuturesPosition
+type ExtendedTrade = Trade & {
+  margin?: string; // Prisma Decimal type is often represented as string in client
+};
 
 // Interfaces for props
 interface CryptoData {
   symbol: string;
   price: string;
 }
+
+// Define ExtendedTrade to include margin for futures trades, if intended
+// This type is used when casting 'trade' to access 'margin', which is typically on FuturesPosition
+type ExtendedTrade = Trade & {
+  margin?: string; // Prisma Decimal type is often represented as string in client
+};
 
 // Helpers
 const formatCurrency = (value: number) =>
@@ -75,7 +87,7 @@ const generatePortfolioPerformanceData = (
 
 const generatePortfolioDistributionData = (
   openTrades: Trade[],
-  tickers: BinanceTicker[],
+  tickers: CryptoData[],
   brlRate: number
 ) => {
   const portfolio: { [key: string]: number } = {};
@@ -83,8 +95,8 @@ const generatePortfolioDistributionData = (
     const ticker = tickers.find((t) => t.symbol === trade.symbol);
     if (ticker) {
       const value = ticker.symbol.includes('BRL')
-        ? parseFloat(trade.quantity.toString()) * parseFloat(ticker.price)
-        : parseFloat(trade.quantity.toString()) * parseFloat(ticker.price) * brlRate;
+        ? parseFloat(trade.quantity) * parseFloat(ticker.price)
+        : parseFloat(trade.quantity) * parseFloat(ticker.price) * brlRate;
       const asset = trade.symbol.replace("USDT", "");
       portfolio[asset] = (portfolio[asset] || 0) + value;
     }
@@ -217,8 +229,8 @@ export const ReportsSection = ({
         if (!ticker) return acc;
         
         const currentPrice = parseFloat(ticker.price);
-        const entryPrice = parseFloat(trade.entryPrice.toString());
-        const quantity = parseFloat(trade.quantity.toString());
+        const entryPrice = parseFloat(trade.entryPrice);
+        const quantity = parseFloat(trade.quantity);
         
         let pnl = (currentPrice - entryPrice) * quantity;
         
