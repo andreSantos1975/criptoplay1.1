@@ -14,7 +14,7 @@ export type Trade = {
   pnl?: string | null; // Decimal no Prisma, string no DTO para JSON
   notes?: string | null;
   sentiment?: string | null;
-  strategy?: string | null;
+  strategy: string | null;
   createdAt: string; // DateTime no Prisma, string no DTO para JSON
   updatedAt: string; // DateTime no Prisma, string no DTO para JSON
   userId: string;
