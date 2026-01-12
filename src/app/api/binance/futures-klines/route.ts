@@ -28,28 +28,39 @@ export async function GET(request: Request) {
   }
 
   try {
-    // A única mudança é a URL da API para a de futuros (fapi)
-    // Adicionando headers para simular um browser e evitar bloqueio 403/418
-    const response = await fetch(
+    const endpoints = [
       `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-      }
-    );
+      `https://fapi1.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
+      `https://fapi2.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
+      `https://fapi3.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
+    ];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Binance Futures API Error: ${response.status} ${response.statusText} - ${errorText}`);
-      throw new Error(`Binance API error: ${response.status} - ${errorText}`);
+    let lastError: any = null;
+
+    for (const url of endpoints) {
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          },
+          next: { revalidate: 0 }
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Binance Futures API error: ${response.status} - ${errorText}`);
+        }
+
+        const data: BinanceKline[] = await response.json();
+        return NextResponse.json(data);
+      } catch (error) {
+        console.error(`Error fetching futures klines from Binance on ${url}:`, error);
+        lastError = error;
+        continue;
+      }
     }
 
-    const data: BinanceKline[] = await response.json();
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error('Error fetching klines from Binance Futures:', error);
-    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    const message = lastError instanceof Error ? lastError.message : 'An unknown error occurred';
     return NextResponse.json({ error: message }, { status: 500 });
-  }
+  } catch (error) {
 }

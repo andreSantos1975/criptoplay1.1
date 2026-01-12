@@ -182,19 +182,22 @@ const Simulator = () => {
     enabled: isPremiumUser,
   });
 
-  const { data: currentPriceData } = useQuery<CurrentPrice, Error>({
+  const { data: currentPriceData, isError: isErrorPrice, error: priceError } = useQuery<CurrentPrice, Error>({
       queryKey: ['currentPrice', selectedCrypto],
       queryFn: () => fetchCurrentPrice(selectedCrypto),
       refetchInterval: 5000,
       enabled: isPremiumUser && !!selectedCrypto,
   });
 
-  const { data: initialChartData, isFetching: isChartLoading } = useQuery({
+  const { data: initialChartData, isFetching: isChartLoading, isError: isErrorKlines, error: klinesError } = useQuery({
     queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
     queryFn: async () => {
       const apiPath = marketType === 'futures' ? 'futures-klines' : 'klines';
       const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}`);
-      if (!response.ok) throw new Error("A resposta da rede não foi ok");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro ao buscar dados do gráfico.");
+      }
       const data: BinanceKlineData[] = await response.json();
       return data.map(k => ({ time: (k[0] / 1000) as any, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
     },
@@ -317,13 +320,13 @@ const Simulator = () => {
   }, [entryPrice, selectedCrypto]);
   
   const assetHeaderData = useMemo(() => {
-    if (!initialChartData || initialChartData.length === 0) return { open: 0, high: 0, low: 0, close: 0, time: 0 };
+    if (!initialChartData || initialChartData.length === 0) return { open: 0, high: 0, low: 0, close: entryPrice, time: 0 };
     const lastCandle = initialChartData[initialChartData.length - 1];
     return {
         ...lastCandle,
-        close: realtimeChartUpdate?.close || lastCandle.close,
+        close: realtimeChartUpdate?.close || lastCandle.close || entryPrice,
     };
-  }, [initialChartData, realtimeChartUpdate]);
+  }, [initialChartData, realtimeChartUpdate, entryPrice]);
 
   const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   const riskAmount = entryPrice > 0 && stopLoss > 0 ? (entryPrice - stopLoss) * quantity : 0;
@@ -362,6 +365,8 @@ const Simulator = () => {
   const handleStartCreateAlert = () => {
     if (entryPrice > 0) {
       setProspectiveAlert({ price: entryPrice });
+    } else {
+      toast.error('Aguarde o carregamento do preço para criar um alerta.');
     }
   };
 
@@ -384,7 +389,10 @@ const Simulator = () => {
   
   const handleSimulatorSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!entryPrice) return;
+    if (!entryPrice) {
+      toast.error('Preço de entrada não disponível. Verifique sua conexão.');
+      return;
+    }
     createSimulatorTradeMutation.mutate({ symbol: selectedCrypto, quantity, type: 'BUY', entryPrice, stopLoss, takeProfit, marketType });
   };
 
@@ -439,6 +447,13 @@ const Simulator = () => {
             high={assetHeaderData.high}
             low={assetHeaderData.low}
         />
+        {(isErrorPrice || isErrorKlines) && (
+          <div className={styles.errorMessage} style={{ color: 'red', margin: '1rem' }}>
+            Aviso: Falha ao carregar dados em tempo real da Binance. Tentando reconectar... 
+            <br />
+            {priceError?.message || klinesError?.message}
+          </div>
+        )}
         <div className={styles.chartWrapper}>
             <SimulatorChart
                 key={selectedCrypto}

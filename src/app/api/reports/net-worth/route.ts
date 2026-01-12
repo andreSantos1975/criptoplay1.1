@@ -67,7 +67,13 @@ export async function GET(request: Request) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
     // 2. Fetch the current USDT to BRL exchange rate
-    const usdtToBrlRate = await getCurrentPrice("USDTBRL");
+    let usdtToBrlRateValue = 6.0; // Fallback value
+    try {
+        const usdtToBrlRate = await getCurrentPrice("USDTBRL");
+        usdtToBrlRateValue = usdtToBrlRate.toNumber();
+    } catch (e) {
+        console.error("Erro ao buscar taxa USDT/BRL, usando fallback:", e);
+    }
 
     // 3. Set the simulation initial balance (Simulador starts with 10k)
     // We cannot use user.virtualBalance because that is the CURRENT balance (End State).
@@ -109,7 +115,7 @@ export async function GET(request: Request) {
                if (trade.symbol.endsWith('BRL')) {
                    unrealizedPnl += pnl;
                } else {
-                   unrealizedPnl += pnl * usdtToBrlRate.toNumber();
+                   unrealizedPnl += pnl * usdtToBrlRateValue;
                }
            }
        }
@@ -120,7 +126,7 @@ export async function GET(request: Request) {
       allTrades as unknown as Trade[],
       capitalMovements as unknown as CapitalMovement[],
       granularity,
-      usdtToBrlRate.toNumber(),
+      usdtToBrlRateValue,
       initialBalance
     );
 

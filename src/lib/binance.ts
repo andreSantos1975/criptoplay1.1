@@ -16,34 +16,49 @@ export async function getCurrentPrice(symbol: string): Promise<Decimal> {
     throw new Error('O símbolo é obrigatório.');
   }
 
-  try {
-    const response = await fetch(
-      `https://api.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`
-    );
+  const endpoints = [
+    `https://api.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`,
+    `https://api1.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`,
+    `https://api2.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`,
+    `https://api3.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`,
+  ];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      // Tenta analisar o erro da Binance, que geralmente é um JSON
-      try {
-        const errorJson = JSON.parse(errorText);
-        throw new Error(`Erro na API da Binance: ${errorJson.msg || 'Erro desconhecido'}`);
-      } catch {
-        throw new Error(`Erro na API da Binance: ${response.status} - ${errorText}`);
+  let lastError: Error | null = null;
+
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        },
+        next: { revalidate: 0 } // Disable cache for price
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(`Erro na API da Binance: ${errorJson.msg || 'Erro desconhecido'}`);
+        } catch {
+          throw new Error(`Erro na API da Binance: ${response.status} - ${errorText}`);
+        }
       }
-    }
 
-    const data: TickerPrice = await response.json();
-    
-    if (!data.price) {
-        throw new Error(`Resposta inválida da API da Binance para o símbolo ${symbol}`);
-    }
+      const data: TickerPrice = await response.json();
+      
+      if (!data.price) {
+          throw new Error(`Resposta inválida da API da Binance para o símbolo ${symbol}`);
+      }
 
-    return new Decimal(data.price);
-  } catch (error) {
-    console.error(`Falha ao buscar o preço para ${symbol}:`, error);
-    // Re-lança o erro para que o chamador possa tratá-lo
-    throw error;
+      return new Decimal(data.price);
+    } catch (error) {
+      console.error(`Falha ao buscar o preço para ${symbol} em ${url}:`, error);
+      lastError = error as Error;
+      continue; // Tenta o próximo endpoint
+    }
   }
+
+  throw lastError || new Error(`Falha ao buscar o preço para ${symbol} em todos os endpoints.`);
 }
 
 /**
@@ -56,30 +71,47 @@ export async function getCurrentFuturesPrice(symbol: string): Promise<Decimal> {
     throw new Error('O símbolo é obrigatório.');
   }
 
-  try {
-    const response = await fetch(
-      `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symbol.toUpperCase()}`
-    );
+  const endpoints = [
+    `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symbol.toUpperCase()}`,
+    `https://fapi1.binance.com/fapi/v1/ticker/price?symbol=${symbol.toUpperCase()}`,
+    `https://fapi2.binance.com/fapi/v1/ticker/price?symbol=${symbol.toUpperCase()}`,
+    `https://fapi3.binance.com/fapi/v1/ticker/price?symbol=${symbol.toUpperCase()}`,
+  ];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      try {
-        const errorJson = JSON.parse(errorText);
-        throw new Error(`Erro na API de Futuros da Binance: ${errorJson.msg || 'Erro desconhecido'}`);
-      } catch {
-        throw new Error(`Erro na API de Futuros da Binance: ${response.status} - ${errorText}`);
+  let lastError: Error | null = null;
+
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        },
+        next: { revalidate: 0 }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(`Erro na API de Futuros da Binance: ${errorJson.msg || 'Erro desconhecido'}`);
+        } catch {
+          throw new Error(`Erro na API de Futuros da Binance: ${response.status} - ${errorText}`);
+        }
       }
-    }
 
-    const data: TickerPrice = await response.json();
-    
-    if (!data.price) {
-        throw new Error(`Resposta inválida da API de Futuros para o símbolo ${symbol}`);
-    }
+      const data: TickerPrice = await response.json();
+      
+      if (!data.price) {
+          throw new Error(`Resposta inválida da API de Futuros para o símbolo ${symbol}`);
+      }
 
-    return new Decimal(data.price);
-  } catch (error) {
-    console.error(`Falha ao buscar o preço futuro para ${symbol}:`, error);
-    throw error;
+      return new Decimal(data.price);
+    } catch (error) {
+      console.error(`Falha ao buscar o preço futuro para ${symbol} em ${url}:`, error);
+      lastError = error as Error;
+      continue;
+    }
   }
+
+  throw lastError || new Error(`Falha ao buscar o preço futuro para ${symbol} em todos os endpoints.`);
 }
