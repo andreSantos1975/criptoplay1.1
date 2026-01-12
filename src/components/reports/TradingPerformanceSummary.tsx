@@ -3,7 +3,7 @@
 import { useMemo } from "react"; // Removed useQuery
 import { calculateTradingStats } from "@/lib/trading-math";
 import { TrendingUp, TrendingDown, Target, Activity, DollarSign, PieChart, AlertTriangle, ArrowRightLeft } from "lucide-react";
-import { Trade } from "@prisma/client";
+import type { Trade } from "@/types/trade";
 import styles from "./TradingPerformanceSummary.module.css";
 
 // Interface for CryptoData if needed internally for new calculations.
@@ -49,8 +49,33 @@ const TradingCard: React.FC<TradingCardProps> = ({ title, value, icon: Icon, des
 );
 
 
-interface TradingPerformanceSummaryProps {
-  trades: Trade[];
+// Define ProcessedTrade to match the data after date/decimal conversion
+export interface ProcessedTrade {
+  id: string;
+  symbol: string;
+  type: string;
+  status: string;
+  entryDate: Date;
+  exitDate?: Date | null;
+  entryPrice: number;
+  exitPrice?: number | null;
+  quantity: number;
+  stopLoss: number;
+  takeProfit: number;
+  pnl?: number | null;
+  notes?: string | null;
+  sentiment?: string | null;
+  strategy: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+  marketType: string;
+  isSimulator: boolean;
+}
+
+export interface TradingPerformanceSummaryProps {
+  trades: ProcessedTrade[];
+  binanceTickers: CryptoData[]; // Added for consistency and potential future use
   brlRate: number;
 }
 

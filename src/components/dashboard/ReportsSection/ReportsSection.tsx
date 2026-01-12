@@ -304,22 +304,20 @@ export const ReportsSection = ({
   }, [simulatorProfile?.virtualBalance, unrealizedPnl, totalMargin]);
 
   const tradesWithDates = useMemo(() => {
-    return trades.map(trade => ({
+    return trades.map((trade: Trade) => ({ // Explicitly type 'trade' as 'Trade' from DTO
       ...trade,
       createdAt: new Date(trade.createdAt),
       entryDate: new Date(trade.entryDate),
-      exitDate: trade.exitDate ? new Date(trade.exitDate) : undefined,
+      exitDate: trade.exitDate ? new Date(trade.exitDate) : null, // Change undefined to null for consistency
       updatedAt: new Date(trade.updatedAt),
-      // Convert Decimal fields from string to number
       quantity: parseFloat(trade.quantity),
       entryPrice: parseFloat(trade.entryPrice),
-      exitPrice: trade.exitPrice ? parseFloat(trade.exitPrice) : null,
+      exitPrice: trade.exitDate ? parseFloat(trade.exitDate) : null, // exitDate in DTO is string | null
       stopLoss: parseFloat(trade.stopLoss),
       takeProfit: parseFloat(trade.takeProfit),
       pnl: trade.pnl ? parseFloat(trade.pnl) : null,
-      // Ensure strategy is string | null, not undefined
       strategy: trade.strategy === undefined ? null : trade.strategy,
-    }));
+    })) as ProcessedTrade[]; // Cast the entire array to ProcessedTrade[]
   }, [trades]);
 
   if (isLoading)
