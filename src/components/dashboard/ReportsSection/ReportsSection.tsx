@@ -204,13 +204,60 @@ export const ReportsSection = ({
       updatedAt: new Date(trade.updatedAt),
       quantity: parseFloat(trade.quantity),
       entryPrice: parseFloat(trade.entryPrice),
-      exitPrice: trade.exitDate ? parseFloat(trade.exitDate) : null,
+      exitPrice: trade.exitPrice ? parseFloat(trade.exitPrice) : null,
       stopLoss: parseFloat(trade.stopLoss),
       takeProfit: parseFloat(trade.takeProfit),
       pnl: trade.pnl ? parseFloat(trade.pnl) : null,
       strategy: trade.strategy === undefined ? null : trade.strategy,
     })) as ProcessedTrade[]; // Cast the entire array to ProcessedTrade[]
   }, [trades]);
+
+  const performanceData = useMemo(
+    () => generatePortfolioPerformanceData(tradesWithDates, brlRate),
+    [tradesWithDates, brlRate]
+  );
+
+  const distributionData = useMemo(
+    () => {
+      const processedOpenTrades = tradesWithDates.filter(t => t.status === "OPEN");
+      return generatePortfolioDistributionData(processedOpenTrades, binanceTickers, brlRate);
+    },
+    [tradesWithDates, binanceTickers, brlRate]
+  );
+
+  const monthlyReportData = useMemo(
+    () => generateMonthlyReportData(tradesWithDates, brlRate),
+    [tradesWithDates, brlRate]
+  );
+
+  const kpiData = useMemo(() => {
+    const totalPnl = tradesWithDates
+      .filter((t) => t.status === "CLOSED" && t.pnl != null)
+      .reduce((acc, t) => {
+        const pnlInBrl = t.symbol.includes('BRL')
+          ? Number(t.pnl)
+          : (Number(t.pnl) || 0) * brlRate;
+        return acc + pnlInBrl;
+      }, 0);
+
+    const openPositionsValue = tradesWithDates
+      .filter((t) => t.status === "OPEN")
+      .reduce((acc, trade) => {
+        const ticker = binanceTickers.find((t) => t.symbol === trade.symbol);
+        if (ticker) {
+          const value = ticker.symbol.includes('BRL')
+            ? trade.quantity * parseFloat(ticker.price)
+            : trade.quantity * parseFloat(ticker.price) * brlRate;
+          return acc + value;
+        }
+        return acc;
+      }, 0);
+
+    return {
+      totalPnl,
+      patrimonioAtual: (simulatorProfile?.virtualBalance || 0) + openPositionsValue,
+    };
+  }, [tradesWithDates, brlRate, binanceTickers, simulatorProfile]);
 
   if (isLoading)
     return (
