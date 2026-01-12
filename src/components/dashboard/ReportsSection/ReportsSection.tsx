@@ -352,7 +352,7 @@ export const ReportsSection = ({
       {/* Performance Avançada */}
       <div style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Performance Avançada</h2>
-        <TradingPerformanceSummary trades={trades} binanceTickers={binanceTickers} brlRate={brlRate} />
+        <TradingPerformanceSummary trades={trades as Trade[]} binanceTickers={binanceTickers} brlRate={brlRate} />
       </div>
 
       {/* Gráficos */}
