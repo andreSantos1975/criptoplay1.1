@@ -128,8 +128,8 @@ const generateMonthlyReportData = (
           tradeCount: 0,
         };
       const pnlInBrl = trade.symbol.includes('BRL')
-        ? Number(t.pnl)
-        : (Number(t.pnl) || 0) * brlRate;
+        ? Number(trade.pnl)
+        : (Number(trade.pnl) || 0) * brlRate;
       monthlyMap[key].pnl += pnlInBrl;
       monthlyMap[key].tradeCount++;
     });
