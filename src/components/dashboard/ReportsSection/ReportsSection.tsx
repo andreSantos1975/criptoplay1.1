@@ -250,9 +250,9 @@ export const ReportsSection = ({
           // Calculate PnL: (Current Price - Entry Price) * Quantity for BUY/LONG
           // (Entry Price - Current Price) * Quantity for SELL/SHORT
           let pnl = 0;
-          if (trade.type === 'BUY') {
+          if (trade.type === 'BUY') { // Spot BUY or Futures LONG (mapped to BUY)
             pnl = (currentPrice - trade.entryPrice) * trade.quantity;
-          } else {
+          } else { // Futures SHORT (mapped to SELL)
             pnl = (trade.entryPrice - currentPrice) * trade.quantity;
           }
           
@@ -273,6 +273,8 @@ export const ReportsSection = ({
     return {
       totalPnl,
       // IMPORTANTE: Number() para evitar concatenação de strings caso venha como string do banco/API
+      // O virtualBalance já inclui o resultado de operações FECHADAS.
+      // O unrealizedEquity soma o resultado flutuante (PnL) + Margem retida das operações ABERTAS.
       patrimonioAtual: Number(simulatorProfile?.virtualBalance || 0) + unrealizedEquity,
     };
   }, [tradesWithDates, brlRate, binanceTickers, simulatorProfile]);
