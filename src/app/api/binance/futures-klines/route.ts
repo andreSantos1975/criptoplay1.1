@@ -33,6 +33,7 @@ export async function GET(request: Request) {
       `https://fapi1.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
       `https://fapi2.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
       `https://fapi3.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
+      `https://fapi.binance.me/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
     ];
 
     let lastError: any = null;
@@ -47,6 +48,10 @@ export async function GET(request: Request) {
         });
 
         if (!response.ok) {
+          if (response.status === 451) {
+            lastError = new Error(`Binance Restricted (451)`);
+            continue;
+          }
           const errorText = await response.text();
           throw new Error(`Binance Futures API error: ${response.status} - ${errorText}`);
         }

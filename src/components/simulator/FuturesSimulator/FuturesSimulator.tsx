@@ -489,11 +489,14 @@ const FuturesSimulator = () => {
     queryFn: fetchAlerts,
   });
 
-  const { data: initialChartData, isFetching: isChartLoading } = useQuery({
+  const { data: initialChartData, isFetching: isChartLoading, isError: isErrorKlines, error: klinesError } = useQuery({
     queryKey: ["binanceKlines", 'futures', interval, symbol],
     queryFn: async () => {
       const response = await fetch(`/api/binance/futures-klines?symbol=${symbol}&interval=${interval}`);
-      if (!response.ok) throw new Error("A resposta da rede não foi ok para klines de futuros.");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro ao buscar dados do gráfico.");
+      }
       const data: BinanceKlineData[] = await response.json();
       return data.map(k => ({ time: (k[0] / 1000) as any, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
     },
@@ -765,6 +768,14 @@ const FuturesSimulator = () => {
         low={assetHeaderData.low}
         exchangeRate={exchangeRate}
       />
+
+      {isErrorKlines && (
+          <div className={styles.errorMessage} style={{ color: 'red', margin: '1rem' }}>
+            Aviso: Falha ao carregar dados do gráfico de futuros. 
+            <br />
+            {klinesError?.message}
+          </div>
+      )}
       
       <div className={styles.chartWrapper}>
         <SimulatorChart
