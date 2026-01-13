@@ -30,9 +30,6 @@ export async function GET(request: Request) {
   try {
     const endpoints = [
       `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
-      `https://fapi1.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
-      `https://fapi2.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
-      `https://fapi3.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
       `https://fapi.binance.me/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
     ];
 
@@ -69,21 +66,20 @@ export async function GET(request: Request) {
     if (symbol) {
         try {
             console.log(`Tentando fallback Bitget Futures para klines de ${symbol}...`);
+            // Bitget Mix (Futures) uses '1m', '5m', '15m' etc.
             const bitgetIntervalMap: { [key: string]: string } = {
-                '1m': '1min',
-                '5m': '5min',
-                '15m': '15min',
-                '30m': '30min',
-                '1h': '1h',
-                '4h': '4h',
-                '1d': '1day',
-                '1w': '1week'
+                '1m': '1m',
+                '5m': '5m',
+                '15m': '15m',
+                '30m': '30m',
+                '1h': '1H',
+                '4h': '4H',
+                '1d': '1D',
+                '1w': '1W'
             };
-            const bitgetInterval = bitgetIntervalMap[interval] || '1min';
+            const bitgetInterval = bitgetIntervalMap[interval] || '1m';
             
             let productType = 'USDT-FUTURES';
-            // Simple logic to guess product type, assuming most are USDT margined
-            // Bitget symbols are usually like BTCUSDT for USDT-FUTURES
             
             const bitgetRes = await fetch(`https://api.bitget.com/api/v2/mix/market/candles?symbol=${symbol.toUpperCase()}&granularity=${bitgetInterval}&productType=${productType}&limit=${limit}`);
             
