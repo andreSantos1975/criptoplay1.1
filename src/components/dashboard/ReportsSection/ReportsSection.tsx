@@ -240,22 +240,40 @@ export const ReportsSection = ({
         return acc + pnlInBrl;
       }, 0);
 
-    const openPositionsValue = tradesWithDates
+    const unrealizedEquity = tradesWithDates
       .filter((t) => t.status === "OPEN")
       .reduce((acc, trade) => {
         const ticker = binanceTickers.find((t) => t.symbol === trade.symbol);
         if (ticker) {
-          const value = ticker.symbol.includes('BRL')
-            ? trade.quantity * parseFloat(ticker.price)
-            : trade.quantity * parseFloat(ticker.price) * brlRate;
-          return acc + value;
+          const currentPrice = parseFloat(ticker.price);
+          
+          // Calculate PnL: (Current Price - Entry Price) * Quantity for BUY/LONG
+          // (Entry Price - Current Price) * Quantity for SELL/SHORT
+          let pnl = 0;
+          if (trade.type === 'BUY') {
+            pnl = (currentPrice - trade.entryPrice) * trade.quantity;
+          } else {
+            pnl = (trade.entryPrice - currentPrice) * trade.quantity;
+          }
+          
+          const pnlInBrl = trade.symbol.includes('BRL')
+            ? pnl
+            : pnl * brlRate;
+
+          // Se for Futuros, precisamos somar a margem de volta, pois ela foi debitada do virtualBalance na abertura.
+          // No Spot, a margem é 0 (não definida), então não afeta o cálculo.
+          const margin = (trade as ExtendedTrade).margin ? parseFloat((trade as ExtendedTrade).margin!) : 0;
+          const marginInBrl = trade.symbol.includes('BRL') ? margin : margin * brlRate;
+
+          return acc + pnlInBrl + marginInBrl;
         }
         return acc;
       }, 0);
 
     return {
       totalPnl,
-      patrimonioAtual: (simulatorProfile?.virtualBalance || 0) + openPositionsValue,
+      // IMPORTANTE: Number() para evitar concatenação de strings caso venha como string do banco/API
+      patrimonioAtual: Number(simulatorProfile?.virtualBalance || 0) + unrealizedEquity,
     };
   }, [tradesWithDates, brlRate, binanceTickers, simulatorProfile]);
 

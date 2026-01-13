@@ -50,7 +50,11 @@ interface CryptoData {
 const fetchSimulatorProfile = async (): Promise<SimulatorProfile> => {
   const response = await fetch('/api/simulator/profile');
   if (!response.ok) throw new Error('Falha ao buscar perfil do simulador.');
-  return response.json();
+  const data = await response.json();
+  return {
+    ...data,
+    virtualBalance: Number(data.virtualBalance)
+  };
 };
 
 const fetchCurrentPrice = async (symbol: string): Promise<CurrentPrice> => {
