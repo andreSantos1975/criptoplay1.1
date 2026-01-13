@@ -63,6 +63,7 @@ export interface ProcessedTrade {
   stopLoss: number;
   takeProfit: number;
   pnl?: number | null;
+  margin?: number | string | null; // Added margin field
   notes?: string | null;
   sentiment?: string | null;
   strategy: string | null;

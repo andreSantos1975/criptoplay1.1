@@ -262,7 +262,7 @@ export const ReportsSection = ({
 
           // Se for Futuros, precisamos somar a margem de volta, pois ela foi debitada do virtualBalance na abertura.
           // No Spot, a margem é 0 (não definida), então não afeta o cálculo.
-          const margin = (trade as ExtendedTrade).margin ? parseFloat((trade as ExtendedTrade).margin!) : 0;
+          const margin = trade.margin ? Number(trade.margin) : 0;
           const marginInBrl = trade.symbol.includes('BRL') ? margin : margin * brlRate;
 
           return acc + pnlInBrl + marginInBrl;
