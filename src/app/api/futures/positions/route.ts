@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
+import { getCurrentPrice } from '@/lib/binance';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,15 +75,31 @@ export async function POST(req: Request) {
     // --- Fim da lógica de checagem de falência ---
     
     // --- Lógica principal ---
-
-    // --- Lógica principal ---
     // 1. Calcular a margem necessária (valor da posição / alavancagem).
     const positionValue = quantity * entryPrice;
     const margin = positionValue / leverage;
 
-    // 2. Verificar se o usuário tem saldo suficiente.
-    if (user.virtualBalance.toNumber() < margin) {
-      return NextResponse.json({ error: 'Saldo virtual insuficiente para cobrir a margem.' }, { status: 400 });
+    // --- CONVERSÃO DE MOEDA (USDT -> BRL) ---
+    let exchangeRate = 1;
+    let marginInBrl = margin;
+
+    // Verifica se o par NÃO é em BRL (assumindo USDT/USD como base para simulador internacional)
+    if (!symbol.toUpperCase().endsWith('BRL')) {
+        try {
+            // Busca a cotação do USDT (Dólar) para converter a margem
+            const rateDecimal = await getCurrentPrice('USDTBRL');
+            exchangeRate = rateDecimal.toNumber();
+            marginInBrl = margin * exchangeRate;
+        } catch (error) {
+            console.error('Falha ao obter taxa de câmbio para margem:', error);
+            // Fallback: Se falhar, assume 1:1 mas loga o erro (ou poderia bloquear a operação)
+            // Para não travar o usuário, seguimos com 1:1 mas o ideal seria alertar
+        }
+    }
+
+    // 2. Verificar se o usuário tem saldo suficiente (em BRL).
+    if (user.virtualBalance.toNumber() < marginInBrl) {
+      return NextResponse.json({ error: `Saldo virtual insuficiente. Necessário: R$ ${marginInBrl.toFixed(2)}` }, { status: 400 });
     }
 
     // 3. Calcular o preço de liquidação (fórmula simplificada para o simulador).
@@ -101,16 +118,17 @@ export async function POST(req: Request) {
 
     // 4. Usar uma transação para garantir atomicidade.
     const [updatedUser, newPosition] = await prisma.$transaction([
-      // Debitar a margem do saldo do usuário.
+      // Debitar a margem (em BRL) do saldo do usuário.
       prisma.user.update({
         where: { id: userId },
         data: {
           virtualBalance: {
-            decrement: margin,
+            decrement: marginInBrl,
           },
         },
       }),
       // Criar a FuturesPosition no banco de dados.
+      // Salvamos a margin em MOEDA ORIGINAL (USDT) para consistência dos cálculos de trade
       prisma.futuresPosition.create({
         data: {
           userId,
@@ -119,7 +137,7 @@ export async function POST(req: Request) {
           quantity,
           leverage,
           entryPrice,
-          margin,
+          margin, // Salvo em USDT
           liquidationPrice,
           stopLoss: stopLoss ?? undefined,
           takeProfit: takeProfit ?? undefined,

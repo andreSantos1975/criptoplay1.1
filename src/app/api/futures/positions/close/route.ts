@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
+import { getCurrentPrice } from '@/lib/binance';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,16 @@ export async function POST(req: Request) {
 
     const { positionIds, symbol, exitPrice } = validation.data;
 
+    // --- OBTER TAXA DE CÂMBIO (USDT -> BRL) ---
+    // Fazemos isso fora da transação para não bloquear o banco enquanto busca API externa
+    let usdtBrlRate = 1;
+    try {
+        const rateDecimal = await getCurrentPrice('USDTBRL');
+        usdtBrlRate = rateDecimal.toNumber();
+    } catch (error) {
+        console.error('Falha ao obter taxa USDTBRL para fechamento. Usando 1:1.', error);
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       let positionsToClose: any[] = [];
 
@@ -58,8 +69,8 @@ export async function POST(req: Request) {
         throw new Error('Nenhuma posição aberta encontrada para fechar.');
       }
 
-      let totalAmountToReturn = 0;
-      let totalPnl = 0;
+      let totalAmountToReturn = 0; // Acumulador em BRL (moeda da conta)
+      let totalPnl = 0; // Acumulador em moeda original (apenas informativo na resposta)
 
       // 2. Processar cada posição
       for (const position of positionsToClose) {
@@ -67,6 +78,7 @@ export async function POST(req: Request) {
         const quantity = position.quantity.toNumber();
         let pnl = 0;
 
+        // Cálculo do PnL na moeda da cotação (ex: USDT)
         if (position.side === 'LONG') {
           pnl = (exitPrice - entryPrice) * quantity;
         } else { // SHORT
@@ -74,10 +86,21 @@ export async function POST(req: Request) {
         }
 
         const margin = position.margin.toNumber();
-        totalAmountToReturn += (margin + pnl);
-        totalPnl += pnl;
+        
+        // --- CONVERSÃO PARA A MOEDA DA CONTA (BRL) ---
+        let exchangeRate = 1;
+        if (!position.symbol.endsWith('BRL')) {
+            exchangeRate = usdtBrlRate;
+        }
+
+        // Valor a ser creditado na conta: (Margem Original + PnL) * Taxa
+        const creditAmount = (margin + pnl) * exchangeRate;
+        
+        totalAmountToReturn += creditAmount;
+        totalPnl += pnl; // Mantém PnL original para retorno da API
 
         // Atualizar a posição para 'CLOSED'
+        // Salvamos o PnL na moeda ORIGINAL para histórico consistente
         await tx.futuresPosition.update({
           where: { id: position.id },
           data: {
@@ -131,7 +154,7 @@ export async function POST(req: Request) {
       return {
         message: 'Posições fechadas com sucesso',
         count: positionsToClose.length,
-        totalPnl: totalPnl
+        totalPnl: totalPnl // Retorna PnL na moeda original (ex: USDT)
       };
     });
 
