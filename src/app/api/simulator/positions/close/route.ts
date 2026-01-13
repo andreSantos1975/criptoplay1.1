@@ -2,24 +2,9 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { getCurrentPrice } from '@/lib/binance';
 
 export const dynamic = 'force-dynamic';
-
-// Helper function to fetch current price from Binance
-// This should ideally be in a shared lib file, but for now, it's here for simplicity.
-async function getCurrentPrice(symbol: string): Promise<number | null> {
-  try {
-            const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);    if (!response.ok) {
-      console.error(`Failed to fetch price for ${symbol}: ${response.statusText}`);
-      return null;
-    }
-    const data = await response.json();
-    return parseFloat(data.price);
-  } catch (error) {
-    console.error(`Error fetching price for ${symbol}:`, error);
-    return null;
-  }
-}
 
 export async function POST(req: Request) {
   try {
@@ -35,9 +20,13 @@ export async function POST(req: Request) {
       return new NextResponse(JSON.stringify({ message: 'Símbolo do ativo é obrigatório' }), { status: 400 });
     }
 
-    const exitPrice = await getCurrentPrice(symbol);
-    if (exitPrice === null) {
-        return new NextResponse(JSON.stringify({ message: 'Não foi possível obter o preço de fechamento atual do ativo.' }), { status: 500 });
+    let exitPrice: number;
+    try {
+      const exitPriceDecimal = await getCurrentPrice(symbol);
+      exitPrice = exitPriceDecimal.toNumber();
+    } catch (error) {
+      console.error('Error fetching price:', error);
+      return new NextResponse(JSON.stringify({ message: 'Não foi possível obter o preço de fechamento atual do ativo.' }), { status: 500 });
     }
 
     // Find all open trades for the user and symbol
