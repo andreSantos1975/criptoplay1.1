@@ -60,6 +60,51 @@ export async function GET(request: Request) {
       }
     }
 
+    // FALLBACK para Bitget Futures
+    if (symbol) {
+        try {
+            console.log(`Tentando fallback Bitget Futures para klines de ${symbol}...`);
+            const bitgetIntervalMap: { [key: string]: string } = {
+                '1m': '1min',
+                '5m': '5min',
+                '15m': '15min',
+                '30m': '30min',
+                '1h': '1h',
+                '4h': '4h',
+                '1d': '1day',
+                '1w': '1week'
+            };
+            const bitgetInterval = bitgetIntervalMap[interval] || '1min';
+            
+            let productType = 'USDT-FUTURES';
+            // Simple logic to guess product type, assuming most are USDT margined
+            // Bitget symbols are usually like BTCUSDT for USDT-FUTURES
+            
+            const bitgetRes = await fetch(`https://api.bitget.com/api/v2/mix/market/candles?symbol=${symbol.toUpperCase()}&granularity=${bitgetInterval}&productType=${productType}&limit=${limit}`);
+            
+            if (bitgetRes.ok) {
+                const bitgetData = await bitgetRes.json();
+                if (bitgetData.code === '00000' && Array.isArray(bitgetData.data)) {
+                     // Bitget format: ["timestamp", "open", "high", "low", "close", "volume", "quoteVolume"]
+                    const normalizedData = bitgetData.data.map((k: any) => [
+                        parseInt(k[0]), // openTime
+                        k[1], // open
+                        k[2], // high
+                        k[3], // low
+                        k[4], // close
+                        k[5], // volume
+                        parseInt(k[0]) + 60000, // closeTime (aproximado)
+                        k[6], // quoteVolume
+                        0, 0, 0, 0
+                    ]);
+                    return NextResponse.json(normalizedData);
+                }
+            }
+        } catch (e) {
+            console.error("Bitget Futures Fallback failed:", e);
+        }
+    }
+
     const message = lastError instanceof Error ? lastError.message : 'An unknown error occurred';
     return NextResponse.json({ error: message }, { status: 500 });
   } catch (error) {

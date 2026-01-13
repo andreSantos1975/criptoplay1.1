@@ -81,7 +81,7 @@ export async function GET(request: Request) {
                 '1w': '1week'
             };
             const bitgetInterval = bitgetIntervalMap[interval] || '1min';
-            const bitgetRes = await fetch(`https://api.bitget.com/api/v2/spot/market/history-candles?symbol=${symbol.toUpperCase()}&granularity=${bitgetInterval}&limit=${limit}`);
+            const bitgetRes = await fetch(`https://api.bitget.com/api/v2/spot/market/candles?symbol=${symbol.toUpperCase()}&granularity=${bitgetInterval}&limit=${limit}`);
             
             if (bitgetRes.ok) {
                 const bitgetData = await bitgetRes.json();
@@ -98,7 +98,7 @@ export async function GET(request: Request) {
                         parseInt(k[0]) + 60000, // closeTime (aproximado)
                         k[6], // quoteVolume
                         0, 0, 0, 0
-                    ]).reverse(); // Bitget costuma retornar do mais novo para o mais antigo
+                    ]); // Bitget retorna do mais antigo para o mais novo, igual Binance
                     return NextResponse.json(normalizedData);
                 }
             }
