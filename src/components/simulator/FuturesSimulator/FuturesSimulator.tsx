@@ -601,6 +601,7 @@ const FuturesSimulator = () => {
       queryClient.invalidateQueries({ queryKey: ['futuresPositions'] });
       queryClient.invalidateQueries({ queryKey: ['trades'] });
       queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
+      queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
       // Limpa as linhas de rascunho (prospectivas) após o sucesso da operação
       setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 });
 
@@ -627,6 +628,7 @@ const FuturesSimulator = () => {
         queryClient.invalidateQueries({ queryKey: ['futuresPositions'] });
         queryClient.invalidateQueries({ queryKey: ['trades'] });
         queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
+        queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
     },
     onError: (error: Error) => {
         toast.dismiss();
