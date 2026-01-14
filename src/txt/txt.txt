@@ -118,7 +118,7 @@ npx prisma migrate reset --force
   ------------------------------------------------------------------------------
 (Gerando o cliente Prisma para refletir as novas configurações no banco de dados
   npx prisma generate 
-  ------------------------------------------------------------------------------
+ -- ------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 (Aplicando as migrações existentes ao novo banco de dados
   npx prisma migrate deploy 
