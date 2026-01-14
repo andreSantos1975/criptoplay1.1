@@ -37,6 +37,7 @@
     bottom: 90px;
     width: 90%; /* Ajuste opcional para mobile, para não ficar largo demais */
     right: 5%;  /* Centraliza melhor */
+    max-height: 75vh;
   }
 }
 
