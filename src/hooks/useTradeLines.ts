@@ -208,14 +208,67 @@ export const useTradeLines = ({
       chartElement.style.cursor = 'default';
     };
 
+    // --- Touch Support ---
+    const handleTouchStart = (e: TouchEvent) => {
+      const rect = chartElement.getBoundingClientRect();
+      const y = e.touches[0].clientY - rect.top;
+
+      for (const key of ['takeProfit', 'stopLoss'] as ('takeProfit' | 'stopLoss')[]) {
+        const priceLine = prospectivePriceLinesRef.current[key];
+        if (priceLine && isNearPriceLine(priceLine, y)) {
+          setDraggingLine(key);
+          chart.applyOptions({ handleScroll: false, handleScale: false });
+          // Prevent default to stop scrolling/zooming while interacting with the line
+          // e.preventDefault(); // Note: might need 'passive: false' in listener options
+          return;
+        }
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!draggingLine) return;
+      e.preventDefault(); // Prevent page scrolling while dragging line
+
+      const rect = chartElement.getBoundingClientRect();
+      const y = e.touches[0].clientY - rect.top;
+      const newPrice = series.coordinateToPrice(y);
+
+      if (newPrice !== null) {
+        onLevelsChangeRef.current({
+          ...tradeLevelsRef.current,
+          [draggingLine]: newPrice,
+        });
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (!draggingLine) return;
+
+      setDraggingLine(null);
+      chart.applyOptions({ handleScroll: true, handleScale: true });
+    };
+
     chartElement.addEventListener('mousedown', handleMouseDown);
     chartElement.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp); // Use window for mouseup to catch releases outside chart
+    window.addEventListener('mouseup', handleMouseUp);
+    
+    // Add Touch Listeners
+    chartElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+    chartElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
+
 
     return () => {
       chartElement.removeEventListener('mousedown', handleMouseDown);
       chartElement.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      
+      // Remove Touch Listeners
+      chartElement.removeEventListener('touchstart', handleTouchStart);
+      chartElement.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
     };
   }, [isChartReady, chartRef, seriesRef, chartContainerRef, setDraggingLine, draggingLine]);
 };
