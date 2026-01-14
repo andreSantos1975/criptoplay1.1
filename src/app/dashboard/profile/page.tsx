@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -8,6 +7,11 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import styles from './profile.module.css';
+import ProfileHeader from '@/components/profile/ProfileHeader';
+import AccountInfo from '@/components/profile/AccountInfo';
+import ChangeNickname from '@/components/profile/ChangeNickname';
+import ChangePassword from '@/components/profile/ChangePassword';
+import SubscriptionStatus from '@/components/profile/SubscriptionStatus';
 
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
@@ -15,7 +19,6 @@ export default function ProfilePage() {
 
   // Username State
   const [currentUsername, setCurrentUsername] = useState('');
-  const [newUsername, setNewUsername] = useState('');
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
 
   // Password State
@@ -31,12 +34,10 @@ export default function ProfilePage() {
     }
     if (session?.user?.username) {
       setCurrentUsername(session.user.username);
-      setNewUsername(session.user.username);
     }
   }, [session, status, router]);
 
-  const handleUpdateUsername = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateUsername = async (newUsername: string) => {
     setIsUpdatingUsername(true);
     toast.dismiss();
 
@@ -76,8 +77,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdatePassword = async (currentPassword: string, newPassword: string) => {
     setIsUpdatingPassword(true);
     toast.dismiss();
 
@@ -98,8 +98,6 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error(data.message || 'Erro ao atualizar senha.');
 
       toast.success('Senha atualizada com sucesso!');
-      setCurrentPassword('');
-      setNewPassword('');
     } catch (error: any) {
       toast.error(error.message || 'Erro inesperado.');
     } finally {
@@ -113,112 +111,34 @@ export default function ProfilePage() {
   const memberSince = user?.createdAt 
     ? format(new Date(user.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
     : 'Data desconhecida';
-  
-  const initials = user?.name 
-    ? user.name.split(' ')[0][0].toUpperCase()
-    : user?.email?.substring(0, 1).toUpperCase() || 'CP';
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Meu Perfil</h1>
+      <h1 className={styles.title}>Configurações de Perfil</h1>
 
-      {/* HEADER: AVATAR & INFO */}
-      <div className={styles.profileHeader}>
-        <div className={styles.avatarContainer}>
-          {user?.image ? (
-            <Image 
-              src={user.image} 
-              alt="Avatar do usuário" 
-              width={80} // Defina a largura apropriada para o seu avatar
-              height={80} // Defina a altura apropriada para o seu avatar
-              className={styles.avatarImage} 
-            />
-          ) : (
-            <span className={styles.avatarPlaceholder}>{initials}</span>
-          )}
-        </div>
-        <h2 className={styles.memberName}>{user?.name || 'Usuário CriptoPlay'}</h2>
-        <p className={styles.memberSince}>Membro desde {memberSince}</p>
-        <div className={styles.emailContainer}>
-          <span className={styles.emailText}>{user?.email}</span>
-        </div>
-      </div>
+      <div className={styles.grid}>
+        <ProfileHeader 
+          name={user?.name || 'Usuário CriptoPlay'} 
+          memberSince={memberSince} 
+        />
 
-      {/* USERNAME SECTION */}
-      <section className={styles.sectionCard}>
-        <h3 className={styles.sectionTitle}>Alterar Apelido (Ranking)</h3>
-        <form onSubmit={handleUpdateUsername} className={styles.form}>
-          <div className={styles.inputGroup}>
-            <label htmlFor="newUsername">Novo Apelido</label>
-            <input
-              type="text"
-              id="newUsername"
-              value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
-              placeholder="Ex: TraderMestre"
-              disabled={isUpdatingUsername}
-            />
-          </div>
-          <button type="submit" className={styles.button} disabled={isUpdatingUsername}>
-            {isUpdatingUsername ? 'Salvando...' : 'Salvar Apelido'}
-          </button>
-        </form>
-      </section>
+        <AccountInfo email={user?.email || ''} />
 
-      {/* PASSWORD SECTION (Only if user has password) */}
-      {user?.hasPassword && (
-        <section className={styles.sectionCard}>
-          <h3 className={styles.sectionTitle}>Alterar Senha</h3>
-          <form onSubmit={handleUpdatePassword} className={styles.form}>
-            <div className={styles.inputGroup}>
-              <label htmlFor="currentPassword">Senha Atual</label>
-              <input
-                type="password"
-                id="currentPassword"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                disabled={isUpdatingPassword}
-              />
-            </div>
-            <div className={styles.inputGroup}>
-              <label htmlFor="newPassword">Nova Senha</label>
-              <input
-                type="password"
-                id="newPassword"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                disabled={isUpdatingPassword}
-                minLength={6}
-              />
-            </div>
-            <button type="submit" className={styles.button} disabled={isUpdatingPassword}>
-              {isUpdatingPassword ? 'Atualizando...' : 'Atualizar Senha'}
-            </button>
-          </form>
-        </section>
-      )}
+        <ChangeNickname 
+          currentNickname={currentUsername} 
+          onSave={handleUpdateUsername}
+          isLoading={isUpdatingUsername}
+        />
 
-      {/* SUBSCRIPTION SECTION */}
-      <section className={styles.sectionCard}>
-        <h3 className={styles.sectionTitle}>Assinatura</h3>
-        <p className={styles.subscriptionStatus}>
-          Status: <span>{user?.subscriptionStatus === 'authorized' ? 'Ativa' : user?.subscriptionStatus || 'Nenhuma'}</span>
-        </p>
-        {user?.subscriptionStatus !== 'authorized' ? (
-          <p style={{ marginTop: '10px' }}>
-            Você não possui uma assinatura ativa. <a href="/assinatura" style={{ color: '#0070f3' }}>Assine agora</a> para desbloquear recursos exclusivos!
-          </p>
-        ) : (
-          <a 
-            href="https://www.mercadopago.com.br/subscriptions/management" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className={styles.manageSubscriptionButton}
-          >
-            Gerenciar Assinatura
-          </a>
+        {user?.hasPassword && (
+          <ChangePassword 
+            onUpdate={handleUpdatePassword}
+            isLoading={isUpdatingPassword}
+          />
         )}
-      </section>
+
+        <SubscriptionStatus status={user?.subscriptionStatus || null} />
+      </div>
     </div>
   );
 }

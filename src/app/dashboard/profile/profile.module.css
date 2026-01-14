@@ -12,6 +12,18 @@
   text-align: center;
 }
 
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* Header Section (Avatar & Basic Info) */
 .profileHeader {
   display: flex;

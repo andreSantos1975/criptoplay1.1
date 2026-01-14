@@ -245,7 +245,7 @@ Insights automáticos (“Você gastou 20% a mais com transporte este mês”).
      meta na data estipulada e mostra uma barra de progresso % para cada meta.
    * Link na Sidebar: "Metas Financeiras".
 
-  B. Calculadora de Inflação / Poder de Compra
+ XXX B. Calculadora de Inflação / Poder de Compra
   Para um investidor profissional, R$ 1 milhão hoje não é a mesma coisa que R$ 1 milhão
   daqui a 10 anos.
    * Como funciona: Uma ferramenta onde o usuário projeta o valor futuro descontando uma
@@ -314,7 +314,7 @@ Sim, você está absolutamente correto.
   Como resolver isso na Vercel (Solução Serverless)?
   Como a Vercel não permite processos longos, usamos Cron Jobs.
 
-  A Vercel tem uma funcionalidade chamada Cron Jobs (Agendamento). Podemos configurar um
+ XXX A Vercel tem uma funcionalidade chamada Cron Jobs (Agendamento). Podemos configurar um
   endpoint da API (ex: /api/cron/check-positions) para ser chamado automaticamente a cada 1
   ou 5 minutos.
 
@@ -540,50 +540,8 @@ Sim, você está absolutamente correto.
          *card do capeao no Dashboard
          *hall da fama
 
-         ---------------------------------08/01/2026
+     
 
-           3. Atenção Pós-Deploy: Assim que o deploy terminar e a Vercel gerar o link (ex:
-      projeto-legal.vercel.app), você precisará ir no Google Cloud Console (onde pegou o ID e
-      Secret do Google) e adicionar essa nova URL nas "Authorized redirect URIs" (URIs de
-      redirecionamento autorizadas), com o final /api/auth/callback/google.
-
-   * O GOOGLE_CLIENT_ID (será gerado lá).
-   * O GOOGLE_CLIENT_SECRET (será gerado lá).
-   * Os "URIs de redirecionamento autorizados" (Authorized redirect URIs), que são os endereços
-     que mencionei anteriormente (para localhost e para a URL da Vercel).
-
-     ====================================================================
-
-     Essa é uma ótima oportunidade para enriquecer a experiência do usuário e centralizar
-  informações importantes.
-
-  Aqui estão algumas sugestões de funcionalidades que podem ser adicionadas à página de perfil
-  (/dashboard/profile), organizadas por complexidade e valor para o usuário:
-
-
-  2. Preferências da Plataforma (Intermediário)
-   * Tema (Claro/Escuro): Se sua aplicação suportar temas, um toggle aqui seria útil.
-   * Moeda Principal: Se o usuário puder escolher ver valores em BRL ou USD.
-   * Notificações: Configurações de quais alertas ele quer receber por email (ex: "Alertas de
-     Preço", "Alertas de Assinatura", "Novidades da Plataforma").
-
-  3. Gamificação e Progresso (Avançado - e muito legal!)
-   * Nível / Badge: Exibir o nível atual do usuário (ex: "Iniciante", "Trader Pro", "Baleia")
-     baseado no progresso dele na plataforma.
-   * Estatísticas Rápidas:
-       * Total de Operações Simuladas.
-       * Maior Lucro em um dia.
-       * Posição atual no Ranking.
-   * Conquistas: Badges desbloqueadas (ex: "Primeiro Lucro", "Mestre do Bitcoin", "Sobrevivente
-     do Bear Market").
-  4. Integrações (API Keys)
-   * Chaves de API (Binance, etc.): Se sua plataforma permitir conectar com exchanges reais no
-     futuro, aqui seria o lugar seguro para gerenciar essas chaves.
-
-  5. Área de Assinatura Melhorada
-   * Histórico de Pagamentos: Listar as últimas faturas pagas.
-   * Próxima Cobrança: Mostrar a data da próxima renovação.
-   * Upgrade/Downgrade: Botões fáceis para mudar de plano.
 
 
 
@@ -613,55 +571,4 @@ Sim, você está absolutamente correto.
 
 
        -------------------------------------------------
-       10/01/2026
-
-        A discrepância nos cálculos de Lucro/Prejuízo (PnL) foi abordada e as seguintes ações
-  foram tomadas para garantir a consistência dos dados de preço em toda a aplicação:
-
-  1. Unificação do Endpoint da API Binance:
-      - Todos os endpoints da API Binance utilizados para buscar preços (spot e klines)
-        foram atualizados para utilizar o endpoint de produção principal:
-        https://api.binance.com. Anteriormente, alguns componentes utilizavam um endpoint de
-        dados públicos (data-api.binance.vision), o que poderia causar pequenas variações e
-        atrasos nos preços em comparação com o mercado em tempo real. Os arquivos
-        atualizados incluem:
-        - src/app/api/binance/price/route.ts
-        - src/app/api/binance/klines/route.ts
-        - src/app/api/simulator/positions/close/route.ts
-        - src/lib/binance.ts
-
-  2. Centralização da Busca de Preços para Operações em Aberto:
-      - Para garantir que todos os componentes exibindo dados de operações em aberto
-        utilizem a mesma cotação, a busca de preços para múltiplos símbolos foi centralizada
-        nos componentes parentes:
-        - Dashboard (`src/app/dashboard/page.tsx`): Agora busca todos os trades e os preços
-          de todos os ativos em aberto (binanceTickers) de forma centralizada. Esses dados
-          são então passados como props para os componentes filhos RecentOperationsTable
-          (tabela de "Operações") e ReportsSection (seção de "Relatórios").
-        - Simulador (`src/components/simulator/Simulator/Simulator.tsx`): Agora busca os
-          preços de todos os ativos nas posições em aberto (simulatorProfile.openPositions)
-          em lote e cria um priceMap. Este priceMap é então passado como prop para o
-          PositionRow (cada linha da tabela "Posições Abertas (Simulador)").
-
-  3. Refatoração de Componentes para Receber Dados via Props:
-      - Os seguintes componentes foram modificados para receber os dados de trades,
-        binanceTickers e simulatorProfile (e seus respectivos estados de carregamento/erro)
-        via props, eliminando suas buscas internas de dados e garantindo que todos trabalhem
-        com a mesma fonte de informação:
-        - src/components/dashboard/RecentOperationsTable/RecentOperationsTable.tsx
-        - src/components/dashboard/ReportsSection/ReportsSection.tsx
-        - src/components/reports/TradingPerformanceSummary.tsx
-        - src/components/simulator/PositionRow/PositionRow.tsx
-  4. Otimização e Consistência de Cálculos:
-      - A deduplicação de símbolos foi implementada em RecentOperationsTable.tsx para
-        otimizar as chamadas de API em lote.
-      - A taxa de câmbio BRL/USDT (brlRate) agora é passada para
-        TradingPerformanceSummary.tsx para garantir a conversão correta de PnL para BRL nos
-        cálculos de performance.
-
-  Com essas alterações, espera-se que todas as tabelas e KPIs exibindo PnL para operações em
-  aberto apresentem valores consistentes, resolvendo a discrepância observada.
-
- Using: 1 GEMINI.md file
-
-         
+  

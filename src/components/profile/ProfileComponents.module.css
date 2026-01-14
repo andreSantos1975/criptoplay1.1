@@ -1,0 +1,179 @@
+.profileCard {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+  animation: fadeIn 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #111;
+}
+
+.text {
+  color: #333;
+}
+
+.mutedText {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.flexCenter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatarCircle {
+  height: 4rem;
+  width: 4rem;
+  border-radius: 50%;
+  background-color: #f0f2f5;
+  color: #0070f3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.5rem;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.inputField {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  background-color: white;
+  color: #333;
+}
+
+.inputField:focus {
+  border-color: #0070f3;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.1);
+}
+
+.btnPrimary {
+  padding: 0.75rem 1.5rem;
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btnPrimary:hover {
+  background-color: #0060df;
+}
+
+.btnPrimary:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.btnSuccess {
+  padding: 0.75rem 1.5rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btnSuccess:hover {
+  background-color: #218838;
+}
+
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #444;
+  margin-bottom: 0.5rem;
+}
+
+.relative {
+  position: relative;
+}
+
+.eyeButton {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.eyeButton:hover {
+  color: #333;
+}
+
+.successBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background-color: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.2);
+  color: #28a745;
+  font-weight: 500;
+}
+
+.textSuccess {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.spaceY4 > * + * {
+  margin-top: 1rem;
+}
+
+.spaceY2 > * + * {
+  margin-top: 0.5rem;
+}
+
+.iconPrimary {
+  color: #0070f3;
+}
