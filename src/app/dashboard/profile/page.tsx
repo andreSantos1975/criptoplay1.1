@@ -137,7 +137,10 @@ export default function ProfilePage() {
           />
         )}
 
-        <SubscriptionStatus status={user?.subscriptionStatus || null} />
+        <SubscriptionStatus 
+          status={user?.subscriptionStatus || null} 
+          trialEndsAt={user?.trialEndsAt} 
+        />
       </div>
     </div>
   );

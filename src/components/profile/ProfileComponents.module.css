@@ -177,3 +177,20 @@
 .iconPrimary {
   color: #0070f3;
 }
+
+.trialBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: rgba(0, 112, 243, 0.08);
+  border: 1px solid rgba(0, 112, 243, 0.15);
+  color: #005bb5;
+}
+
+.trialBadge span {
+  font-weight: 500;
+}

@@ -571,4 +571,17 @@ Sim, você está absolutamente correto.
 
 
        -------------------------------------------------
+       -------------14/01/2026-----------------------
+       
+       ✦ Corrigi o problema das linhas de stop e take profit que não podiam ser movidas em
+  dispositivos móveis. O problema era que a lógica original só escutava eventos de mouse
+  (mousedown, mousemove), e não eventos de toque (touchstart, touchmove).
+
+  Adicionei o suporte para toque no hook useTradeLines.ts, garantindo que:
+   1. O toque inicial sobre a linha seja detectado.
+   2. O movimento do dedo mova a linha.
+   3. A rolagem da página seja bloqueada enquanto você arrasta a linha, para evitar que o
+      gráfico ou a tela se movam acidentalmente.
+
+  Agora deve funcionar corretamente em celulares e tablets.
   

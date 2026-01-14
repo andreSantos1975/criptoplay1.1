@@ -1,14 +1,28 @@
 import React from 'react';
-import { CreditCard, Sparkles } from "lucide-react";
+import { CreditCard, Sparkles, Clock } from "lucide-react";
 import Link from 'next/link';
+import { format, differenceInDays, isFuture } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import styles from './ProfileComponents.module.css';
 
 interface SubscriptionStatusProps {
   status: string | null;
+  trialEndsAt?: Date | null;
 }
 
-const SubscriptionStatus = ({ status }: SubscriptionStatusProps) => {
+const SubscriptionStatus = ({ status, trialEndsAt }: SubscriptionStatusProps) => {
   const isActive = status === 'authorized' || status === 'lifetime';
+  const isTrialActive = trialEndsAt && isFuture(new Date(trialEndsAt));
+  
+  const trialDaysDiff = trialEndsAt ? differenceInDays(new Date(trialEndsAt), new Date()) : -1;
+  const trialDaysRemaining = Math.max(0, trialDaysDiff + 1);
+
+  const getStatusText = () => {
+    if (status === 'authorized') return 'Ativa';
+    if (status === 'lifetime') return 'Vitalícia';
+    if (isTrialActive) return 'Período de Teste';
+    return status || "Nenhuma";
+  };
 
   return (
     <div className={styles.profileCard} style={{ animationDelay: "0.4s" }}>
@@ -20,12 +34,12 @@ const SubscriptionStatus = ({ status }: SubscriptionStatusProps) => {
       <div className={styles.spaceY4}>
         <div className={styles.flexCenter}>
           <span className={styles.text} style={{ fontWeight: 500 }}>Status:</span>
-          <span className={isActive ? styles.textSuccess : styles.mutedText}>
-            {status === 'authorized' ? 'Ativa' : (status || "Nenhuma")}
+          <span className={isActive || isTrialActive ? styles.textSuccess : styles.mutedText}>
+            {getStatusText()}
           </span>
         </div>
         
-        {!isActive && (
+        {!isActive && !isTrialActive && (
           <>
             <p className={styles.mutedText}>
               Você não possui uma assinatura ativa. Assine agora para desbloquear recursos exclusivos!
@@ -36,6 +50,19 @@ const SubscriptionStatus = ({ status }: SubscriptionStatusProps) => {
               Assinar agora
             </Link>
           </>
+        )}
+
+        {isTrialActive && !isActive && (
+           <div className={styles.trialBadge}>
+             <Clock size={20} />
+             <span>
+                Restam <strong>{trialDaysRemaining} dia{trialDaysRemaining !== 1 && 's'}</strong> do seu período de teste.
+                Aproveite os recursos Pro!
+             </span>
+             <Link href="/precos" className={styles.btnSuccess} style={{marginTop: '1rem', width: '100%'}}>
+               Fazer Upgrade
+             </Link>
+           </div>
         )}
         
         {isActive && (
