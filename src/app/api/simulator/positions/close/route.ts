@@ -48,7 +48,11 @@ export async function POST(req: Request) {
     // Calculate PNL for each trade and update it
     const updatedTrades = await prisma.$transaction(
       tradesToClose.map(trade => {
-        const pnl = (exitPrice - Number(trade.entryPrice)) * Number(trade.quantity);
+        // Correct PnL calculation based on trade type
+        const pnl = trade.type === 'SELL' 
+          ? (Number(trade.entryPrice) - exitPrice) * Number(trade.quantity)
+          : (exitPrice - Number(trade.entryPrice)) * Number(trade.quantity);
+
         return prisma.trade.update({
           where: { id: trade.id },
           data: {
