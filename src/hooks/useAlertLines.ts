@@ -109,62 +109,100 @@ export const useAlertLines = ({
     const chart = chartRef.current;
     const series = seriesRef.current;
 
-    // Only attach listeners if there's a prospective line to drag
     if (!isChartReady || !chartElement || !chart || !series || !prospectiveAlert) return;
 
     const isNearPriceLine = (priceLine: IPriceLine, y: number) => {
       const priceY = series.priceToCoordinate(priceLine.options().price);
-      return priceY !== null && Math.abs(priceY - y) < 10;
+      return priceY !== null && Math.abs(priceY - y) < 20; // Increased tolerance for touch
     };
 
-    const handleMouseDown = (e: MouseEvent) => {
+    const handleDragStart = (y: number) => {
       if (!prospectiveLineRef.current) return;
-      const rect = chartElement.getBoundingClientRect();
-      const y = e.clientY - rect.top;
-
       if (isNearPriceLine(prospectiveLineRef.current, y)) {
         isDragging.current = true;
         chart.applyOptions({ handleScroll: false, handleScale: false });
         chartElement.style.cursor = 'ns-resize';
       }
     };
-
-    const handleMouseMove = (e: MouseEvent) => {
+    
+    const handleDragMove = (y: number) => {
       if (!isDragging.current || !prospectiveLineRef.current) return;
-      const rect = chartElement.getBoundingClientRect();
-      const y = e.clientY - rect.top;
       const newPrice = series.coordinateToPrice(y);
 
       if (newPrice !== null) {
-        // Update the line visually in real-time
         prospectiveLineRef.current.applyOptions({ price: newPrice });
       }
     };
-
-    const handleMouseUp = () => {
-      if (!isDragging.current || !prospectiveLineRef.current) {
-        return;
-      }
+    
+    const handleDragEnd = () => {
+      if (!isDragging.current || !prospectiveLineRef.current) return;
       
       const finalPrice = prospectiveLineRef.current.options().price;
       isDragging.current = false;
       chart.applyOptions({ handleScroll: true, handleScale: true });
       chartElement.style.cursor = 'default';
       
-      // Update the state in the parent component
       onProspectiveAlertChangeRef.current({ price: finalPrice });
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const rect = chartElement.getBoundingClientRect();
+      handleDragStart(e.clientY - rect.top);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const rect = chartElement.getBoundingClientRect();
+      handleDragMove(e.clientY - rect.top);
+    };
+
+    const handleMouseUp = () => {
+      handleDragEnd();
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const rect = chartElement.getBoundingClientRect();
+        handleDragStart(e.touches[0].clientY - rect.top);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging.current) return;
+      if (e.touches.length > 0) {
+        e.preventDefault(); // Prevent scrolling while dragging
+        const rect = chartElement.getBoundingClientRect();
+        handleDragMove(e.touches[0].clientY - rect.top);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      handleDragEnd();
     };
 
     chartElement.addEventListener('mousedown', handleMouseDown);
     chartElement.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
+    
+    chartElement.addEventListener('touchstart', handleTouchStart);
+    chartElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       chartElement.removeEventListener('mousedown', handleMouseDown);
       chartElement.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
-      chart.applyOptions({ handleScroll: true, handleScale: true });
-      chartElement.style.cursor = 'default';
+
+      chartElement.removeEventListener('touchstart', handleTouchStart);
+      chartElement.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+
+      if (chart) {
+        chart.applyOptions({ handleScroll: true, handleScale: true });
+      }
+      if (chartElement) {
+        chartElement.style.cursor = 'default';
+      }
     };
   }, [isChartReady, prospectiveAlert, chartRef, seriesRef, chartContainerRef]);
 
