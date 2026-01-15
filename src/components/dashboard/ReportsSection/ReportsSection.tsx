@@ -231,7 +231,7 @@ export const ReportsSection = ({
   );
 
   const kpiData = useMemo(() => {
-    const totalPnl = tradesWithDates
+    const realizedPnl = tradesWithDates
       .filter((t) => t.status === "CLOSED" && t.pnl != null)
       .reduce((acc, t) => {
         const pnlInBrl = t.symbol.includes('BRL')
@@ -240,6 +240,7 @@ export const ReportsSection = ({
         return acc + pnlInBrl;
       }, 0);
 
+    let unrealizedPnl = 0;
     const unrealizedEquity = tradesWithDates
       .filter((t) => t.status === "OPEN")
       .reduce((acc, trade) => {
@@ -247,12 +248,10 @@ export const ReportsSection = ({
         if (ticker) {
           const currentPrice = parseFloat(ticker.price);
           
-          // Calculate PnL: (Current Price - Entry Price) * Quantity for BUY/LONG
-          // (Entry Price - Current Price) * Quantity for SELL/SHORT
           let pnl = 0;
-          if (trade.type === 'BUY') { // Spot BUY or Futures LONG (mapped to BUY)
+          if (trade.type === 'BUY') {
             pnl = (currentPrice - trade.entryPrice) * trade.quantity;
-          } else { // Futures SHORT (mapped to SELL)
+          } else {
             pnl = (trade.entryPrice - currentPrice) * trade.quantity;
           }
           
@@ -260,8 +259,8 @@ export const ReportsSection = ({
             ? pnl
             : pnl * brlRate;
 
-          // Se for Futuros, precisamos somar a margem de volta, pois ela foi debitada do virtualBalance na abertura.
-          // No Spot, a margem é 0 (não definida), então não afeta o cálculo.
+          unrealizedPnl += pnlInBrl;
+
           const margin = trade.margin ? Number(trade.margin) : 0;
           const marginInBrl = trade.symbol.includes('BRL') ? margin : margin * brlRate;
 
@@ -269,12 +268,11 @@ export const ReportsSection = ({
         }
         return acc;
       }, 0);
+      
+    const totalPnlWithUnrealized = realizedPnl + unrealizedPnl;
 
     return {
-      totalPnl,
-      // IMPORTANTE: Number() para evitar concatenação de strings caso venha como string do banco/API
-      // O virtualBalance já inclui o resultado de operações FECHADAS.
-      // O unrealizedEquity soma o resultado flutuante (PnL) + Margem retida das operações ABERTAS.
+      totalPnl: totalPnlWithUnrealized,
       patrimonioAtual: Number(simulatorProfile?.virtualBalance || 0) + unrealizedEquity,
     };
   }, [tradesWithDates, brlRate, binanceTickers, simulatorProfile]);
