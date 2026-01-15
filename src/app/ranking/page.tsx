@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import useSWR, { mutate } from 'swr'; // Import mutate
 import { useSession } from 'next-auth/react';
@@ -159,6 +160,20 @@ export default function RankingPage() {
           <p className={styles.heroSubtitle}>
             Compare sua performance com a comunidade CriptoPlay e conquiste seu lugar entre os melhores.
           </p>
+
+          <div className="mt-8 flex justify-center">
+            <Link href="/ranking/hall-da-fama" passHref>
+              <Button 
+                size="lg" 
+                className="text-white border-0 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)' }}
+              >
+                <Trophy className="w-5 h-5 mr-2" />
+                Ver Hall da Fama
+              </Button>
+            </Link>
+          </div>
+
         </div>
       </section>
 
