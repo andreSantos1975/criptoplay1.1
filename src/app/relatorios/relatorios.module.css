@@ -42,3 +42,16 @@
 .backLink:hover {
   text-decoration: underline;
 }
+
+@media (max-width: 768px) {
+  .chartsGrid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
