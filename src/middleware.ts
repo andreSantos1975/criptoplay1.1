@@ -6,6 +6,14 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Protect Vercel Cron Jobs
+  if (pathname.startsWith('/api/cron/')) {
+    const authHeader = req.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+  }
+
   // Lista de rotas que exigem uma assinatura válida
   const protectedRoutes = ['/curso']; // '/relatorios', '/alertas' removidos
 
@@ -50,6 +58,6 @@ export async function middleware(req: NextRequest) {
 
 // Configuração do matcher para definir em quais rotas este middleware deve ser executado.
 export const config = {
-  matcher: ['/curso/:path*'], // '/relatorios/:path*', '/alertas/:path*' removidos
+  matcher: ['/curso/:path*', '/api/cron/:path*'], // '/relatorios/:path*', '/alertas/:path*' removidos
 };
 

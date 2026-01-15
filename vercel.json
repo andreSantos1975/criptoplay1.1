@@ -9,7 +9,7 @@
       "schedule": "* * * * *"
     },
     {
-      "path": "/api/cron/process-alerts?secret=${CRON_SECRET}",
+      "path": "/api/cron/process-alerts",
       "schedule": "* * * * *"
     }
   ]

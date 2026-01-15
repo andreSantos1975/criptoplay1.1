@@ -3,14 +3,7 @@ import { processAlerts } from '@/lib/alert-processor';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const secret = searchParams.get('secret');
-
-  if (secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
-
+export async function GET() {
   try {
     await processAlerts();
     return NextResponse.json({ message: 'Alerts processed successfully' }, { status: 200 });

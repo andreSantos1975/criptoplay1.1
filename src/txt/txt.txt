@@ -584,4 +584,40 @@ Sim, você está absolutamente correto.
       gráfico ou a tela se movam acidentalmente.
 
   Agora deve funcionar corretamente em celulares e tablets.
+
+  ----------------------------------------------------------------------------------
+  -----------------------------15/01/2026-------------------------------------------
+
+  Como Fazer Funcionar na Vercel
+
+  O essencial já está pré-configurado no seu projeto. Para que funcione em produção, você
+  precisa garantir duas coisas:
+
+   1. Configuração do `vercel.json`:
+      O arquivo vercel.json na raiz do seu projeto já deve conter a configuração para o Cron
+  Job. Vou verificar o conteúdo dele para confirmar.
+
+   2. Variáveis de Ambiente:
+      O script do Cron Job precisará de acesso a várias chaves de API e à URL do banco de
+  dados. Você precisa configurar as seguintes variáveis de ambiente no painel do seu projeto
+  na Vercel:
+       * DATABASE_URL: A URL de conexão para o seu banco de dados de produção.
+       * BINANCE_API_KEY e BINANCE_SECRET_KEY: Suas chaves de API da Binance para consultar
+         os preços.
+       * RESEND_API_KEY: Se estiver usando Resend para enviar e-mails, a chave da API é
+         necessária.
+       * Outras variáveis que seu projeto possa necessitar para autenticação e funcionamento
+         geral.
+
+         --------------
+
+           1. Domínio Verificado: Para que os e-mails sejam enviados com sucesso e tenham boa
+      entrega (ou seja, não caiam na caixa de spam), o ideal é que o domínio
+      (seudominio.com.br nos exemplos acima) esteja verificado na sua conta do Resend. Isso
+      geralmente envolve adicionar registros DNS (como TXT e CNAME) nas configurações do seu
+      domínio.
+   2. Endereço Funcional: Embora seja comum usar endereços como noreply@, certifique-se de
+      que, se os usuários responderem a esses e-mails, a resposta seja encaminhada para um
+      local que você monitore, ou que o endereço seja configurado para não receber
+      respostas.
   
