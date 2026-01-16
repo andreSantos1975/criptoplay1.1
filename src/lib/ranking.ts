@@ -1,9 +1,16 @@
 import prisma from '@/lib/prisma';
+import { MonthlyRanking, User } from '@prisma/client';
+
+export type HallOfFameData = (MonthlyRanking & {
+    user: Pick<User, 'id' | 'username' | 'image'>;
+});
 
 /**
  * Fetches the Hall of Fame data from the MonthlyRanking table.
  * The data is ordered by year, month, and rank position to show the most
  * recent winners first.
+ * This function also converts Decimal types to numbers to prevent type
+ * errors in the consuming components.
  */
 export async function getHallOfFameData() {
   try {
@@ -26,9 +33,16 @@ export async function getHallOfFameData() {
       ],
     });
 
-    // The logic inside the API route to handle not found is now part of the function.
-    // The page component will handle the case of an empty array.
-    return hallOfFameData;
+    // Convert Decimal fields to number
+    const convertedData = hallOfFameData.map(rank => ({
+      ...rank,
+      startingBalance: rank.startingBalance.toNumber(),
+      finalBalance: rank.finalBalance.toNumber(),
+      roiPercentage: rank.roiPercentage.toNumber(),
+    }));
+
+
+    return convertedData;
 
   } catch (error) {
     console.error('Erro ao buscar dados do Hall da Fama:', error);

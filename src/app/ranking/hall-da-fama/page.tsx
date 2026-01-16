@@ -1,26 +1,11 @@
 import React from 'react';
 import Image from 'next/image';
 import styles from './hall-da-fama.module.css';
-import { getHallOfFameData } from '@/lib/ranking';
+import { getHallOfFameData, HallOfFameData } from '@/lib/ranking';
 
-// Define the type for the ranking data we expect
-interface RankingData {
-  id: string;
-  userId: string;
-  month: number;
-  year: number;
-  finalBalance: number;
-  roiPercentage: number;
-  rankPosition: number;
-  user: {
-    id: string;
-    username: string;
-    image?: string | null;
-  };
-}
 
 // Group data by month and year
-function groupRankings(rankings: RankingData[]) {
+function groupRankings(rankings: HallOfFameData[]) {
   return rankings.reduce((acc, rank) => {
     const key = `${rank.month}/${rank.year}`;
     if (!acc[key]) {
@@ -28,7 +13,7 @@ function groupRankings(rankings: RankingData[]) {
     }
     acc[key].push(rank);
     return acc;
-  }, {} as Record<string, RankingData[]>);
+  }, {} as Record<string, HallOfFameData[]>);
 }
 
 export default async function HallOfFamePage() {
@@ -63,12 +48,12 @@ export default async function HallOfFamePage() {
                   <div className={styles.userCell}>
                     <Image
                       src={rank.user.image || `https://api.dicebear.com/7.x/adventurer/png?seed=${rank.user.id}`}
-                      alt={rank.user.username}
+                      alt={rank.user.username || 'Usuário anônimo'}
                       width={40}
                       height={40}
                       className={styles.avatar}
                     />
-                    <span>{rank.user.username}</span>
+                    <span>{rank.user.username || 'Usuário Anônimo'}</span>
                   </div>
                   <div className={`${styles.roi} ${rank.roiPercentage >= 0 ? styles.positive : styles.negative}`}>
                     {rank.roiPercentage.toFixed(2)}%
