@@ -55,16 +55,18 @@ const ProfileHeader = ({ name, memberSince, image }: ProfileHeaderProps) => {
       toast.error(error.message || 'Ocorreu um erro.', { id: uploadToast });
     } finally {
       setIsUploading(false);
-      // Reset file input value to allow re-uploading the same file
-      if(inputFileRef.current) {
-        inputFileRef.current.value = "";
-      }
+      // Removed: inputFileRef.current.value = ""; to avoid "No file chosen" message after successful upload.
     }
   };
 
   return (
     <div className={styles.profileCard}>
       <h2 className={styles.title}>Meu Perfil</h2>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <h3 className={styles.text} style={{ fontSize: '1.125rem', fontWeight: 600 }}>{name}</h3>
+        <p className={styles.mutedText}>Membro desde {memberSince}</p>
+      </div>
       
       <div className={styles.flexCenter}>
         <label htmlFor="avatar-upload" className={styles.avatarContainer} style={{ cursor: isUploading ? 'not-allowed' : 'pointer' }}>
@@ -94,11 +96,6 @@ const ProfileHeader = ({ name, memberSince, image }: ProfileHeaderProps) => {
           accept="image/png, image/jpeg, image/gif"
           disabled={isUploading}
         />
-        
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <h3 className={styles.text} style={{ fontSize: '1.125rem', fontWeight: 600 }}>{name}</h3>
-          <p className={styles.mutedText}>Membro desde {memberSince}</p>
-        </div>
       </div>
     </div>
   );
