@@ -19,7 +19,12 @@ interface RankingData {
 
 async function getHallOfFameData(): Promise<RankingData[]> {
   // Use NEXT_PUBLIC_BASE_URL which should be set in your environment variables
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+  console.log(`Fetching Hall of Fame data from: ${baseUrl}/api/ranking/hall-da-fama`);
+
   const response = await fetch(`${baseUrl}/api/ranking/hall-da-fama`, {
     cache: 'no-store', // Always fetch fresh data
   });

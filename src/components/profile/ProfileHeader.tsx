@@ -60,7 +60,7 @@ const ProfileHeader = ({ name, memberSince, image }: ProfileHeaderProps) => {
       <h2 className={styles.title}>Meu Perfil</h2>
       
       <div className={styles.flexCenter}>
-        <div className={styles.avatarContainer} onClick={() => !isUploading && inputFileRef.current?.click()}>
+        <label htmlFor="avatar-upload" className={styles.avatarContainer} style={{ cursor: isUploading ? 'not-allowed' : 'pointer' }}>
           {image ? (
             <Image
               src={image}
@@ -77,15 +77,16 @@ const ProfileHeader = ({ name, memberSince, image }: ProfileHeaderProps) => {
           <div className={styles.avatarOverlay}>
             {isUploading ? <Loader2 className="animate-spin" /> : <Camera />}
           </div>
-          <input
-            type="file"
-            ref={inputFileRef}
-            onChange={handleFileChange}
-            className="hidden"
-            accept="image/png, image/jpeg, image/gif"
-            disabled={isUploading}
-          />
-        </div>
+        </label>
+        <input
+          type="file"
+          id="avatar-upload"
+          ref={inputFileRef} // Manter a ref para resetar o valor
+          onChange={handleFileChange}
+          className="hidden"
+          accept="image/png, image/jpeg, image/gif"
+          disabled={isUploading}
+        />
         
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <h3 className={styles.text} style={{ fontSize: '1.125rem', fontWeight: 600 }}>{name}</h3>
