@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp } from "lucide-react";
 import styles from "./HeroSection.module.css";
@@ -7,9 +8,17 @@ import clsx from "clsx";
 
 interface HeroSectionProps {
   isLoggedIn?: boolean;
+  nextLessonSlug?: string;
 }
 
-export function HeroSection({ isLoggedIn = false }: HeroSectionProps) {
+export function HeroSection({
+  isLoggedIn = false,
+  nextLessonSlug,
+}: HeroSectionProps) {
+  const startJourneyHref = nextLessonSlug
+    ? `/academia-criptoplay/${nextLessonSlug}`
+    : "#journey-list";
+
   return (
     <section className={styles.heroSection}>
       {/* Background decorations */}
@@ -44,18 +53,22 @@ export function HeroSection({ isLoggedIn = false }: HeroSectionProps) {
 
           {/* CTAs */}
           <div className={styles.ctaWrapper}>
-            <Button size="xl" className={styles.primaryButton}>
-              Começar minha jornada
-            </Button>
-            {isLoggedIn && (
-              <Button
-                variant="outline"
-                size="xl"
-                className={styles.secondaryButton}
-              >
-                <TrendingUp className="mr-2 h-5 w-5" />
-                Ver meu progresso
+            <Link href={startJourneyHref} passHref>
+              <Button size="xl" className={styles.primaryButton}>
+                Começar minha jornada
               </Button>
+            </Link>
+            {isLoggedIn && (
+              <Link href="#journey-list" passHref>
+                <Button
+                  variant="outline"
+                  size="xl"
+                  className={styles.secondaryButton}
+                >
+                  <TrendingUp className="mr-2 h-5 w-5" />
+                  Ver meu progresso
+                </Button>
+              </Link>
             )}
           </div>
         </div>

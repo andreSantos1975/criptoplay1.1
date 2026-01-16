@@ -14,7 +14,7 @@ export function ChapterGrid({ chapters }: ChapterGridProps) {
   const advancedChapters = chapters.filter((c) => c.status === "coming" && c.category === "advanced");
 
   return (
-    <section className={styles.section}>
+    <section id="journey-list" className={styles.section}>
       <div className={styles.container}>
         {/* Active chapters section */}
         <div className={styles.activeSection}>

@@ -94,13 +94,18 @@ export default async function LearningPathPage() {
   // Apenas conta chapters que realmente existem (não "coming") para o total
   const totalActiveChapters = processedChapters.filter(c => c.status !== "coming").length;
 
+  const nextLesson = processedChapters.find(c => c.status === 'available');
+  // Fallback to the very first lesson if none are "available" (e.g., all completed)
+  const firstLesson = courseData.find(c => c.order === 1);
+  const nextLessonSlug = nextLesson?.slug || firstLesson?.slug;
+
   return (
     <>
       <Navbar />
       <main className={styles.main}>
         <div style={{ marginTop: "64px" }}>
             {/* Hero Section */}
-            <HeroSection isLoggedIn={isLoggedIn} />
+            <HeroSection isLoggedIn={isLoggedIn} nextLessonSlug={nextLessonSlug} />
 
             {/* Progress Bar - only show when logged in */}
             {isLoggedIn && (
