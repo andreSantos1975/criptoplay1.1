@@ -582,19 +582,3 @@ Sim, você está absolutamente correto.
       --------------------------------------------------------------------------------
 
       --------------------16/01/2026----------------------------------------------
-
-
-  Passo 1: Configuração do Armazenamento (Sua Ação)
-
-   * Primeiro, precisamos configurar o serviço de armazenamento. Vou te guiar nesse
-     processo, que é feito uma única vez:
-       1. Vá até o painel do seu projeto na Vercel.
-       2. Na aba "Storage", crie um novo "Blob Store".
-       3. Após a criação, a Vercel fornecerá um token de ambiente chamado
-          BLOB_READ_WRITE_TOKEN. Você precisará copiar este token e adicioná-lo ao seu
-          arquivo .env.local.
-   * Enquanto isso, eu já vou instalar o pacote necessário (@vercel/blob) no projeto.
-
-
-XXXXXXXXX 
-  DESFAZER O TESTE DO HALL DA FAMA
