@@ -1,11 +1,11 @@
 import React from 'react';
 import Image from 'next/image';
 import styles from './hall-da-fama.module.css';
-import { getHallOfFameData, HallOfFameData } from '@/lib/ranking';
+import { getHallOfFameData, HallOfFameEntry } from '@/lib/ranking';
 
 
 // Group data by month and year
-function groupRankings(rankings: HallOfFameData[]) {
+function groupRankings(rankings: HallOfFameEntry[]) {
   return rankings.reduce((acc, rank) => {
     const key = `${rank.month}/${rank.year}`;
     if (!acc[key]) {
@@ -13,7 +13,7 @@ function groupRankings(rankings: HallOfFameData[]) {
     }
     acc[key].push(rank);
     return acc;
-  }, {} as Record<string, HallOfFameData[]>);
+  }, {} as Record<string, HallOfFameEntry[]>);
 }
 
 export default async function HallOfFamePage() {

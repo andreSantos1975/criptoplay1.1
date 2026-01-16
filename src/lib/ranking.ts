@@ -1,9 +1,20 @@
 import prisma from '@/lib/prisma';
-import { MonthlyRanking, User } from '@prisma/client';
+import { User } from '@prisma/client';
 
-export type HallOfFameData = (MonthlyRanking & {
+// Define the shape of the data after converting Decimals to numbers.
+export type HallOfFameEntry = {
+    id: string;
+    userId: string;
+    month: number;
+    year: number;
+    startingBalance: number;
+    finalBalance: number;
+    roiPercentage: number;
+    rankPosition: number;
+    createdAt: Date;
     user: Pick<User, 'id' | 'username' | 'image'>;
-});
+};
+
 
 /**
  * Fetches the Hall of Fame data from the MonthlyRanking table.
@@ -12,7 +23,7 @@ export type HallOfFameData = (MonthlyRanking & {
  * This function also converts Decimal types to numbers to prevent type
  * errors in the consuming components.
  */
-export async function getHallOfFameData() {
+export async function getHallOfFameData(): Promise<HallOfFameEntry[]> {
   try {
     const hallOfFameData = await prisma.monthlyRanking.findMany({
       // Select specific fields from the User model to avoid exposing sensitive data
