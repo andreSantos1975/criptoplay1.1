@@ -46,7 +46,7 @@ const Navbar = () => {
             </Link>
             {status === "authenticated" && (
               <Link href="/academia-criptoplay" className={styles.navLink}>
-                Academia
+                Jornada Cripto
               </Link>
             )}
           </nav>
@@ -115,7 +115,7 @@ const Navbar = () => {
                   className={styles.mobileNavLink}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Academia
+                  Jornada Cripto
                 </Link>
               )}
               <div className={styles.mobileCtaContainer}>

@@ -105,7 +105,7 @@ export async function POST(req: Request) {
 
     console.log('Result keys:', Object.keys(result));
     console.log('Result prototype:', Object.getPrototypeOf(result));
-    // console.log('Result full:', result); // Pode ser muito grande
+    // console.log('Result full:', result); /// Pode ser muito grande
 
     return result.toTextStreamResponse();
   } catch (error: any) {
