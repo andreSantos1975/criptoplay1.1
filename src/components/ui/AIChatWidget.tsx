@@ -67,7 +67,22 @@ export const AIChatWidget: React.FC = () => {
         }),
       });
 
-      if (!response.ok) throw new Error(response.statusText);
+      if (!response.ok) {
+        // Handle rate-limiting errors specifically
+        if (response.status === 429) {
+          const errorData = await response.json();
+          setMessages(prev => prev.map(msg => 
+            msg.id === aiMsgId 
+              ? { ...msg, parts: [{ type: 'text', text: errorData.error || "Você atingiu seu limite de uso." }] }
+              : msg
+          ));
+        } else {
+          // For other errors, throw to be caught by the generic catch block
+          throw new Error(response.statusText);
+        }
+        setIsLoading(false);
+        return; // Stop further execution
+      }
 
       if (!response.body) throw new Error('Sem corpo de resposta');
 
@@ -80,17 +95,6 @@ export const AIChatWidget: React.FC = () => {
         if (done) break;
         
         const chunk = decoder.decode(value, { stream: true });
-        // O stream do AI SDK pode vir formatado. Simplificação: assumir texto bruto ou tentar limpar
-        // Em Vercel AI SDK 3.x, o stream é texto puro se usar streamText().toTextStreamResponse()
-        // Mas pode conter protocolos. Vamos acumular tudo por enquanto e limpar se necessário.
-        
-        // Se o chunk for parte de um protocolo (ex: "0: texto"), precisaríamos de parse.
-        // Mas vamos assumir stream de texto simples por hora. 
-        // Se vier sujo, ajustaremos.
-        
-        // Tratamento básico para remover prefixos de protocolo se existirem (ex: "0:" das versões antigas)
-        // Mas o streamText novo geralmente manda texto limpo ou data chunks.
-        
         aiText += chunk;
         
         // Atualiza a UI progressivamente

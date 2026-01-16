@@ -104,8 +104,6 @@ export const SimulatorChart = memo(({
     const chart = createChart(chartElement, {
       layout: { background: { type: ColorType.Solid, color: "#131722" }, textColor: "#D9D9D9" },
       grid: { vertLines: { color: "#2A2E39" }, horzLines: { color: "#2A2E39" } },
-      width: chartElement.clientWidth,
-      height: chartElement.clientHeight,
       crosshair: { mode: CrosshairMode.Normal },
     });
     chartRef.current = chart;

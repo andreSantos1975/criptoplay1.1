@@ -5,6 +5,16 @@ import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
+// --- DEFINIÇÃO DOS LIMITES DE CHAT POR PLANO ---
+// IMPORTANTE: Substitua os IDs pelos IDs reais dos seus planos no Mercado Pago.
+const PLAN_LIMITS: { [key: string]: number } = {
+  "PLANO_STARTER_ID": 200,   // Exemplo para o plano Starter
+  "PLANO_PRO_ID": 1000,      // Exemplo para o plano Pro
+  "LIFETIME_PLAN": 5000,     // Exemplo para o plano Vitalício
+  // Adicione outros planos aqui
+};
+
+
 // Configurar Mercado Pago
 const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
@@ -30,20 +40,34 @@ export async function POST(req: Request) {
       const userId = preapproval.external_reference;
       const newStatus = preapproval.status; // e.g., "authorized", "paused", "cancelled"
 
-      await prisma.subscription.updateMany({
-        where: { 
-          userId: userId,
-          mercadoPagoSubscriptionId: preapproval.id 
-        },
-        data: { status: newStatus },
+      const subscription = await prisma.subscription.findFirst({
+        where: { mercadoPagoSubscriptionId: preapproval.id },
       });
+      
+      if (subscription) {
+        await prisma.subscription.update({
+          where: { id: subscription.id },
+          data: { status: newStatus },
+        });
 
-      await prisma.user.update({
-        where: { id: userId },
-        data: { subscriptionStatus: newStatus },
-      });
+        let userUpdateData: any = { subscriptionStatus: newStatus };
+        
+        // Se a assinatura for autorizada, atualiza o limite de chat
+        if (newStatus === 'authorized') {
+          const newLimit = PLAN_LIMITS[subscription.planId];
+          if (newLimit) {
+            userUpdateData.chatMessageLimit = newLimit;
+          }
+        }
 
-      console.log(`Webhook: Assinatura recorrente ${preapproval.id} do usuário ${userId} atualizada para ${newStatus}.`);
+        await prisma.user.update({
+          where: { id: userId },
+          data: userUpdateData,
+        });
+
+        console.log(`Webhook: Assinatura recorrente ${preapproval.id} do usuário ${userId} atualizada para ${newStatus}. Limite de chat definido se aplicável.`);
+      }
+
       return NextResponse.json({ message: 'Webhook de assinatura recorrente processado.' }, { status: 200 });
     }
 
@@ -61,30 +85,31 @@ export async function POST(req: Request) {
       // Verificar se o pagamento foi aprovado
       if (payment.status === 'approved') {
         const userId = payment.external_reference;
-        // @ts-ignore: metadata property might be missing in type definition but present in API response
-        const planId = payment.metadata?.plan_id || 'LIFETIME_PLAN'; // Garante compatibilidade
+        const planId = payment.items?.[0]?.id || 'LIFETIME_PLAN';
 
-        // Atualiza a assinatura para ativa
         const updatedSubscription = await prisma.subscription.updateMany({
           where: {
             userId: userId,
             planId: planId,
-            status: 'pending', // Apenas atualiza se estiver pendente
+            status: 'pending',
           },
           data: {
             status: 'active',
           },
         });
 
-        // Se alguma assinatura foi atualizada, atualiza o usuário
         if (updatedSubscription.count > 0) {
+          const newLimit = PLAN_LIMITS[planId];
           await prisma.user.update({
             where: { id: userId },
-            data: { subscriptionStatus: 'active' },
+            data: { 
+              subscriptionStatus: 'lifetime', // Status mais descritivo
+              ...(newLimit && { chatMessageLimit: newLimit }) // Atualiza o limite se encontrado
+            },
           });
-          console.log(`Webhook: Plano vitalício para o usuário ${userId} ativado com sucesso.`);
+          console.log(`Webhook: Plano vitalício para o usuário ${userId} ativado. Limite de chat definido como ${newLimit || 'padrão'}.`);
         } else {
-          console.log(`Webhook: Nenhuma assinatura pendente encontrada para o usuário ${userId} e plano ${planId}. Pode já ter sido ativada.`);
+          console.log(`Webhook: Nenhuma assinatura pendente encontrada para o usuário ${userId} e plano ${planId}.`);
         }
       }
       

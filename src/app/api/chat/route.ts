@@ -1,6 +1,7 @@
 import { streamText, type UIMessage, tool } from 'ai';
 import { google } from '@ai-sdk/google';
 import { searchCourseContent } from '@/lib/course';
+import prisma from '@/lib/prisma'; // Importa o Prisma
 
 // Função auxiliar manual para converter mensagens, contornando erro na biblioteca
 function simpleConvertToCoreMessages(messages: any[]) {
@@ -20,10 +21,11 @@ export const runtime = 'nodejs';
 
 const gemini = google('gemini-2.5-flash');
 
+const THROTTLE_SECONDS = 3; // Limite de 1 mensagem a cada 3 segundos
+
 export async function POST(req: Request) {
   try {
     const jsonBody = await req.json();
-    console.log('[ChatAPI] Body recebido:', JSON.stringify(jsonBody, null, 2));
     const { messages } = jsonBody;
 
     if (!messages || !Array.isArray(messages)) {
@@ -32,16 +34,65 @@ export async function POST(req: Request) {
 
     const session = await getServerSession(authOptions);
 
-    let userContext = '';
-    if (session?.user) {
-      userContext = `\n\nCONTEXTO DO USUÁRIO ATUAL:
-      - Nome: ${session.user.name || 'Não informado'}
-      - Email: ${session.user.email || 'Não informado'}
-      - Status da Assinatura: ${session.user.subscriptionStatus || 'Sem assinatura'}
-      - ID do Usuário: ${session.user.id}
+    if (!session?.user?.id) {
+      return new Response(JSON.stringify({ error: 'Acesso não autorizado. Por favor, faça login.' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Usuário não encontrado.' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 1. Verificação de Quota Mensal
+    if (user.chatMessageCount >= user.chatMessageLimit) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Você atingiu seu limite mensal de mensagens. O limite será renovado no próximo mês.' 
+        }), 
+        { status: 429, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 2. Verificação de Velocidade (Throttling)
+    if (user.lastChatMessageAt) {
+      const now = new Date();
+      const lastMessageTime = new Date(user.lastChatMessageAt);
+      const diffInSeconds = (now.getTime() - lastMessageTime.getTime()) / 1000;
+      if (diffInSeconds < THROTTLE_SECONDS) {
+        return new Response(
+          JSON.stringify({ 
+            error: `Você está enviando mensagens muito rápido. Por favor, aguarde ${THROTTLE_SECONDS} segundos.` 
+          }), 
+          { status: 429, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    
+    // 3. Atualizar contagem ANTES de chamar a IA
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        chatMessageCount: { increment: 1 },
+        lastChatMessageAt: new Date(),
+      },
+    });
+
+    let userContext = `\n\nCONTEXTO DO USUÁRIO ATUAL:
+      - Nome: ${user.name || 'Não informado'}
+      - Email: ${user.email || 'Não informado'}
+      - Status da Assinatura: ${user.subscriptionStatus || 'Sem assinatura'}
+      - ID do Usuário: ${user.id}
       
       Use essas informações para personalizar a conversa. Trate o usuário pelo nome quando apropriado.`;
-    }
 
     const cursoSchema = z.object({
       termo_busca: z.string().describe('O termo de busca OBRIGATÓRIO para encontrar informações no material do curso. Ex: "Hardware Wallet" ou "gerenciamento de risco".'),
@@ -54,19 +105,13 @@ export async function POST(req: Request) {
         // @ts-ignore
         execute: async (input) => {
           const { termo_busca } = input;
-          console.log('[ChatAPI] Args recebidos:', termo_busca);
-          
           if (!termo_busca) {
             return 'Erro: Termo de busca não fornecido.';
           }
-
-          console.log(`[ChatAPI] Consultar curso: ${termo_busca}`);
           try {
             const context = searchCourseContent(termo_busca);
-            console.log(`[ChatAPI] Resultado busca: ${context ? 'Encontrado' : 'Vazio'}`);
             return context || 'Nenhuma informação relevante encontrada no curso para este termo.';
           } catch (e) {
-            console.error('[ChatAPI] Erro na busca:', e);
             return 'Erro interno ao buscar no curso.';
           }
         },
@@ -76,11 +121,8 @@ export async function POST(req: Request) {
         parameters: z.object({}),
         // @ts-ignore
         execute: async () => {
-          if (!session?.user?.id) {
-            return 'Erro: Usuário não está logado. Peça para ele fazer login para ver esses dados.';
-          }
           try {
-            const data = await getUserFinancialData(session.user.id);
+            const data = await getUserFinancialData(user.id);
             return JSON.stringify(data, null, 2);
           } catch (error) {
             return 'Erro ao buscar dados financeiros.';
@@ -102,10 +144,6 @@ export async function POST(req: Request) {
       messages: simpleConvertToCoreMessages(messages),
       tools: tools as any,
     });
-
-    console.log('Result keys:', Object.keys(result));
-    console.log('Result prototype:', Object.getPrototypeOf(result));
-    // console.log('Result full:', result); /// Pode ser muito grande
 
     return result.toTextStreamResponse();
   } catch (error: any) {

@@ -22,6 +22,9 @@ model User {
   createdAt           DateTime          @default(now())
   trialEndsAt         DateTime?
   isPublicProfile     Boolean           @default(true)
+  chatMessageCount    Int               @default(0)
+  lastChatMessageAt   DateTime?
+  chatMessageLimit    Int               @default(30)
   dailyPerformances   DailyPerformance[]
   monthlyRankings     MonthlyRanking[]
   oauthAccounts       OAuthAccount[]
