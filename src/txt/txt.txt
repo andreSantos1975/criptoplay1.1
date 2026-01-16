@@ -583,3 +583,85 @@ Sim, você está absolutamente correto.
 
       --------------------16/01/2026----------------------------------------------
 NEXT_PUBLIC_BASE_URL
+
+-----------------------------------------------------------------------------------
+
+Qual seria a tática de implementaçao para usuarios dos tres planos da plataforma
+  CriptoPlay para que nao ouvesse abuso nas consultas ao chatbot?
+
+✦ Excelente pergunta. Implementar um sistema para prevenir abusos é crucial para controlar
+  os custos da API e garantir a qualidade do serviço. A melhor abordagem é uma estratégia em
+  camadas, com limites diferentes para cada plano.
+
+  Aqui está a tática de implementação que eu sugiro, dividida em 4 partes:
+
+  1. Rastreamento de Uso no Banco de Dados
+
+  Primeiro, precisamos modificar o schema.prisma para rastrear o uso do chatbot por cada
+  usuário. Adicionaríamos estes campos ao model User:
+
+   1 // Em prisma/schema.prisma
+   2 
+   3 model User {
+   4   // ... outros campos
+   5   chatMessageCount      Int      @default(0) // Contagem de mensagens no mês atual
+   6   lastChatMessageAt     DateTime?            // Data e hora da última mensagem enviada
+   7   chatMessageLimit      Int      @default(20) // Limite mensal de mensagens (definido 
+     pelo plano)
+   8 }
+
+   - `chatMessageCount`: Contaria as mensagens que o usuário enviou no ciclo atual.
+   - `lastChatMessageAt`: Nos ajudaria a limitar a velocidade das mensagens.
+   - `chatMessageLimit`: Guardaria o limite total do plano do usuário, para fácil consulta.
+
+  2. Lógica de Rate Limiting no Backend
+
+  No arquivo src/app/api/chat/route.ts, antes de processar a mensagem e enviá-la para a IA,
+  implementaríamos a lógica de verificação:
+
+   1. Buscar o Usuário: Obter os dados do usuário atual, incluindo chatMessageCount e
+      chatMessageLimit.
+   2. Verificar Limite de Quantidade (Quota Mensal):
+       - Se user.chatMessageCount >= user.chatMessageLimit, a API recusaria a solicitação
+         com um erro 429 Too Many Requests e uma mensagem clara: "Você atingiu seu limite
+         mensal de mensagens."
+   3. Verificar Limite de Velocidade (Throttling):
+       - Calcular o tempo desde a lastChatMessageAt. Se for muito recente (ex: menos de 3
+         segundos), a API recusaria a solicitação com a mensagem: "Você está enviando
+         mensagens rápido demais." Isso previne spam automatizado.
+   4. Permitir e Atualizar: Se o usuário estiver dentro dos limites, a API processaria a
+      mensagem e, em seguida, atualizaria o banco de dados:
+       - chatMessageCount seria incrementado em 1.
+       - lastChatMessageAt seria atualizado para a data e hora atuais.
+
+  3. Reinicialização Mensal (Cron Job)
+  Criaríamos um "cron job" (uma tarefa agendada) que rodaria uma vez por mês.
+   - Responsabilidade: A tarefa percorreria todos os usuários no banco de dados e
+     redefiniria o chatMessageCount de volta para 0.
+   - O projeto já possui uma pasta src/app/api/cron, o que facilitaria a implementação.
+
+  4. Estratégia de Limites por Plano (Exemplo)
+
+  Agora, aplicamos limites diferentes para cada plano. Os valores exatos podem ser
+  ajustados, mas aqui está uma sugestão:
+
+   - Plano Gratuito/Trial:
+       - Limite Mensal: 30 mensagens.
+       - Limite de Velocidade: 1 mensagem a cada 5 segundos.
+       - Objetivo: Permitir que o usuário experimente o valor do chatbot.
+
+   - Plano Starter (Intermediário):
+       - Limite Mensal: 200 mensagens.
+       - Limite de Velocidade: 1 mensagem a cada 2 segundos.
+       - Objetivo: Atender à maioria dos usuários com um volume generoso, mas finito.
+
+   - Plano Premium/Lifetime (Avançado):
+       - Limite Mensal: 5.000 mensagens (um "quase ilimitado" que protege contra abusos
+         extremos).
+       - Limite de Velocidade: Sem limite de velocidade.
+       - Objetivo: Oferecer uma experiência fluida e sem interrupções para os usuários mais
+         engajados.
+
+  Essa abordagem em camadas protege o sistema tanto de uso excessivo ao longo do tempo
+  (quotas) quanto de picos de abuso momentâneos (throttling), de forma justa e escalonada
+  para cada tipo de cliente.
