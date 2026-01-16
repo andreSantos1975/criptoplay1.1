@@ -49,7 +49,7 @@ export async function getHallOfFameData(): Promise<HallOfFameEntry[]> {
       ...rank,
       startingBalance: rank.startingBalance.toNumber(),
       finalBalance: rank.finalBalance.toNumber(),
-      roiPercentage: rank.roiPercentage.toNumber(),
+      roiPercentage: rank.roiPercentage, // roiPercentage is already a number (Float in Prisma)
     }));
 
 
