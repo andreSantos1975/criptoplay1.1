@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
       return {
         id: user.id,
         nickname: user.username || `User ${user.id.slice(0, 4)}`,
-        avatar: user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+        avatar: user.image || `https://api.dicebear.com/7.x/adventurer/png?seed=${user.id}`,
         roi: roi,
         profit: periodProfit,
         trades: totalTradesCount,

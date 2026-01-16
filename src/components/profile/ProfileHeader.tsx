@@ -1,21 +1,90 @@
-import React from 'react';
+'use client';
+
+import React, { useState, useRef } from 'react';
+import Image from 'next/image';
+import { useSession } from 'next-auth/react';
+import toast from 'react-hot-toast';
+import { Camera, Loader2 } from 'lucide-react';
 import styles from './ProfileComponents.module.css';
 
 interface ProfileHeaderProps {
   name: string;
   memberSince: string;
+  image?: string | null;
 }
 
-const ProfileHeader = ({ name, memberSince }: ProfileHeaderProps) => {
+const ProfileHeader = ({ name, memberSince, image }: ProfileHeaderProps) => {
+  const { update } = useSession();
+  const inputFileRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
   const initial = name.charAt(0).toUpperCase();
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const uploadToast = toast.loading('Enviando sua nova foto...');
+
+    try {
+      const response = await fetch(`/api/avatar/upload?filename=${file.name}`, {
+        method: 'POST',
+        body: file,
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha no upload da imagem.');
+      }
+
+      const newBlob = await response.json();
+      
+      // A API agora atualiza o banco de dados, então só precisamos atualizar a sessão
+      await update({ image: newBlob.url });
+
+      toast.success('Avatar atualizado com sucesso!', { id: uploadToast });
+
+    } catch (error: any) {
+      toast.error(error.message || 'Ocorreu um erro.', { id: uploadToast });
+    } finally {
+      setIsUploading(false);
+      // Reset file input value to allow re-uploading the same file
+      if(inputFileRef.current) {
+        inputFileRef.current.value = "";
+      }
+    }
+  };
 
   return (
     <div className={styles.profileCard}>
       <h2 className={styles.title}>Meu Perfil</h2>
       
       <div className={styles.flexCenter}>
-        <div className={styles.avatarCircle}>
-          {initial}
+        <div className={styles.avatarContainer} onClick={() => !isUploading && inputFileRef.current?.click()}>
+          {image ? (
+            <Image
+              src={image}
+              alt={name}
+              width={64}
+              height={64}
+              className={styles.avatarImage}
+            />
+          ) : (
+            <div className={styles.avatarCircle}>
+              {initial}
+            </div>
+          )}
+          <div className={styles.avatarOverlay}>
+            {isUploading ? <Loader2 className="animate-spin" /> : <Camera />}
+          </div>
+          <input
+            type="file"
+            ref={inputFileRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept="image/png, image/jpeg, image/gif"
+            disabled={isUploading}
+          />
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column' }}>

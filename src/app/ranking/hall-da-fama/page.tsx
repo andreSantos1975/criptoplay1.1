@@ -74,7 +74,7 @@ export default async function HallOfFamePage() {
                   </div>
                   <div className={styles.userCell}>
                     <Image
-                      src={rank.user.image || '/assets/default-avatar.svg'}
+                      src={rank.user.image || `https://api.dicebear.com/7.x/adventurer/png?seed=${rank.userId}`}
                       alt={rank.user.username}
                       width={40}
                       height={40}

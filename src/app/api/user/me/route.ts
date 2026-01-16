@@ -8,7 +8,8 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 
 const updateProfileSchema = z.object({
-  isPublicProfile: z.boolean(),
+  isPublicProfile: z.boolean().optional(),
+  image: z.string().url().optional(),
 });
 
 export async function GET(request: Request) {
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
         username: true,
         virtualBalance: true,
         isPublicProfile: true, // Incluir o status de visibilidade do ranking
+        image: true,
         // Incluir outros campos relevantes se necessário
       },
     });
@@ -59,22 +61,36 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ message: 'Dados inválidos', errors: validation.error.format() }, { status: 400 });
     }
 
-    const { isPublicProfile } = validation.data;
+    const { isPublicProfile, image } = validation.data;
+
+    // Build the data object for Prisma conditionally
+    const dataToUpdate: { isPublicProfile?: boolean; image?: string } = {};
+    if (isPublicProfile !== undefined) {
+      dataToUpdate.isPublicProfile = isPublicProfile;
+    }
+    if (image !== undefined) {
+      dataToUpdate.image = image;
+    }
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      return NextResponse.json({ message: 'Nenhum dado para atualizar' }, { status: 400 });
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
-      data: { isPublicProfile },
+      data: dataToUpdate,
       select: {
         id: true,
         username: true,
-        isPublicProfile: true, // Only return relevant fields
+        isPublicProfile: true,
+        image: true,
       },
     });
 
     return NextResponse.json(updatedUser, { status: 200 });
 
   } catch (error) {
-    console.error('Erro ao atualizar visibilidade do perfil:', error);
+    console.error('Erro ao atualizar perfil do usuário:', error);
     return NextResponse.json({ message: 'Ocorreu um erro no servidor.' }, { status: 500 });
   }
 }

@@ -119,7 +119,8 @@ export default function ProfilePage() {
       <div className={styles.grid}>
         <ProfileHeader 
           name={user?.name || 'Usuário CriptoPlay'} 
-          memberSince={memberSince} 
+          memberSince={memberSince}
+          image={user?.image}
         />
 
         <AccountInfo email={user?.email || ''} />
