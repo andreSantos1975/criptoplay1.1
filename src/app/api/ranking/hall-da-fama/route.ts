@@ -1,41 +1,27 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { getHallOfFameData } from '@/lib/ranking';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * API route to fetch the Hall of Fame data from the MonthlyRanking table.
- * The data is ordered by year, month, and rank position to show the most
- * recent winners first.
+ * API route to fetch the Hall of Fame data from the MonthlyRanking table
+ * by using the centralized getHallOfFameData function.
  */
 export async function GET() {
   try {
-    const hallOfFameData = await prisma.monthlyRanking.findMany({
-      // Select specific fields from the User model to avoid exposing sensitive data
-      include: {
-        user: {
-          select: {
-            username: true,
-            image: true,
-          },
-        },
-      },
-      // Order the results to show the most recent rankings first
-      orderBy: [
-        { year: 'desc' },
-        { month: 'desc' },
-        { rankPosition: 'asc' },
-      ],
-    });
+    const hallOfFameData = await getHallOfFameData();
 
-    if (!hallOfFameData) {
+    // The getHallOfFameData function throws an error on failure, which is caught below.
+    // If it returns an empty array, it's still a successful response.
+    if (hallOfFameData.length === 0) {
       return NextResponse.json({ message: 'Nenhum dado encontrado no Hall da Fama.' }, { status: 404 });
     }
 
     return NextResponse.json(hallOfFameData);
 
   } catch (error) {
-    console.error('Erro ao buscar dados do Hall da Fama:', error);
+    // The error is already logged by the getHallOfFameData function.
+    // We just return a generic server error response.
     return new NextResponse('Erro interno do servidor ao buscar o Hall da Fama.', { status: 500 });
   }
 }

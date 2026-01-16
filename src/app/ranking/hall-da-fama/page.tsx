@@ -1,6 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import styles from './hall-da-fama.module.css';
+import { getHallOfFameData } from '@/lib/ranking';
 
 // Define the type for the ranking data we expect
 interface RankingData {
@@ -12,29 +13,10 @@ interface RankingData {
   roiPercentage: number;
   rankPosition: number;
   user: {
+    id: string;
     username: string;
     image?: string | null;
   };
-}
-
-async function getHallOfFameData(): Promise<RankingData[]> {
-  // Use NEXT_PUBLIC_BASE_URL which should be set in your environment variables
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-
-  console.log(`Fetching Hall of Fame data from: ${baseUrl}/api/ranking/hall-da-fama`);
-
-  const response = await fetch(`${baseUrl}/api/ranking/hall-da-fama`, {
-    cache: 'no-store', // Always fetch fresh data
-  });
-
-  if (!response.ok) {
-    // This will be caught by the nearest error.js / error.tsx
-    throw new Error('Falha ao carregar os dados do Hall da Fama.');
-  }
-
-  return response.json();
 }
 
 // Group data by month and year
@@ -50,6 +32,7 @@ function groupRankings(rankings: RankingData[]) {
 }
 
 export default async function HallOfFamePage() {
+  // Fetch data directly from the database
   const data = await getHallOfFameData();
   const groupedData = groupRankings(data);
 
@@ -79,7 +62,7 @@ export default async function HallOfFamePage() {
                   </div>
                   <div className={styles.userCell}>
                     <Image
-                      src={rank.user.image || `https://api.dicebear.com/7.x/adventurer/png?seed=${rank.userId}`}
+                      src={rank.user.image || `https://api.dicebear.com/7.x/adventurer/png?seed=${rank.user.id}`}
                       alt={rank.user.username}
                       width={40}
                       height={40}
