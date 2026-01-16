@@ -21,9 +21,16 @@ const ProfileHeader = ({ name, memberSince, image }: ProfileHeaderProps) => {
   const initial = name.charAt(0).toUpperCase();
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    console.log('handleFileChange foi acionado.');
+    console.log('Conteúdo de event.target.files:', event.target.files);
 
+    const file = event.target.files?.[0];
+    if (!file) {
+      console.log('Nenhum arquivo encontrado em event.target.files. Abortando.');
+      return;
+    }
+
+    console.log('Arquivo selecionado:', file.name);
     setIsUploading(true);
     const uploadToast = toast.loading('Enviando sua nova foto...');
 
