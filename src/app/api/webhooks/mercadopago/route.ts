@@ -6,7 +6,7 @@ import prisma from '@/lib/prisma';
 export const dynamic = 'force-dynamic';
 
 // Adicionando uma interface local para contornar o problema de tipagem do SDK
-interface PaymentWithAdditionalInfo extends Payment {
+interface PaymentWithAdditionalInfo {
   additional_info?: {
     items?: {
       id?: string;
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
       // Verificar se o pagamento foi aprovado
       if (payment.status === 'approved') {
         const userId = payment.external_reference;
-        const planId = (payment as PaymentWithAdditionalInfo).additional_info?.items?.[0]?.id || 'LIFETIME_PLAN';
+        const planId = ((payment as unknown) as PaymentWithAdditionalInfo).additional_info?.items?.[0]?.id || 'LIFETIME_PLAN';
 
         const updatedSubscription = await prisma.subscription.updateMany({
           where: {
