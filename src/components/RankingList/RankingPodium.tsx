@@ -23,14 +23,7 @@ export const RankingPodium: React.FC<RankingPodiumProps> = ({ topTraders }) => {
     topTraders.find(t => t.position === 3) || null,
   ];
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
+  // Removed formatCurrency function
 
   const formatPercentage = (value: number) => {
     return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
@@ -83,7 +76,7 @@ export const RankingPodium: React.FC<RankingPodiumProps> = ({ topTraders }) => {
           <div className={styles.traderInfo}>
             <span className={styles.nickname}>{trader.nickname}</span>
             <span className={styles.roi}>{formatPercentage(trader.roi)}</span>
-            <span className={styles.profit}>{formatCurrency(trader.profit)}</span>
+            <span className={styles.profit}>{trader.profit >= 0 ? '+' : ''}{trader.profit.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USDT</span>
           </div>
         </div>
       </div>

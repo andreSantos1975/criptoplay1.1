@@ -38,13 +38,19 @@ export async function GET(req: NextRequest) {
     const includeSpot = market === 'spot' || market === 'all';
     const includeFutures = market === 'futures' || market === 'all';
 
+    const whereClause: any = {
+      OR: [
+        { subscriptionStatus: 'active' },
+        { trialEndsAt: { gt: new Date() } },
+      ],
+    };
+
+    if (currentUserId) {
+      whereClause.OR.push({ id: currentUserId });
+    }
+
     const users = await prisma.user.findMany({
-      where: {
-        OR: [
-          { subscriptionStatus: 'active' },
-          { trialEndsAt: { gt: new Date() } }
-        ]
-      },
+      where: whereClause,
       select: {
         id: true,
         username: true,

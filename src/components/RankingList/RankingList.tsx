@@ -41,15 +41,6 @@ const fetchRanking = async (period: string = '30d'): Promise<RankingResponse> =>
   return res.json();
 };
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-};
-
 const formatPercentage = (value: number) => {
   return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
 };
@@ -121,7 +112,7 @@ export const RankingList: React.FC = () => {
               <th className={styles.th}>Trader</th>
               <th className={`${styles.th} ${styles.mobileHide}`}>Trades</th>
               <th className={`${styles.th} ${styles.mobileHide}`}>Win Rate</th>
-              <th className={styles.th}>Lucro</th>
+              <th className={styles.th}>Lucro (USDT)</th>
               <th className={styles.th}>ROI</th>
             </tr>
           </thead>
@@ -144,7 +135,7 @@ export const RankingList: React.FC = () => {
                 <td className={`${styles.td} ${styles.mobileHide}`}>{trader.trades}</td>
                 <td className={`${styles.td} ${styles.mobileHide}`}>{trader.winRate.toFixed(1)}%</td>
                 <td className={`${styles.td} ${trader.profit >= 0 ? styles.positive : styles.negative}`}>
-                  {formatCurrency(trader.profit)}
+                  {trader.profit >= 0 ? '+' : ''}{trader.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
                 <td className={`${styles.td} ${styles.roiCell}`}>
                   {formatPercentage(trader.roi)}
