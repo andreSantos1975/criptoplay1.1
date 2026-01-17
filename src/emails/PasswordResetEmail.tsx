@@ -29,7 +29,7 @@ export const PasswordResetEmail = ({
     <Body style={main}>
       <Container style={container}>
         <Img
-          src="cid:logo"
+          src="hero-crypto.jpg"
           width="120"
           height="60"
           alt="CriptoPlay"

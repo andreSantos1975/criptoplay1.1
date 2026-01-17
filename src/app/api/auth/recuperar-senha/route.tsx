@@ -63,7 +63,6 @@ export async function POST(req: Request) {
         {
           filename: 'hero-crypto.jpg',
           content: imageBuffer,
-          cid: 'logo',
         },
       ],
     });
