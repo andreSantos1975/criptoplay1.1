@@ -87,7 +87,6 @@ export const useVigilante = ({
 }: VigilanteOptions) => {
   const openPositionsString = JSON.stringify(openPositions);
   
-  // Refs to keep track of state inside intervals/callbacks without staleness
   const closingSymbolsRef = useRef(closingPositionSymbols);
   closingSymbolsRef.current = closingPositionSymbols;
 
@@ -99,80 +98,98 @@ export const useVigilante = ({
       return;
     }
 
-    // Map positions by symbol for easy lookup
     const positionsBySymbol: { [key: string]: SimulatorPosition } = {};
     openPositions.forEach(pos => {
       positionsBySymbol[pos.symbol] = pos;
     });
 
     const symbols = Object.keys(positionsBySymbol);
-    const sockets: WebSocket[] = [];
+    const sockets = new Map<string, WebSocket>();
+    const reconnectTimeouts = new Map<string, NodeJS.Timeout>();
 
-    // --- STRATEGY 1: WEBSOCKET (Fast, Real-time) ---
-    symbols.forEach(symbol => {
+    const connect = (symbol: string) => {
+      console.log(`[VIGILANTE-WS] Attempting to connect for ${symbol}...`);
+      
       const position = positionsBySymbol[symbol];
-      const marketType = position.marketType || 'spot';
+      if (!position) return;
 
-      const streamHost = marketType === 'futures'
-        ? 'fstream.binance.com'
-        : 'stream.binance.com:9443';
-        
-      const ws = new WebSocket(`wss://${streamHost}/ws/${symbol.toLowerCase()}@kline_1m`);
+      const marketType = position.marketType || 'spot';
+      const streamHost = marketType === 'futures' ? 'fstream.binance.com' : 'stream.binance.com:9443';
+      const streamName = marketType === 'futures' ? `${symbol.toLowerCase()}@markPrice@1s` : `${symbol.toLowerCase()}@kline_1m`;
+      
+      const ws = new WebSocket(`wss://${streamHost}/ws/${streamName}`);
+
+      ws.onopen = () => {
+        console.log(`[VIGILANTE-WS] Connection opened for ${symbol}`);
+        sockets.set(symbol, ws);
+      };
 
       ws.onmessage = (event) => {
         const message = JSON.parse(event.data);
-        const kline = message.k;
+        const currentPrice = marketType === 'futures' ? parseFloat(message.p) : parseFloat(message.k?.c);
 
-        if (kline) {
-          const currentPrice = parseFloat(kline.c);
+        if (isNaN(currentPrice)) return;
 
-          if (closeMutationRef.current.isPending) return;
+        if (closeMutationRef.current.isPending) return;
 
-          const pos = positionsBySymbol[symbol];
-          if (!pos) return;
+        const pos = positionsBySymbol[symbol];
+        if (!pos) return;
 
+        const stopLoss = getNumericValue(pos.stopLoss);
+        const takeProfit = getNumericValue(pos.takeProfit);
+
+        if ((!stopLoss || stopLoss === 0) && (!takeProfit || takeProfit === 0)) return;
+
+        const shouldClose = checkTrigger(currentPrice, pos, stopLoss, takeProfit);
+
+        if (shouldClose) {
           if (closingSymbolsRef.current.has(pos.symbol)) return;
 
-          const stopLoss = getNumericValue(pos.stopLoss);
-          const takeProfit = getNumericValue(pos.takeProfit);
-
-          if ((!stopLoss || stopLoss === 0) && (!takeProfit || takeProfit === 0)) return;
-
-          if (checkTrigger(currentPrice, pos, stopLoss, takeProfit)) {
-            console.log(`[VIGILANTE-WS] Closing ${pos.symbol} at ${currentPrice}`);
-            onAddToClosingPositionSymbols(pos.symbol);
-            closeMutationRef.current.mutate({ 
-                symbol: pos.symbol, 
-                price: currentPrice, 
-                marketType: marketType 
-            });
-          }
+          console.log(`[VIGILANTE-WS] Closing ${pos.symbol} at ${currentPrice} (Mark Price)`);
+          onAddToClosingPositionSymbols(pos.symbol);
+          closeMutationRef.current.mutate({ 
+              symbol: pos.symbol, 
+              price: currentPrice, 
+              marketType: marketType 
+          });
         }
       };
 
       ws.onerror = (error) => {
-        // Just log, the Polling strategy will pick it up
-        console.warn(`[VIGILANTE-WS] Error for ${symbol}. Polling will handle updates.`);
+        console.warn(`[VIGILANTE-WS] Error for ${symbol}:`, error);
+        // The onclose event will handle reconnection.
       };
 
-      sockets.push(ws);
-    });
+      ws.onclose = () => {
+        console.log(`[VIGILANTE-WS] Connection closed for ${symbol}. Reconnecting in 5 seconds...`);
+        sockets.delete(symbol);
+        // Clear any existing timeout for this symbol to avoid multiple reconnect loops
+        if (reconnectTimeouts.has(symbol)) {
+          clearTimeout(reconnectTimeouts.get(symbol)!);
+        }
+        // Set a new timeout to reconnect
+        const timeoutId = setTimeout(() => connect(symbol), 5000);
+        reconnectTimeouts.set(symbol, timeoutId);
+      };
+    };
 
-    // --- STRATEGY 2: POLLING (Robust, Fallback) ---
-    // Runs every 3 seconds to fetch prices via API Proxy (Server-side)
-    // This bypasses client-side WebSocket blocks (CORS, ISP, etc.)
+    symbols.forEach(symbol => connect(symbol));
+
     const pollingInterval = setInterval(async () => {
         for (const symbol of symbols) {
             if (closeMutationRef.current.isPending) continue;
             
             const pos = positionsBySymbol[symbol];
-            if (!pos) continue;
-            if (closingSymbolsRef.current.has(pos.symbol)) continue;
+            if (!pos || closingSymbolsRef.current.has(pos.symbol)) continue;
 
             const stopLoss = getNumericValue(pos.stopLoss);
             const takeProfit = getNumericValue(pos.takeProfit);
 
             if ((!stopLoss || stopLoss === 0) && (!takeProfit || takeProfit === 0)) continue;
+            
+            // Skip polling if WebSocket is connected and healthy for this symbol
+            const socket = sockets.get(symbol);
+            if (socket && socket.readyState === WebSocket.OPEN) continue;
 
             const marketType = pos.marketType || 'spot';
             const apiPath = marketType === 'futures' ? 'futures-price' : 'price';
@@ -196,13 +213,23 @@ export const useVigilante = ({
                 console.error(`[VIGILANTE-POLL] Error fetching price for ${symbol}:`, err);
             }
         }
-    }, 3000); // Check every 3 seconds
+    }, 3000);
 
     return () => {
-      sockets.forEach(ws => ws.close());
+      console.log('[VIGILANTE-WS] Cleaning up all connections and timeouts.');
+      // Clear all reconnect timeouts
+      reconnectTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+      reconnectTimeouts.clear();
+      
+      // Close all active WebSocket connections
+      sockets.forEach(ws => {
+        // Remove listeners to prevent reconnection attempts during cleanup
+        ws.onclose = null; 
+        ws.close();
+      });
+      sockets.clear();
+
       clearInterval(pollingInterval);
     };
-  // Re-run if positions change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openPositionsString, enabled, onAddToClosingPositionSymbols]);
 };

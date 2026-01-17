@@ -85,6 +85,9 @@ export default function LoginPage() {
             required
           />
         </div>
+        <div className={styles.forgotPassword}>
+          <a href="/auth/recuperar-senha">Esqueceu sua senha?</a>
+        </div>
         <button type="submit" className={styles.button} disabled={isLoading}>
           {isLoading ? 'Entrando...' : 'Login'}
         </button>

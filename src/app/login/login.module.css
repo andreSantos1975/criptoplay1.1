@@ -133,3 +133,18 @@
 .registerLink a:hover {
   text-decoration: underline;
 }
+
+.forgotPassword {
+  text-align: right;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.forgotPassword a {
+  color: #0070f3;
+  text-decoration: none;
+}
+
+.forgotPassword a:hover {
+  text-decoration: underline;
+}

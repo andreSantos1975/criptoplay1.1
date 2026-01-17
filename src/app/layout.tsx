@@ -6,6 +6,8 @@ import AuthProvider from "@/components/AuthProvider";
 import QueryProvider from "@/components/QueryProvider";
 import Navbar from "@/components/Navbar/Navbar";
 import { AIChatWidget } from '@/components/ui/AIChatWidget';
+import { ToastProvider } from "@/components/ui/use-toast.tsx"; // Importar o provedor de toast
+import { Toaster } from "@/components/ui/toaster";     // Importar o componente Toaster
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,9 +32,12 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
+              <ToastProvider> {/* Envolver com ToastProvider */}
                 <Navbar />
                 {children}
                 <AIChatWidget />
+                <Toaster /> {/* Adicionar o componente Toaster aqui */}
+              </ToastProvider>
             </ThemeProvider>
           </QueryProvider>
         </AuthProvider>

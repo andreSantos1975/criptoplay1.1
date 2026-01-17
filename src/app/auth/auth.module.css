@@ -1,0 +1,14 @@
+.authContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding-top: 64px; /* Altura da Navbar */
+  box-sizing: border-box; /* Garante que o padding seja incluído na altura */
+  background-color: #f9f9f9; /* Cor de fundo correspondente */
+}
+
+/* Para o modo escuro, se necessário */
+.dark .authContainer {
+  background-color: #1a202c; /* Cor de fundo escura correspondente */
+}

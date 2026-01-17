@@ -665,3 +665,9 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
   Essa abordagem em camadas protege o sistema tanto de uso excessivo ao longo do tempo
   (quotas) quanto de picos de abuso momentâneos (throttling), de forma justa e escalonada
   para cada tipo de cliente.
+
+  =================================================================================
+
+  
+
+  

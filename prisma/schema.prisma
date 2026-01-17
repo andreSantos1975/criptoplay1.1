@@ -25,6 +25,8 @@ model User {
   chatMessageCount    Int               @default(0)
   lastChatMessageAt   DateTime?
   chatMessageLimit    Int               @default(30)
+  passwordResetToken  String?           @unique
+  passwordResetExpires DateTime?
   dailyPerformances   DailyPerformance[]
   monthlyRankings     MonthlyRanking[]
   oauthAccounts       OAuthAccount[]
