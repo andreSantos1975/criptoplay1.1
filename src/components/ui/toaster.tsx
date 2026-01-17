@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useToast } from './use-toast.tsx';
+import { useToast } from './use-toast';
 import styles from './toast.module.css';
 import { X } from 'lucide-react'; // Importar o ícone X
 
