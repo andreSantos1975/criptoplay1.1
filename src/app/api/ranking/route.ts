@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
         : 0;
 
       // Verificar se o trial está ativo
-      const isTrialActive = user.trialEndsAt && new Date(user.trialEndsAt) > new Date();
+      const isTrialActive = user.trialEndsAt ? new Date(user.trialEndsAt).getTime() > Date.now() : false;
       const plan = (user.subscriptionStatus === 'active' || isTrialActive) ? 'pro' : 'free';
 
       // Badges
