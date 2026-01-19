@@ -130,10 +130,14 @@ export default function RankingPage() {
   const metrics = data?.metrics || {};
 
   const isLoggedIn = !!session?.user?.id;
-  const userPlan = currentUserData?.plan || "free";
+  
+  // Encontre o usuário atual na lista de traders como um fallback para consistência da UI
+  const currentUserInTraders = traders.find(t => t.id === session?.user?.id);
+
+  // Priorize `currentUserData` da API, mas use a lista de traders se necessário para garantir consistência
+  const userPlan = currentUserData?.plan || currentUserInTraders?.plan || "free";
   
   // Lógica atualizada: Qualquer plano que não seja 'free' é considerado assinante (Pro, Premium, Trial)
-  // A API já retorna 'pro' se estiver em trial ativo, mas essa verificação garante robustez.
   const isSubscriber = userPlan !== "free";
 
   const totalTradersRanked = metrics.totalTraders || 0;
