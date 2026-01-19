@@ -43,6 +43,22 @@ const SORT_OPTIONS = [
   { label: 'Consistência', value: 'consistency' },
 ];
 
+// Definindo a interface do Trader para garantir a tipagem
+interface Trader {
+  id: string;
+  position: number;
+  nickname: string;
+  avatar: string;
+  roi: number;
+  profit: number;
+  trades: number;
+  winRate: number;
+  drawdown: number;
+  plan: "free" | "starter" | "pro" | "premium";
+  isCurrentUser?: boolean;
+  badges?: string[];
+}
+
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function RankingPage() {
@@ -124,15 +140,15 @@ export default function RankingPage() {
 
   if (error) return <div className="text-center py-20 text-red-500">Falha ao carregar o ranking. Tente novamente mais tarde.</div>;
 
-  const traders = data?.traders || [];
-  const top3Traders = traders.slice(0, 3); // Extrair Top 3 para o Pódio
+  const traders: Trader[] = data?.traders || [];
+  const top3Traders: Trader[] = traders.slice(0, 3);
   const currentUserData = data?.currentUser || null;
   const metrics = data?.metrics || {};
 
   const isLoggedIn = !!session?.user?.id;
   
   // Encontre o usuário atual na lista de traders como um fallback para consistência da UI
-  const currentUserInTraders = traders.find(t => t.id === session?.user?.id);
+  const currentUserInTraders: Trader | undefined = traders.find((t: Trader) => t.id === session?.user?.id);
 
   // Priorize `currentUserData` da API, mas use a lista de traders se necessário para garantir consistência
   const userPlan = currentUserData?.plan || currentUserInTraders?.plan || "free";
