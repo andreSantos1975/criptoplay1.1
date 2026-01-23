@@ -198,7 +198,7 @@ const Simulator = () => {
     queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
     queryFn: async () => {
       const apiPath = marketType === 'futures' ? 'futures-klines' : 'klines';
-      const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}`);
+      const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}&limit=1000`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Erro ao buscar dados do gráfico.");
