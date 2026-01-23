@@ -354,13 +354,13 @@ const Simulator = () => {
   }, [entryPrice, selectedCrypto]);
   
   const assetHeaderData = useMemo(() => {
-    if (!initialChartData || initialChartData.length === 0) return { open: 0, high: 0, low: 0, close: entryPrice, time: 0 };
-    const lastCandle = initialChartData[initialChartData.length - 1];
+    if (!chartData || chartData.length === 0) return { open: 0, high: 0, low: 0, close: entryPrice, time: 0 };
+    const lastCandle = chartData[chartData.length - 1];
     return {
         ...lastCandle,
         close: realtimeChartUpdate?.close || lastCandle.close || entryPrice,
     };
-  }, [initialChartData, realtimeChartUpdate, entryPrice]);
+  }, [chartData, realtimeChartUpdate, entryPrice]);
 
   const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   const riskAmount = entryPrice > 0 && stopLoss > 0 ? (entryPrice - stopLoss) * quantity : 0;
