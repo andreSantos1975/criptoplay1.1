@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get('symbol');
   const interval = searchParams.get('interval');
-  const limit = searchParams.get('limit') || '365';
+  const limit = searchParams.get('limit') || '1000';
 
   if (!symbol || !interval) {
     return NextResponse.json({ error: 'Symbol and interval are required' }, { status: 400 });
