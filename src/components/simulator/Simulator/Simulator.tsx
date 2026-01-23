@@ -225,6 +225,10 @@ const Simulator = () => {
       // Multiplica por 1000 para converter para ms e subtrai 1 para evitar buscar a mesma vela novamente
       return oldestTimestamp ? (oldestTimestamp * 1000) - 1 : undefined;
     },
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage, allPages) => {
+        return undefined; // Não estamos usando paginação para a frente
+    },
     staleTime: 60 * 60 * 1000, // 1 hora
     refetchOnWindowFocus: false,
     enabled: isPremiumUser && !!selectedCrypto,
