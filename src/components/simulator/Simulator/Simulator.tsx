@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useVigilante, SimulatorPosition } from '@/hooks/useVigilante';
 import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
 import { Alert, AlertType, Trade } from '@prisma/client';
+import { UTCTimestamp } from 'lightweight-charts';
 
 // Componentes do simulador e dashboard
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
@@ -203,7 +204,7 @@ const Simulator = () => {
         throw new Error(errorData.error || "Erro ao buscar dados do gráfico.");
       }
       const data: BinanceKlineData[] = await response.json();
-      return data.map(k => ({ time: Number(k[0] / 1000), open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
+      return data.map(k => ({ time: Number(k[0] / 1000) as UTCTimestamp, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
     },
     staleTime: 60000,
     refetchOnWindowFocus: false,
