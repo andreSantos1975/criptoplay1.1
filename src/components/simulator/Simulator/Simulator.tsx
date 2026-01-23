@@ -204,7 +204,7 @@ const Simulator = () => {
     error: klinesError,
   } = useInfiniteQuery({
     queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
-    queryFn: async ({ pageParam = undefined }) => {
+    queryFn: async ({ pageParam }: { pageParam?: number }) => {
       const apiPath = marketType === 'futures' ? 'futures-klines' : 'klines';
       const endTimeParam = pageParam ? `&endTime=${pageParam}` : '';
       const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}&limit=1000${endTimeParam}`);
