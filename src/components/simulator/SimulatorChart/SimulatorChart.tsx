@@ -31,6 +31,10 @@ interface SimulatorChartProps {
   onStartCreateAlert: () => void;
   onSaveAlert: () => void;
   onCancelCreateAlert: () => void;
+  // Props for infinite loading
+  isLoadingMore?: boolean;
+  hasMoreData?: boolean;
+  onLoadMoreData?: () => void;
 }
 
 export const SimulatorChart = memo(({ 
@@ -50,12 +54,16 @@ export const SimulatorChart = memo(({
   onStartCreateAlert,
   onSaveAlert,
   onCancelCreateAlert,
+  isLoadingMore,
+  hasMoreData,
+  onLoadMoreData,
 }: SimulatorChartProps) => {
   const { data: session } = useSession();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [isChartReady, setIsChartReady] = useState(false);
+  const isInitialLoad = useRef(true);
 
   // Verifica se o período de trial ainda está ativo
   const isTrialActive = session?.user?.trialEndsAt ? new Date(session.user.trialEndsAt) > new Date() : false;
@@ -105,6 +113,10 @@ export const SimulatorChart = memo(({
       layout: { background: { type: ColorType.Solid, color: "#131722" }, textColor: "#D9D9D9" },
       grid: { vertLines: { color: "#2A2E39" }, horzLines: { color: "#2A2E39" } },
       crosshair: { mode: CrosshairMode.Normal },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+      }
     });
     chartRef.current = chart;
     
@@ -116,6 +128,24 @@ export const SimulatorChart = memo(({
       wickDownColor: "#ef5350",
     });
     seriesRef.current = series;
+
+    // --- Infinite Scroll ---
+    const handleVisibleLogicalRangeChange = (newVisibleLogicalRange: any) => {
+      if (
+        !onLoadMoreData ||
+        isLoadingMore ||
+        !hasMoreData
+      ) {
+        return;
+      }
+
+      // If the user is scrolling to the beginning of the data
+      if (newVisibleLogicalRange.from < 10) {
+        onLoadMoreData();
+      }
+    };
+
+    chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleLogicalRangeChange);
 
     // --- Resize Observer ---
     const resizeObserver = new ResizeObserver(entries => {
@@ -132,18 +162,25 @@ export const SimulatorChart = memo(({
       chartRef.current = null;
       seriesRef.current = null;
       setIsChartReady(false);
+      isInitialLoad.current = true; // Reset for next chart instance
     };
-  }, [symbol, hasAccess]); // Adicionado hasAccess como dependência
+  }, [symbol, hasAccess, onLoadMoreData, isLoadingMore, hasMoreData]); // Adicionado hasAccess como dependência
 
   // Load initial data
   useEffect(() => {
-    if (!seriesRef.current || !chartRef.current) return;
-
+    if (!seriesRef.current || !chartRef.current || !isChartReady) return;
+  
     if (isChartLoading) {
-      seriesRef.current.setData([]); // Clear chart data while fetching
-    } else if (isChartReady && initialChartData) {
+      seriesRef.current.setData([]); // Limpa os dados enquanto carrega
+      isInitialLoad.current = true; // Reseta para a proxima carga de dados
+    } else if (initialChartData) {
       seriesRef.current.setData(initialChartData);
-      chartRef.current.timeScale().fitContent();
+      
+      // Apenas faz o fitContent na carga inicial para não perder o zoom/posição do usuário
+      if (isInitialLoad.current && initialChartData.length > 0) {
+        chartRef.current.timeScale().fitContent();
+        isInitialLoad.current = false;
+      }
     }
   }, [isChartReady, initialChartData, isChartLoading]);
 

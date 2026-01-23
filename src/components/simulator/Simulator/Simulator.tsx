@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, FormEvent, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { useVigilante, SimulatorPosition } from '@/hooks/useVigilante';
@@ -194,22 +194,47 @@ const Simulator = () => {
       enabled: isPremiumUser && !!selectedCrypto,
   });
 
-  const { data: initialChartData, isFetching: isChartLoading, isError: isErrorKlines, error: klinesError } = useQuery({
+  const {
+    data,
+    isFetching,
+    isFetchingPreviousPage,
+    fetchPreviousPage,
+    hasPreviousPage,
+    isError: isErrorKlines,
+    error: klinesError,
+  } = useInfiniteQuery({
     queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
-    queryFn: async () => {
+    queryFn: async ({ pageParam = undefined }) => {
       const apiPath = marketType === 'futures' ? 'futures-klines' : 'klines';
-      const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}&limit=1000`);
+      const endTimeParam = pageParam ? `&endTime=${pageParam}` : '';
+      const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}&limit=1000${endTimeParam}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Erro ao buscar dados do gráfico.");
       }
       const data: BinanceKlineData[] = await response.json();
+      // A API da Binance retorna um array vazio se não houver mais dados antes do endTime
       return data.map(k => ({ time: Number(k[0] / 1000) as UTCTimestamp, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) })).filter(k => k.time > 0 && !isNaN(k.time));
     },
-    staleTime: 60000,
+    getPreviousPageParam: (firstPage, allPages) => {
+      if (firstPage.length === 0) {
+        return undefined; // Não há mais páginas
+      }
+      // O timestamp da vela mais antiga da primeira página buscada
+      const oldestTimestamp = firstPage[0]?.time;
+      // Multiplica por 1000 para converter para ms e subtrai 1 para evitar buscar a mesma vela novamente
+      return oldestTimestamp ? (oldestTimestamp * 1000) - 1 : undefined;
+    },
+    staleTime: 60 * 60 * 1000, // 1 hora
     refetchOnWindowFocus: false,
     enabled: isPremiumUser && !!selectedCrypto,
   });
+
+  const chartData = useMemo(() => {
+    return data?.pages?.flat() ?? [];
+  }, [data]);
+  
+  const isChartLoading = isFetching && !isFetchingPreviousPage;
 
   const createSimulatorTrade = async (tradeData: { symbol: string, quantity: number, type: 'BUY' | 'SELL', entryPrice: number, stopLoss?: number, takeProfit?: number, marketType: 'spot' | 'futures' }): Promise<Trade> => {
     const response = await fetch('/api/simulator/trades', {
@@ -466,8 +491,11 @@ const Simulator = () => {
                 tradeLevels={tradeLevelsForChart}
                 onLevelsChange={handleLevelsChange}
                 tipoOperacao="compra"
-                initialChartData={initialChartData}
+                initialChartData={chartData}
                 isChartLoading={isChartLoading}
+                isLoadingMore={isFetchingPreviousPage}
+                hasMoreData={hasPreviousPage}
+                onLoadMoreData={() => fetchPreviousPage()}
                 interval={interval}
                 onIntervalChange={setInterval}
                 realtimeChartUpdate={realtimeChartUpdate}

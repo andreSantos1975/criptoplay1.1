@@ -22,19 +22,22 @@ export async function GET(request: Request) {
   const symbol = searchParams.get('symbol');
   const interval = searchParams.get('interval');
   const limit = searchParams.get('limit') || '1000';
+  const endTime = searchParams.get('endTime');
 
   if (!symbol || !interval) {
     return NextResponse.json({ error: 'Symbol and interval are required' }, { status: 400 });
   }
 
+  const endTimeParam = endTime ? `&endTime=${endTime}` : '';
+
   try {
     const endpoints = [
-      `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
-      `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
-      `https://api2.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
-      `https://api3.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
-      `https://api.binance.me/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
-      `https://api-gcp.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
+      `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}${endTimeParam}`,
+      `https://api1.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}${endTimeParam}`,
+      `https://api2.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}${endTimeParam}`,
+      `https://api3.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}${endTimeParam}`,
+      `https://api.binance.me/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}${endTimeParam}`,
+      `https://api-gcp.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}${endTimeParam}`,
     ];
 
     let lastError: any = null;

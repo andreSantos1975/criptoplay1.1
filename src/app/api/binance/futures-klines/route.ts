@@ -22,15 +22,18 @@ export async function GET(request: Request) {
   const symbol = searchParams.get('symbol');
   const interval = searchParams.get('interval');
   const limit = searchParams.get('limit') || '1000';
+  const endTime = searchParams.get('endTime');
 
   if (!symbol || !interval) {
     return NextResponse.json({ error: 'Symbol and interval are required' }, { status: 400 });
   }
 
+  const endTimeParam = endTime ? `&endTime=${endTime}` : '';
+
   try {
     const endpoints = [
-      `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
-      `https://fapi.binance.me/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`,
+      `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}${endTimeParam}`,
+      `https://fapi.binance.me/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}${endTimeParam}`,
     ];
 
     let lastError: any = null;
