@@ -204,7 +204,7 @@ const Simulator = () => {
     error: klinesError,
   } = useInfiniteQuery({
     queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
-    queryFn: async ({ pageParam }: { pageParam?: number }) => {
+    queryFn: useCallback(async ({ pageParam }: { pageParam?: number }) => {
       const apiPath = marketType === 'futures' ? 'futures-klines' : 'klines';
       const endTimeParam = pageParam ? `&endTime=${pageParam}` : '';
       const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}&limit=1000${endTimeParam}`);
@@ -213,9 +213,8 @@ const Simulator = () => {
         throw new Error(errorData.error || "Erro ao buscar dados do gráfico.");
       }
       const data: BinanceKlineData[] = await response.json();
-      // A API da Binance retorna um array vazio se não houver mais dados antes do endTime
       return data.map(k => ({ time: Number(k[0] / 1000) as UTCTimestamp, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) })).filter(k => k.time > 0 && !isNaN(k.time));
-    },
+    }, [marketType, selectedCrypto, interval]),
     getPreviousPageParam: (firstPage, allPages) => {
       if (firstPage.length === 0) {
         return undefined; // Não há mais páginas
