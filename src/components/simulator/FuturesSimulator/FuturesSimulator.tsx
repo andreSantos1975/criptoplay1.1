@@ -783,6 +783,7 @@ const FuturesSimulator = () => {
         <SimulatorChart
           key={symbol}
           symbol={symbol}
+          marketType="futures"
           initialChartData={chartDataInBRL}
           isChartLoading={isChartLoading}
           interval={interval}
