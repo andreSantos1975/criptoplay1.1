@@ -61,7 +61,8 @@ export async function GET(request: Request) {
         }
 
         const data: BinanceKline[] = await response.json();
-        return NextResponse.json(data);
+        // Inverte os dados da Binance para que fiquem do mais antigo para o mais recente
+        return NextResponse.json(data.reverse());
       } catch (error) {
         console.error(`Error fetching klines from Binance on ${url}:`, error);
         lastError = error;
@@ -102,8 +103,8 @@ export async function GET(request: Request) {
                         k[6], // quoteVolume
                         0, 0, 0, 0
                     ]); 
-                    // Inverte para corresponder à ordem da Binance (mais recente primeiro)
-                    return NextResponse.json(normalizedData.reverse());
+                    // Bitget já retorna em ordem crescente, então não precisamos inverter aqui.
+                    return NextResponse.json(normalizedData);
                 }
             }
         } catch (e) {

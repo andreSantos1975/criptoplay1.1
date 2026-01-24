@@ -234,9 +234,9 @@ const Simulator = () => {
   });
 
   const chartData = useMemo(() => {
-    // A API da Binance retorna os dados do mais recente para o mais antigo.
-    // O lightweight-charts espera do mais antigo para o mais recente, então invertemos a cópia.
-    return (data?.pages?.flat() ?? []).slice().reverse();
+    // As APIs de klines agora garantem que os dados vêm em ordem crescente (do mais antigo para o mais recente).
+    // Portanto, não é mais necessário inverter aqui.
+    return data?.pages?.flat() ?? [];
   }, [data]);
   
   const isChartLoading = isFetching && !isFetchingPreviousPage;
