@@ -19,7 +19,7 @@ export function ProBanner() {
     { icon: CheckCircle2, text: "Acesso total aos módulos" },
     { icon: Trophy, text: "Ranking e gamificação" },
     { icon: BarChart3, text: "Simulador e gestão financeira" },
-    { icon: Bot, text: "IA como tutor pessoal" },
+    // { icon: Bot, text: "IA como tutor pessoal" },
   ];
 
   return (
@@ -44,10 +44,10 @@ export function ProBanner() {
                   <span className={styles.textGradient}>CriptoPlay</span>
                 </h2>
 
-                <p className={styles.description}>
+                {/* <p className={styles.description}>
                   Acesse todos os módulos, ferramentas exclusivas e tenha um
                   tutor de IA pessoal para acelerar seu aprendizado.
-                </p>
+                </p> */}
 
                 <Button size="lg" className={styles.buttonPro}>
                   <Sparkles className="mr-2 h-5 w-5" />

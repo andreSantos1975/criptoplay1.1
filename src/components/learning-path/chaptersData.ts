@@ -175,14 +175,14 @@ export const comingChapters: Chapter[] = [
     status: "coming",
     category: "intermediate",
   },
-  {
+  /* {
     id: 21,
     title: "Cripto + Inteligência Artificial",
     description:
       "Descubra como IA está transformando o mercado de criptomoedas.",
     status: "coming",
     category: "intermediate",
-  },
+  }, */
 ];
 
 // Advanced chapters (Coming soon)

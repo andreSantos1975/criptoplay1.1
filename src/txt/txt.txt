@@ -677,6 +677,32 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
 
   Acredito que o problema esteja resolvido
 
+  ===============================================================================
+
+  ARQUIVO COMENTADOS PARA RETIRAR MENSOES AO CHATBOT 
+
+
+   1. `src/app/layout.tsx`: Importação e renderização do AIChatWidget comentadas.
+   2. `src/app/api/chat/route.ts`: A lógica da função POST foi substituída por um retorno
+      de "serviço indisponível" (status 503). Para reativar, a lógica original deve ser
+      restaurada.
+   3. `src/app/assinatura/page.tsx`:
+       * Menção { text: "Chatbot Assistente (Limitado)" } (plano Starter) foi removida.
+         Precisa ser adicionada de volta para reativar.
+       * Menção { text: "Chatbot Ilimitado" } (plano Pro) foi comentada.
+   4. `src/components/HowItWorks/HowItWorks.tsx`: Descrição do "tutor alimentado por
+      inteligência artificial" comentada.
+   5. `src/components/learning-path/ProBanner.tsx`:
+       * Descrição do "tutor de IA pessoal" comentada.
+       * Benefício { icon: Bot, text: "IA como tutor pessoal" } comentado.
+   6. `src/components/learning-path/chaptersData.ts`: Módulo { id: 21, title: "Cripto +
+      Inteligência Artificial", ... } comentado.
+  Para reverter: desfaça os comentários ou adicione as linhas removidas nos arquivos .tsx e
+  .ts. Especificamente, em src/app/api/chat/route.ts, restaure a lógica original da função
+  POST.
+
+  ======================================================================================
+
   
 
   
