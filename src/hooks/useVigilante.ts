@@ -231,5 +231,5 @@ export const useVigilante = ({
 
       clearInterval(pollingInterval);
     };
-  }, [openPositionsString, enabled, onAddToClosingPositionSymbols]);
+  }, [openPositions, openPositionsString, enabled, onAddToClosingPositionSymbols]);
 };

@@ -101,7 +101,7 @@ export const useTradeLines = ({
       }
     });
 
-  }, [isChartReady, openPositions, symbol, seriesRef, marketType === 'spot' ? cleanupLines : undefined].filter(Boolean));
+  }, [isChartReady, openPositions, symbol, seriesRef, cleanupLines, marketType]);
   
   // Effect for PROSPECTIVE (draggable) lines
   useEffect(() => {
