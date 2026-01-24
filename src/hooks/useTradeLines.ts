@@ -154,7 +154,7 @@ export const useTradeLines = ({
       prospectivePriceLinesRef.current = {}; // Limpa também as referências prospectivas
     };
 
-  }, [isChartReady, openPositions, tradeLevels, symbol, seriesRef, prospectivePriceLinesRef]); // Adiciona prospectivePriceLinesRef nas dependências
+  }, [isChartReady, openPositions, tradeLevels, symbol, seriesRef]); // Adiciona prospectivePriceLinesRef nas dependências
 
   // Effect to setup drag-and-drop listeners for PROSPECTIVE lines
   useEffect(() => {

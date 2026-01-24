@@ -669,15 +669,7 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
   =================================================================================
 ✦ A implementação da rolagem infinita está concluída.
 
-  Resumo das alterações:
-
-   1. Backend (`klines/route.ts`, `futures-klines/route.ts`): Atualizei as rotas da API
-      para que possam buscar dados a partir de uma data específica no passado.
-   2. Busca de Dados (`Simulator.tsx`): Substituí a busca de dados simples por uma busca
-      "infinita" e paginada, que é a base para o carregamento contínuo.
-   3. Componente do Gráfico (`SimulatorChart.tsx`): O gráfico agora detecta quando você
-      rola para o início do histórico e solicita automaticamente mais dados, sem perder sua
-      posição de zoom ou local no gráfico.
+ 
 
   Esta solução é completa e robusta, corrigindo a causa raiz do problema. O gráfico não
   deve mais travar em nenhum período de tempo (incluindo o de 1 dia) ao rolar para o

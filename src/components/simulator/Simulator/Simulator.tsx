@@ -217,15 +217,6 @@ const Simulator = () => {
     enabled: isPremiumUser && !!selectedCrypto,
   });
 
-  // Efeito de depuração para inspecionar os dados do gráfico
-  useEffect(() => {
-    console.log('[DEBUG] Spot Simulator Chart Data:', {
-      isChartLoading,
-      chartData,
-      klinesError,
-    });
-  }, [chartData, isChartLoading, klinesError]);
-
   const createSimulatorTrade = async (tradeData: { symbol: string, quantity: number, type: 'BUY' | 'SELL', entryPrice: number, stopLoss?: number, takeProfit?: number, marketType: 'spot' | 'futures' }): Promise<Trade> => {
     const response = await fetch('/api/simulator/trades', {
         method: 'POST',
