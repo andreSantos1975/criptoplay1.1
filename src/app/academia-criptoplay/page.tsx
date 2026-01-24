@@ -10,6 +10,7 @@ import { ProBanner } from "@/components/learning-path/ProBanner";
 import { allChapters, Chapter, ChapterStatus } from "@/components/learning-path/chaptersData";
 import styles from "./page.module.css";
 import Navbar from "@/components/Navbar/Navbar";
+import { hasSubscriptionAccess } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Academia CriptoPlay | Aprenda do Zero ao Pro",
@@ -27,60 +28,36 @@ export const metadata: Metadata = {
 
 export default async function LearningPathPage() {
   const session = await getServerSession(authOptions);
+  const hasAccess = hasSubscriptionAccess(session); // Use the new, stricter access check
   const isLoggedIn = !!session?.user;
-  const isPro = session?.user?.subscriptionStatus === "active"; // Ajustar conforme lógica real de subscription
 
-  // 1. Get real course data (slugs and order)
-  const courseData = getSortedCourseData(); // Returns [{ slug, title, order, ... }]
+  const courseData = getSortedCourseData();
 
-  // 2. Get user progress
   let completedSlugs: string[] = [];
   if (isLoggedIn && session.user) {
     const progress = await prisma.userProgress.findMany({
-      where: {
-        userId: session.user.id,
-        completed: true,
-      },
+      where: { userId: session.user.id, completed: true },
       select: { slug: true },
     });
     completedSlugs = progress.map(p => p.slug);
   }
 
-  // 3. Merge data and calculate status
-  let firstAvailableFound = false;
-
   const processedChapters: Chapter[] = allChapters.map((staticChapter) => {
-    // Se for "coming", mantém como está
     if (staticChapter.status === "coming") return staticChapter;
 
-    // Encontra o markdown correspondente pelo ID/Order
     const markdownData = courseData.find(c => c.order === staticChapter.id);
     const slug = markdownData?.slug;
-
     let status: ChapterStatus = "locked";
 
     if (slug) {
-      if (completedSlugs.includes(slug)) {
-        status = "completed";
-      } else if (!firstAvailableFound) {
-        // Se ainda não achamos o primeiro disponível, este é o "próximo"
-        // Lógica simplificada: Se o anterior foi completado (ou é o primeiro), e este não, então é available.
-        // Como estamos iterando em ordem, o primeiro que não for "completed" vira "available".
-        status = "available";
-        firstAvailableFound = true;
+      const isCompleted = completedSlugs.includes(slug);
+      if (hasAccess) {
+        // Paid user has access to all chapters
+        status = isCompleted ? "completed" : "available";
       } else {
-        status = "locked";
+        // Non-paid users (incl. trial) only get the first chapter
+        status = staticChapter.id === 1 ? "available" : "locked";
       }
-    } else {
-      // Se não achou markdown mas não é coming, algo está errado na configuração, trava.
-      status = "locked"; 
-    }
-
-    // Se não estiver logado, apenas o primeiro é available (como demo) ou tudo locked?
-    // Vamos deixar o primeiro available para teaser.
-    if (!isLoggedIn) {
-        if (staticChapter.id === 1) status = "available";
-        else status = "locked";
     }
 
     return {
@@ -91,11 +68,13 @@ export default async function LearningPathPage() {
   });
 
   const completedCount = processedChapters.filter(c => c.status === "completed").length;
-  // Apenas conta chapters que realmente existem (não "coming") para o total
   const totalActiveChapters = processedChapters.filter(c => c.status !== "coming").length;
-
-  const nextLesson = processedChapters.find(c => c.status === 'available');
-  // Fallback to the very first lesson if none are "available" (e.g., all completed)
+  
+  // Find the next available lesson for the user to continue
+  let nextLesson = processedChapters.find(c => c.status === 'available' && !completedSlugs.includes(c.slug || ''));
+  if (!nextLesson) { // If all available are completed, find the first uncompleted one
+      nextLesson = processedChapters.find(c => c.status !== 'completed' && c.status !== 'coming' && c.status !== 'locked');
+  }
   const firstLesson = courseData.find(c => c.order === 1);
   const nextLessonSlug = nextLesson?.slug || firstLesson?.slug;
 
@@ -104,30 +83,26 @@ export default async function LearningPathPage() {
       <Navbar />
       <main className={styles.main}>
         <div style={{ marginTop: "64px" }}>
-            {/* Hero Section */}
             <HeroSection isLoggedIn={isLoggedIn} nextLessonSlug={nextLessonSlug} />
 
-            {/* Progress Bar - only show when logged in */}
             {isLoggedIn && (
-            <ProgressBar
+              <ProgressBar
                 completedChapters={completedCount}
                 totalChapters={totalActiveChapters}
-            />
+              />
             )}
 
-            {/* Chapter Grid */}
             <ChapterGrid chapters={processedChapters} />
 
-            {/* Pro Banner - only show when not PRO */}
-            {!isPro && <ProBanner />}
+            {/* Show banner if the user does NOT have a paid subscription */}
+            {!hasAccess && <ProBanner />}
 
-            {/* Footer */}
             <footer className={styles.footer}>
-            <div className={styles.container}>
-                <p className={styles.footerText}>
-                © 2024 CriptoPlay. Educação financeira de qualidade para todos.
-                </p>
-            </div>
+              <div className={styles.container}>
+                  <p className={styles.footerText}>
+                  © 2024 CriptoPlay. Educação financeira de qualidade para todos.
+                  </p>
+              </div>
             </footer>
         </div>
       </main>

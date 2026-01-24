@@ -39,6 +39,55 @@
   color: hsl(var(--primary));
 }
 
+.loadingState p {
+  color: hsl(var(--muted-foreground));
+}
+
+.upgradeCard {
+  background-color: hsl(var(--primary-muted));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: 1rem;
+}
+
+.upgradeTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  margin-top: 0.5rem;
+}
+
+.upgradeDescription {
+  font-size: 0.9rem;
+  color: hsl(var(--muted-foreground));
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+.upgradeButton {
+  background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--primary-gradient)));
+  color: hsl(var(--primary-foreground));
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 500;
+  margin-top: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-medium);
+}
+
+.upgradeButton:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-large);
+}
+
+
 /* Media query for smaller screens (e.g., mobile phones) */
 @media (max-width: 768px) {
   .topNav {
@@ -56,5 +105,10 @@
 
   .link {
     text-align: center; /* Center text inside the link */
+  }
+
+  .upgradeCard {
+    width: 100%;
+    margin-left: 0;
   }
 }

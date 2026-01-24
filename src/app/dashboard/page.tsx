@@ -384,13 +384,24 @@ const DashboardPage = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case "painel":
-        return (<><DashboardOverview /><div style={{ marginTop: '2rem' }}><RecentOperationsTable 
-          trades={trades} 
-          binanceTickers={binanceTickers} 
-          isLoadingTrades={isLoadingTrades} 
-          isLoadingBinanceTickers={isLoadingBinanceTickers} 
-          errorTrades={errorTrades || errorBinanceTickers} 
-        /></div></>);
+        // Check for premium access for the main dashboard view
+        if (!hasPremiumAccess(session)) {
+          return renderLockedContent();
+        }
+        return (
+          <>
+            <DashboardOverview />
+            <div style={{ marginTop: '2rem' }}>
+              <RecentOperationsTable 
+                trades={trades} 
+                binanceTickers={binanceTickers} 
+                isLoadingTrades={isLoadingTrades} 
+                isLoadingBinanceTickers={isLoadingBinanceTickers} 
+                errorTrades={errorTrades || errorBinanceTickers} 
+              />
+            </div>
+          </>
+        );
       case "pessoal":
         return (
           <>

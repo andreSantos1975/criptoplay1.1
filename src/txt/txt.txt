@@ -703,6 +703,38 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
 
   ======================================================================================
 
+  -------------------- 24/01/2026 ------------------------------------------------------
+
+   1. Acesso ao "Painel Geral" do Dashboard
+  O "Painel Geral" (com a Evolução do Portfólio e a tabela de Operações) agora é visível
+  para:
+   - Qualquer assinante com um plano ativo (Starter, Pro ou Premium).
+   - Usuários em período de teste (trial).
+   - Administradores.
+
+  2. Acesso aos Links do "Sidebar"
+  Os links do menu "SeuFluxo" (Contas/Cartões, Relatórios, Alertas, etc.) seguem a mesma
+  lógica do Painel Geral. São visíveis para:
+   - Qualquer assinante com um plano ativo (Starter, Pro ou Premium).
+   - Usuários em período de teste (trial).
+   - Administradores.
+   - Usuários não pagantes verão um convite para assinar.
+
+  3. Limite de Alertas por Plano
+  A criação de alertas foi limitada de acordo com o plano:
+   - Plano Starter: Pode criar no máximo 3 alertas ativos. Ao atingir o limite, o botão
+     para criar novos alertas é desativado e uma mensagem para upgrade é exibida.
+   - Plano Pro e Premium: Podem criar alertas ilimitados.
+
+  4. Acesso à "Jornada Cripto" (Curso)
+  O acesso ao curso foi restringido e é o mais exclusivo. Ele NÃO faz parte do período de
+  teste. O acesso é concedido apenas para:
+   - Qualquer assinante com um plano PAGO e ativo (Starter, Pro ou Premium).
+   - Administradores.
+   - Usuários em período de teste e visitantes verão o conteúdo como bloqueado (com exceção
+     da primeira aula, que serve como "teaser").
+
+
   
 
   

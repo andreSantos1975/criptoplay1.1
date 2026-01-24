@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import styles from './alertas.module.css';
 import AlertForm from '@/components/alerts/AlertForm/AlertForm';
 import AlertList from '@/components/alerts/AlertList/AlertList';
 import { useAlerts } from '@/hooks/useAlerts';
 import { useBudgetCategories } from '@/hooks/useBudget';
-import { useAlertNotification } from '@/hooks/useAlertNotification';
+import { useSubscription } from '@/hooks/useSubscription'; // Import the new hook
 import { Alert } from '@prisma/client';
 import Link from 'next/link';
 
@@ -15,11 +14,21 @@ const AlertasPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
 
-  const { data: alerts, isLoading: isLoadingAlerts, error: errorAlerts, refetch: mutateAlerts } = useAlerts();
+  // Fetch alerts and subscription status
+  const { data: alerts, isLoading: isLoadingAlerts, error: errorAlerts } = useAlerts();
+  const { data: subscription, isLoading: isLoadingSubscription } = useSubscription();
   const { data: budgetCategories, isLoading: isLoadingCategories, error: errorCategories } = useBudgetCategories();
-  const { notificationCount, mutate: mutateNotifications } = useAlertNotification();
+
+  // --- FEATURE GATING LOGIC ---
+  const STARTER_ALERT_LIMIT = 3;
+  const isStarter = subscription?.planId.startsWith('starter');
+  const alertCount = alerts?.length || 0;
+  const limitReached = isStarter && alertCount >= STARTER_ALERT_LIMIT;
+  const isLoading = isLoadingAlerts || isLoadingSubscription || isLoadingCategories;
+  // ---
 
   const handleOpenModal = () => {
+    if (limitReached) return; // Extra safety check
     setEditingAlert(null);
     setIsModalOpen(true);
   };
@@ -35,7 +44,7 @@ const AlertasPage = () => {
   };
 
   const renderContent = () => {
-    if (isLoadingAlerts || isLoadingCategories) {
+    if (isLoading) {
       return <div className={styles.placeholder}>Carregando...</div>;
     }
 
@@ -62,8 +71,21 @@ const AlertasPage = () => {
         </Link>
         <h1>Meus Alertas</h1>
         <div className={styles.headerActions}>
-          <button onClick={handleOpenModal} className={styles.addButton}>+ Novo Alerta</button>
+          <button 
+            onClick={handleOpenModal} 
+            className={styles.addButton}
+            disabled={limitReached}
+            title={limitReached ? `Limite de ${STARTER_ALERT_LIMIT} alertas atingido para o plano Starter` : 'Criar um novo alerta'}
+          >
+            + Novo Alerta
+          </button>
         </div>
+        {limitReached && (
+          <div className={styles.limitMessage}>
+            <p>Você atingiu o limite de {STARTER_ALERT_LIMIT} alertas para o plano Starter.</p>
+            <Link href="/assinatura">Faça upgrade para o plano Pro e tenha alertas ilimitados!</Link>
+          </div>
+        )}
       </header>
       <main className={styles.mainContent}>
         {renderContent()}

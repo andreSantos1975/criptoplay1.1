@@ -10,6 +10,8 @@ import { LessonActions } from "@/components/learning-path/LessonActions";
 import styles from "./page.module.css";
 import Navbar from "@/components/Navbar/Navbar";
 
+import { hasSubscriptionAccess } from "@/lib/permissions";
+
 interface Props {
   params: { slug: string };
 }
@@ -31,8 +33,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LessonPage({ params }: Props) {
   const session = await getServerSession(authOptions);
 
-  if (!session || !session.user) {
-    redirect("/login?callbackUrl=/academia-criptoplay/" + params.slug);
+  // Secure this page with the new, stricter permission check
+  if (!hasSubscriptionAccess(session)) {
+    // Redirect non-subscribers (including trial users) to the subscription page
+    redirect("/assinatura?reason=course_access");
   }
 
   let lessonData;
@@ -46,6 +50,13 @@ export default async function LessonPage({ params }: Props) {
   const allLessons = getSortedCourseData();
   const currentIndex = allLessons.findIndex((l) => l.slug === params.slug);
   const nextLesson = allLessons[currentIndex + 1];
+
+  // Although hasSubscriptionAccess should prevent session from being null here,
+  // this check is needed to satisfy TypeScript.
+  if (!session?.user) {
+    // This should not be reached, but it's a safeguard.
+    return redirect("/login");
+  }
 
   // Check user progress for this specific lesson
   const progress = await prisma.userProgress.findUnique({

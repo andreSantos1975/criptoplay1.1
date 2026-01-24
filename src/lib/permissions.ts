@@ -1,7 +1,7 @@
 import { Session } from "next-auth";
 
 /**
- * Verifica se o usuário tem acesso às funcionalidades Premium (Simulador, Alertas, Relatórios, Curso).
+ * Verifica se o usuário tem acesso às funcionalidades Premium (Simulador, Alertas, Relatórios).
  * O acesso é concedido se:
  * 1. O usuário é Admin/Desenvolvedor.
  * 2. O usuário possui uma assinatura ativa ('authorized' ou 'lifetime').
@@ -38,6 +38,31 @@ export function hasPremiumAccess(session: Session | null): boolean {
     if ((now.getTime() - creationDate.getTime()) < sevenDaysInMs) {
       return true;
     }
+  }
+
+  return false;
+}
+
+/**
+ * Verifica se o usuário tem acesso ao conteúdo exclusivo para assinantes (ex: Curso).
+ * O acesso é concedido APENAS se:
+ * 1. O usuário é Admin/Desenvolvedor.
+ * 2. O usuário possui uma assinatura PAGA e ativa ('authorized' ou 'lifetime').
+ * ESTA FUNÇÃO EXCLUI USUÁRIOS EM PERÍODO DE TESTE.
+ */
+export function hasSubscriptionAccess(session: Session | null): boolean {
+  if (!session || !session.user) {
+    return false;
+  }
+
+  const { isAdmin, subscriptionStatus } = session.user;
+
+  // 1. Acesso Admin/Developer
+  if (isAdmin) return true;
+
+  // 2. Assinatura Ativa e Paga
+  if (subscriptionStatus === 'authorized' || subscriptionStatus === 'lifetime') {
+    return true;
   }
 
   return false;

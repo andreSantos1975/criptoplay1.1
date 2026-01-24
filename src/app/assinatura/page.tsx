@@ -40,7 +40,7 @@ const plans: PlanConfig[] = [
       { text: "Acesso ao Dashboard Básico" },
       { text: "Gráfico de Análise Técnica (Básico)" },
       { text: "Relatórios de Trades (Simples)" },
-
+      { text: "3 Alertas Personalizados" }, // Added this line
       { text: "Suporte via Email" },
     ],
     type: 'RECURRING'

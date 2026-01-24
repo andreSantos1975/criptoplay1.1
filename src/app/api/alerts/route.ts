@@ -42,10 +42,42 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  // Removido o check de hasPremiumAccess
-  // if (!hasPremiumAccess(session)) {
-  //   return NextResponse.json({ message: 'Premium access required' }, { status: 403 });
-  // }
+  // --- FEATURE GATING: LIMIT ALERTS FOR STARTER PLAN ---
+  const STARTER_ALERT_LIMIT = 3;
+
+  // Find the user's current active subscription
+  const subscription = await prisma.subscription.findFirst({
+    where: {
+      userId: session.user.id,
+      // Status 'authorized' for recurring or 'active' for legacy/lifetime
+      status: { in: ['authorized', 'active'] } 
+    },
+    orderBy: {
+      createdAt: 'desc', // Get the most recent one
+    }
+  });
+
+  // Check if the user is on a starter plan
+  const isStarterPlan = subscription?.planId.startsWith('starter');
+
+  if (isStarterPlan) {
+    // Count existing active alerts for the user
+    const alertCount = await prisma.alert.count({
+      where: {
+        userId: session.user.id,
+        status: AlertStatus.ACTIVE,
+      },
+    });
+
+    // If limit is reached, block creation
+    if (alertCount >= STARTER_ALERT_LIMIT) {
+      return NextResponse.json(
+        { message: `Você atingiu o limite de ${STARTER_ALERT_LIMIT} alertas para o plano Starter. Faça upgrade para o plano Pro para alertas ilimitados.` },
+        { status: 403 } // 403 Forbidden
+      );
+    }
+  }
+  // --- END OF FEATURE GATING ---
 
   try {
     const body = await request.json();
