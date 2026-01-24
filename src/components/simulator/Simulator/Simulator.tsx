@@ -234,7 +234,9 @@ const Simulator = () => {
   });
 
   const chartData = useMemo(() => {
-    return data?.pages?.flat() ?? [];
+    // A API da Binance retorna os dados do mais recente para o mais antigo.
+    // O lightweight-charts espera do mais antigo para o mais recente, então invertemos.
+    return (data?.pages?.flat() ?? []).reverse();
   }, [data]);
   
   const isChartLoading = isFetching && !isFetchingPreviousPage;
