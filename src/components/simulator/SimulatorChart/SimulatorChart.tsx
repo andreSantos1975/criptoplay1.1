@@ -15,7 +15,7 @@ import Link from 'next/link';
 
 interface SimulatorChartProps {
   symbol: string;
-  marketType: 'spot' | 'futures'; // Prop adicionada
+  marketType: 'spot' | 'futures';
   tradeLevels: { entry: number; takeProfit: number; stopLoss: number };
   onLevelsChange: (levels: { entry: number; takeProfit: number; stopLoss: number; }) => void;
   tipoOperacao: 'compra' | 'venda' | '';
@@ -32,15 +32,11 @@ interface SimulatorChartProps {
   onStartCreateAlert: () => void;
   onSaveAlert: () => void;
   onCancelCreateAlert: () => void;
-  // Props for infinite loading
-  isLoadingMore?: boolean;
-  hasMoreData?: boolean;
-  onLoadMoreData?: () => void;
 }
 
 export const SimulatorChart = memo(({ 
   symbol,
-  marketType, // Prop adicionada
+  marketType,
   tradeLevels, 
   onLevelsChange, 
   tipoOperacao,
@@ -56,9 +52,6 @@ export const SimulatorChart = memo(({
   onStartCreateAlert,
   onSaveAlert,
   onCancelCreateAlert,
-  isLoadingMore,
-  hasMoreData,
-  onLoadMoreData,
 }: SimulatorChartProps) => {
   const { data: session } = useSession();
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -131,24 +124,6 @@ export const SimulatorChart = memo(({
     });
     seriesRef.current = series;
 
-    // --- Infinite Scroll ---
-    const handleVisibleLogicalRangeChange = (newVisibleLogicalRange: any) => {
-      if (
-        !onLoadMoreData ||
-        isLoadingMore ||
-        !hasMoreData
-      ) {
-        return;
-      }
-
-      // If the user is scrolling to the beginning of the data
-      if (newVisibleLogicalRange.from < 10) {
-        onLoadMoreData();
-      }
-    };
-
-    chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleLogicalRangeChange);
-
     // --- Resize Observer ---
     const resizeObserver = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect;
@@ -166,7 +141,7 @@ export const SimulatorChart = memo(({
       setIsChartReady(false);
       isInitialLoad.current = true; // Reset for next chart instance
     };
-  }, [symbol, hasAccess, onLoadMoreData, isLoadingMore, hasMoreData]); // Adicionado hasAccess como dependência
+  }, [symbol, hasAccess]); // Dependências simplificadas
 
   // Load initial data
   useEffect(() => {

@@ -195,51 +195,36 @@ const Simulator = () => {
   });
 
   const {
-    data,
-    isFetching,
-    isFetchingPreviousPage,
-    fetchPreviousPage,
-    hasPreviousPage,
+    data: chartData,
+    isFetching: isChartLoading,
     isError: isErrorKlines,
     error: klinesError,
-  } = useInfiniteQuery({
+  } = useQuery({
     queryKey: ["binanceKlines", marketType, interval, selectedCrypto],
-    queryFn: useCallback(async ({ pageParam }: { pageParam?: number }) => {
+    queryFn: async () => {
       const apiPath = marketType === 'futures' ? 'futures-klines' : 'klines';
-      const endTimeParam = pageParam ? `&endTime=${pageParam}` : '';
-      const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}&limit=1000${endTimeParam}`);
+      const response = await fetch(`/api/binance/${apiPath}?symbol=${selectedCrypto}&interval=${interval}&limit=1000`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Erro ao buscar dados do gráfico.");
       }
       const data: BinanceKlineData[] = await response.json();
+      // A API já retorna os dados em ordem crescente (antigo -> recente)
       return data.map(k => ({ time: Number(k[0] / 1000) as UTCTimestamp, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) })).filter(k => k.time > 0 && !isNaN(k.time));
-    }, [marketType, selectedCrypto, interval]),
-    getPreviousPageParam: (firstPage, allPages) => {
-      if (firstPage.length === 0) {
-        return undefined; // Não há mais páginas
-      }
-      // O timestamp da vela mais antiga da primeira página buscada
-      const oldestTimestamp = firstPage[0]?.time;
-      // Multiplica por 1000 para converter para ms e subtrai 1 para evitar buscar a mesma vela novamente
-      return oldestTimestamp ? (oldestTimestamp * 1000) - 1 : undefined;
-    },
-    initialPageParam: undefined,
-    getNextPageParam: (lastPage, allPages) => {
-        return undefined; // Não estamos usando paginação para a frente
     },
     staleTime: 60 * 60 * 1000, // 1 hora
     refetchOnWindowFocus: false,
     enabled: isPremiumUser && !!selectedCrypto,
   });
 
-  const chartData = useMemo(() => {
-    // As APIs de klines agora garantem que os dados vêm em ordem crescente (do mais antigo para o mais recente).
-    // Portanto, não é mais necessário inverter aqui.
-    return data?.pages?.flat() ?? [];
-  }, [data]);
-  
-  const isChartLoading = isFetching && !isFetchingPreviousPage;
+  // Efeito de depuração para inspecionar os dados do gráfico
+  useEffect(() => {
+    console.log('[DEBUG] Spot Simulator Chart Data:', {
+      isChartLoading,
+      chartData,
+      klinesError,
+    });
+  }, [chartData, isChartLoading, klinesError]);
 
   const createSimulatorTrade = async (tradeData: { symbol: string, quantity: number, type: 'BUY' | 'SELL', entryPrice: number, stopLoss?: number, takeProfit?: number, marketType: 'spot' | 'futures' }): Promise<Trade> => {
     const response = await fetch('/api/simulator/trades', {
@@ -499,9 +484,6 @@ const Simulator = () => {
                 tipoOperacao="compra"
                 initialChartData={chartData}
                 isChartLoading={isChartLoading}
-                isLoadingMore={isFetchingPreviousPage}
-                hasMoreData={hasPreviousPage}
-                onLoadMoreData={() => fetchPreviousPage()}
                 interval={interval}
                 onIntervalChange={setInterval}
                 realtimeChartUpdate={realtimeChartUpdate}
