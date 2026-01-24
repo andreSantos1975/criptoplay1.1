@@ -33,8 +33,8 @@ const plans: PlanConfig[] = [
     name: 'Starter',
     badge: 'Early Access',
     badgeType: "default",
-    monthlyPrice: 19.90,
-    annualPrice: 199.00,
+    monthlyPrice: 29.90,
+    annualPrice: 299.00,
     description: "Para quem está começando a jornada no mundo cripto.",
     features: [
       { text: "Acesso ao Dashboard Básico" },
@@ -50,8 +50,8 @@ const plans: PlanConfig[] = [
     name: 'Pro',
     badge: 'Recomendado',
     badgeType: "recommended",
-    monthlyPrice: 39.90,
-    annualPrice: 399.00,
+    monthlyPrice: 59.90,
+    annualPrice: 599.00,
     description: "A escolha principal para traders que buscam evolução.",
     features: [
       { text: "Todas as funcionalidades do Starter" },
@@ -69,8 +69,8 @@ const plans: PlanConfig[] = [
     name: 'Premium',
     badge: 'Exclusivo',
     badgeType: "premium",
-    monthlyPrice: 59.90,
-    annualPrice: 599.00,
+    monthlyPrice: 129.90,
+    annualPrice: 1299.00,
     description: "Experiência exclusiva e máxima potência.",
     features: [
       { text: "Todas as funcionalidades do Pro" },

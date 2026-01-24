@@ -105,13 +105,13 @@ const Footer = () => {
               © 2024 CryptoPlay. Todos os direitos reservados.
             </div>
             <div className={styles.legalLinks}>
-              <a href="#" className={styles.legalLink}>
+              <a href="/politica-de-privacidade" className={styles.legalLink}>
                 Política de Privacidade
               </a>
-              <a href="#" className={styles.legalLink}>
+              <a href="/termos" className={styles.legalLink}>
                 Termos de Uso
               </a>
-              <a href="#" className={styles.legalLink}>
+              <a href="/disclaimer" className={styles.legalLink}>
                 Disclaimer Legal
               </a>
             </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,15 +13,20 @@ import {
   Trophy,
 } from "lucide-react";
 import styles from "./ProBanner.module.css";
-import clsx from "clsx";
+import Link from 'next/link';
 
 export function ProBanner() {
+  const router = useRouter();
   const benefits = [
     { icon: CheckCircle2, text: "Acesso total aos módulos" },
     { icon: Trophy, text: "Ranking e gamificação" },
     { icon: BarChart3, text: "Simulador e gestão financeira" },
     // { icon: Bot, text: "IA como tutor pessoal" },
   ];
+
+  const handleGoToSubscription = () => {
+    router.push('/assinatura');
+  };
 
   return (
     <section className={styles.section}>
@@ -49,7 +55,7 @@ export function ProBanner() {
                   tutor de IA pessoal para acelerar seu aprendizado.
                 </p> */}
 
-                <Button size="lg" className={styles.buttonPro}>
+                <Button size="lg" className={styles.buttonPro} onClick={handleGoToSubscription}>
                   <Sparkles className="mr-2 h-5 w-5" />
                   Tornar-se PRO
                 </Button>
