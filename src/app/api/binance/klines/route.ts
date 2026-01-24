@@ -101,8 +101,9 @@ export async function GET(request: Request) {
                         parseInt(k[0]) + 60000, // closeTime (aproximado)
                         k[6], // quoteVolume
                         0, 0, 0, 0
-                    ]); // Bitget retorna do mais antigo para o mais novo, igual Binance
-                    return NextResponse.json(normalizedData);
+                    ]); 
+                    // Inverte para corresponder à ordem da Binance (mais recente primeiro)
+                    return NextResponse.json(normalizedData.reverse());
                 }
             }
         } catch (e) {

@@ -15,6 +15,7 @@ import Link from 'next/link';
 
 interface SimulatorChartProps {
   symbol: string;
+  marketType: 'spot' | 'futures'; // Prop adicionada
   tradeLevels: { entry: number; takeProfit: number; stopLoss: number };
   onLevelsChange: (levels: { entry: number; takeProfit: number; stopLoss: number; }) => void;
   tipoOperacao: 'compra' | 'venda' | '';
@@ -38,7 +39,8 @@ interface SimulatorChartProps {
 }
 
 export const SimulatorChart = memo(({ 
-  symbol, 
+  symbol,
+  marketType, // Prop adicionada
   tradeLevels, 
   onLevelsChange, 
   tipoOperacao,
@@ -83,7 +85,7 @@ export const SimulatorChart = memo(({
     tradeLevels,
     onLevelsChange,
     isChartReady,
-    marketType: 'spot',
+    marketType: marketType, // Corrigido
     tipoOperacao: tipoOperacao,
     openPositions,
     symbol,

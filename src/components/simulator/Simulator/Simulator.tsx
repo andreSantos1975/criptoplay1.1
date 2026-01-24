@@ -493,6 +493,7 @@ const Simulator = () => {
             <SimulatorChart
                 key={selectedCrypto}
                 symbol={selectedCrypto}
+                marketType={marketType}
                 tradeLevels={tradeLevelsForChart}
                 onLevelsChange={handleLevelsChange}
                 tipoOperacao="compra"
