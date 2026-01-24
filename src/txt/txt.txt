@@ -683,7 +683,7 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
   deve mais travar em nenhum período de tempo (incluindo o de 1 dia) ao rolar para o
   passado, pois ele carregará o histórico de forma contínua conforme necessário.
 
-  Acredito que o problema esteja resolvido.
+  Acredito que o problema esteja resolvido
 
   
 
