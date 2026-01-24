@@ -48,7 +48,7 @@ const Footer = () => {
                 </a>
               </li>
               <li className={styles.listItem}>
-                <a href="/precos">
+                <a href="/assinatura">
                   Preços
                 </a>
               </li>
