@@ -40,7 +40,7 @@ const plans: PlanConfig[] = [
       { text: "Acesso ao Dashboard Básico" },
       { text: "Gráfico de Análise Técnica (Básico)" },
       { text: "Relatórios de Trades (Simples)" },
-      { text: "Chatbot Assistente (Limitado)" },
+
       { text: "Suporte via Email" },
     ],
     type: 'RECURRING'
@@ -58,7 +58,7 @@ const plans: PlanConfig[] = [
       { text: "Gráficos Futuros e Spot Completos" },
       { text: "Alertas Personalizados Ilimitados" },
       { text: "Relatórios Avançados de Performance" },
-      { text: "Chatbot Ilimitado" },
+      // { text: "Chatbot Ilimitado" },
       { text: "Prioridade no Suporte" },
     ],
     isPopular: true,
