@@ -60,6 +60,7 @@ export default function CadastroPage() {
       <form onSubmit={handleSubmit} className={styles.form}>
         <h1 className={styles.title}>Criar Conta</h1>
         
+        {/*
         <button 
           type="button"
           className={styles.googleButton}
@@ -75,6 +76,7 @@ export default function CadastroPage() {
         </button>
 
         <div className={styles.divider}>ou registrar com email</div>
+        */}
 
         <div className={styles.inputGroup}>
           <label htmlFor="name">Nome</label>
