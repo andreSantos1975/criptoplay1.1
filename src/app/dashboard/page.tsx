@@ -452,7 +452,7 @@ const DashboardPage = () => {
         );
       }
       case "relatorios":
-        // if (!hasPremiumAccess(session)) return renderLockedContent(); // Removido
+        if (!hasPremiumAccess(session)) return renderLockedContent();
         return (
           <ReportsSection
             trades={trades}

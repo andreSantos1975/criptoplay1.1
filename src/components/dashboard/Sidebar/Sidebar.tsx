@@ -46,7 +46,7 @@ const Sidebar = () => {
         </nav>
       ) : (
         <div className={styles.upgradeCard}>
-          <Sparkles className="h-6 w-6 text-yellow-400" />
+          <Sparkles className="h-6 w-6" style={{ color: 'yellow' }} />
           <h3 className={styles.upgradeTitle}>Acesso PRO</h3>
           <p className={styles.upgradeDescription}>
             Desbloqueie todas as ferramentas de gestão financeira.

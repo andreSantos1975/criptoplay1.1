@@ -59,13 +59,13 @@
 .upgradeTitle {
   font-size: 1.1rem;
   font-weight: 600;
-  color: hsl(var(--foreground));
+  color: white;
   margin-top: 0.5rem;
 }
 
 .upgradeDescription {
   font-size: 0.9rem;
-  color: hsl(var(--muted-foreground));
+  color: white;
   max-width: 200px;
   line-height: 1.4;
 }

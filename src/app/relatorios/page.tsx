@@ -55,8 +55,6 @@ const RelatoriosPage = () => {
   const { data: yearIncomes = [], isLoading: isLoadingIncomes } = useQuery<Income[]>({
     queryKey: ['incomes', selectedYear],
     queryFn: async () => {
-      // Assuming the API can return all incomes for a year.
-      // If not, this needs to be adjusted.
       const response = await fetch(`/api/incomes?year=${selectedYear}`);
       if (!response.ok) throw new Error("Network response was not ok for incomes");
       return response.json();
