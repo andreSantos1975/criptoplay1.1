@@ -53,17 +53,16 @@ model Subscription {
   user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   mercadoPagoSubscriptionId String? @unique
   status                  String    // e.g., "active", "pending", "paused", "cancelled"
-  planId                  String    // ID do plano de assinatura no Mercado Pago
-  planName                String    // Nome do plano (ex: "Premium Mensal")
+  planId                  String?   // ID do plano (Mercado Pago, Hotmart, etc.)
+  planName                String    // Nome do plano (ex: "Premium Mensal", "eBook XYZ")
   amount                  Decimal   @db.Decimal(12, 2)
   currency                String    @default("BRL")
   startDate               DateTime  @default(now())
-  endDate                 DateTime?
-  type                    String    @default("RECURRING")
+  endDate                 DateTime? // Para acessos com tempo limitado
+  type                    String    @default("RECURRING") // ex: RECURRING, LIFETIME
+  origin                  String    @default("CRIPTONET") // ex: CRIPTONET, HOTMART
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
-
-  @@unique([userId, planId])
 }
 
 model OAuthAccount {

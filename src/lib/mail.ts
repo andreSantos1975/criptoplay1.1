@@ -2,8 +2,61 @@ import { Resend } from 'resend';
 import { PriceAlertEmail } from '../emails/PriceAlertEmail';
 import { render } from '@react-email/components';
 import { ContactFormEmail } from '../emails/ContactFormEmail';
+import { HotmartWelcomeEmail } from '../emails/HotmartWelcomeEmail';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+interface SendHotmartWelcomeEmailParams {
+  to: string;
+  userName?: string | null;
+  productName: string;
+  accessLink: string;
+}
+
+export async function sendHotmartWelcomeEmail({
+  to,
+  userName,
+  productName,
+  accessLink,
+}: SendHotmartWelcomeEmailParams) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[Mail] RESEND_API_KEY não definida. O envio do e-mail de boas-vindas foi pulado.');
+    return;
+  }
+
+  try {
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+    
+    console.log(`[Mail] Tentando enviar e-mail de boas-vindas da Hotmart para ${to}...`);
+
+    const emailHtml = await render(
+      HotmartWelcomeEmail({
+        userName: userName || 'Usuário',
+        productName,
+        accessLink,
+      })
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: `CriptoPlay <${fromEmail}>`,
+      to: [to],
+      subject: `Seu acesso à CriptoPlay está liberado!`,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error('[Mail] Erro ao enviar e-mail de boas-vindas via Resend:', error);
+      return null;
+    }
+
+    console.log(`[Mail] E-mail de boas-vindas enviado com sucesso! ID: ${data?.id}`);
+    return data;
+  } catch (error) {
+    console.error('[Mail] Exceção ao enviar e-mail de boas-vindas:', error);
+    return null;
+  }
+}
+
 
 interface SendPriceAlertParams {
   to: string;

@@ -67,27 +67,37 @@ export async function POST(req: Request) {
 
       const response = await preference.create({ body: preferenceData });
 
-      if (response.init_point) {
-        // Usando upsert para evitar múltiplas entradas pendentes para o mesmo plano
-        await prisma.subscription.upsert({
-          where: { 
-            userId_planId: { userId, planId } // Requer um índice único composto no schema
-           },
-          update: {
-            mercadoPagoSubscriptionId: response.id!,
-            status: 'pending',
-          },
-          create: {
+      if (response.id && response.init_point) {
+        // Lógica de "upsert manual" para evitar múltiplas entradas pendentes
+        const existingPendingSub = await prisma.subscription.findFirst({
+          where: {
             userId: userId,
-            mercadoPagoSubscriptionId: response.id!, // Usando o ID da preferência
-            status: 'pending',
             planId: planId,
-            planName: planName,
-            amount: new Prisma.Decimal(amount),
-            currency: "BRL",
-            type: 'LIFETIME',
+            status: 'pending',
           },
         });
+
+        if (existingPendingSub) {
+          // Se já existe uma pendente, apenas atualiza o ID da preferência do MP
+          await prisma.subscription.update({
+            where: { id: existingPendingSub.id },
+            data: { mercadoPagoSubscriptionId: response.id },
+          });
+        } else {
+          // Se não existe, cria uma nova
+          await prisma.subscription.create({
+            data: {
+              userId: userId,
+              mercadoPagoSubscriptionId: response.id,
+              status: 'pending',
+              planId: planId,
+              planName: planName,
+              amount: new Prisma.Decimal(amount),
+              currency: "BRL",
+              type: 'LIFETIME',
+            },
+          });
+        }
         
         return NextResponse.json({ init_point: response.init_point }, { status: 200 });
       } else {

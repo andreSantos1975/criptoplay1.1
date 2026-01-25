@@ -63,9 +63,13 @@ export async function POST(req: Request) {
         
         // Se a assinatura for autorizada, atualiza o limite de chat
         if (newStatus === 'authorized') {
-          const newLimit = PLAN_LIMITS[subscription.planId];
-          if (newLimit) {
-            userUpdateData.chatMessageLimit = newLimit;
+          if (subscription.planId !== null) { // Adicionando a verificação de nulidade aqui
+            const newLimit = PLAN_LIMITS[subscription.planId];
+            if (newLimit) {
+              userUpdateData.chatMessageLimit = newLimit;
+            }
+          } else {
+            console.warn(`Webhook: assinatura ${subscription.id} tem planId nulo. Limite de chat não atualizado.`);
           }
         }
 

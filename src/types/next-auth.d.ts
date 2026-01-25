@@ -2,6 +2,13 @@ import 'next-auth';
 import 'next-auth/jwt';
 import { DefaultSession } from 'next-auth';
 
+// Interface para a estrutura de permissões
+export interface UserPermissions {
+  isPremium: boolean;
+  isSubscriber: boolean;
+  hasHotmartAccess: boolean;
+}
+
 declare module 'next-auth' {
   /**
    * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
@@ -17,6 +24,8 @@ declare module 'next-auth' {
       emailVerified?: Date | null;
       trialEndsAt?: Date | null; // Adicionado campo de término do trial
       hasPassword?: boolean; // Indica se o usuário possui senha definida
+      /** Objeto centralizado de permissões do usuário. */
+      permissions: UserPermissions;
     } & DefaultSession['user'];
   }
 }
@@ -31,5 +40,7 @@ declare module 'next-auth/jwt' {
     emailVerified?: Date | null;
     trialEndsAt?: Date | null; // Adicionado campo de término do trial
     hasPassword?: boolean;
+    /** Objeto centralizado de permissões do usuário. */
+    permissions: UserPermissions;
   }
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -7,6 +6,8 @@ import styles from './contas.module.css';
 import { AccountCardManagement } from '@/components/finance/AccountCardManagement/AccountCardManagement';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { PremiumLock } from '@/components/ui/PremiumLock';
 
 // Funções de fetch para os dados
 const fetchBankAccounts = async () => {
@@ -26,15 +27,39 @@ const fetchCreditCards = async () => {
 };
 
 export default function ContasPage() {
+  const { data: session, status } = useSession();
+  const permissions = session?.user?.permissions;
+
   const { data: bankAccounts, isLoading: isLoadingAccounts, error: errorAccounts } = useQuery({
     queryKey: ['bankAccounts'],
     queryFn: fetchBankAccounts,
+    enabled: permissions?.isPremium, // Só executa a query se for premium
   });
 
   const { data: creditCards, isLoading: isLoadingCards, error: errorCards } = useQuery({
     queryKey: ['creditCards'],
     queryFn: fetchCreditCards,
+    enabled: permissions?.isPremium, // Só executa a query se for premium
   });
+
+  if (status === 'loading') {
+    return (
+      <div className={styles.container}>
+        <p>Carregando...</p>
+      </div>
+    );
+  }
+
+  if (!permissions?.isPremium) {
+    return (
+      <div className={styles.container}>
+        <PremiumLock 
+          title="Gestão de Contas e Cartões"
+          message="Conecte suas contas e cartões para ter uma visão unificada de suas finanças. Esta funcionalidade é exclusiva para assinantes PRO."
+        />
+      </div>
+    );
+  }
 
   const isLoading = isLoadingAccounts || isLoadingCards;
   const error = errorAccounts || errorCards;
