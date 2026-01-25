@@ -2,3 +2,13 @@
   toEmail = 'contato@cryptoplay.com.br';. Sugiro movê-lo para uma variável de ambiente para
   facilitar futuras alterações.
   O email deve se corrigido nesse arquivo assim que o dominio for criado
+  ---------------------------------------------------------------------------
+
+    Isso mostra que a página de suporte foi projetada para ser um hub central que no
+  futuro poderá incluir um chatbot, links para documentação, status do sistema (que já
+  existe no final da página), etc. Se o link do rodapé fosse direto para /contato, seria
+  mais difícil introduzir esses outros canais de suporte depois.
+  A página /suporte serve como um distribuidor de tráfego de
+  suporte. Atualmente, sua principal função é encaminhar o usuário para o formulário de
+  contato com o assunto correto, mas ela foi construída para acomodar um ecossistema de
+  suporte muito mais rico no futuro. É um design inteligente e escalável.
