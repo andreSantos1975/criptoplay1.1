@@ -86,14 +86,8 @@ const Footer = () => {
                 <Mail />
                 <span className={styles.contactText}>contato@cryptoplay.com.br</span>
               </div>
-              <div className={styles.contactItem}>
-                <Phone />
-                <span className={styles.contactText}>+55 (61) 991637838</span>
-              </div>
-              <div className={styles.contactItem}>
-                <MapPin />
-                <span className={styles.contactText}>Brasília, DF - Brasil</span>
-              </div>
+
+
             </div>
           </div>
         </div>
