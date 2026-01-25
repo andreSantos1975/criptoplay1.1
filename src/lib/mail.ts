@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { PriceAlertEmail } from '../emails/PriceAlertEmail';
 import { render } from '@react-email/components';
+import { ContactFormEmail } from '../emails/ContactFormEmail';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -98,5 +99,53 @@ export async function sendVerificationEmail(email: string, token: string) {
   } catch (error) {
     console.error('[Mail] Exceção ao enviar e-mail de verificação:', error);
     return null;
+  }
+}
+
+interface ContactFormEmailParams {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
+export async function sendContactFormEmail({ name, email, subject, message }: ContactFormEmailParams) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[Mail] RESEND_API_KEY não definida. O envio de e-mail de contato foi pulado.');
+    // Mesmo sem a chave, não retornamos erro para não quebrar o fluxo do formulário
+    return { success: false, error: 'RESEND_API_KEY not set' };
+  }
+  
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+  const toEmail = 'contato@cryptoplay.com.br'; // Destinatário fixo
+
+  try {
+    const emailHtml = await render(
+      ContactFormEmail({
+        name,
+        email,
+        subject,
+        message,
+      })
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: fromEmail,
+      to: [toEmail],
+      subject: `Contato CriptoPlay: ${subject}`,
+      replyTo: email, // Importante para responder diretamente ao usuário
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error('[Mail] Erro ao enviar e-mail de contato via Resend:', error);
+      return { success: false, error };
+    }
+
+    console.log(`[Mail] E-mail de contato enviado com sucesso! ID: ${data?.id}`);
+    return { success: true, data };
+  } catch (error) {
+    console.error('[Mail] Exceção ao enviar e-mail de contato:', error);
+    return { success: false, error };
   }
 }

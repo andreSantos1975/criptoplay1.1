@@ -1,0 +1,3 @@
+ O e-mail de destino do formulário de contato está fixo em src/lib/mail.ts, na linha const
+  toEmail = 'contato@cryptoplay.com.br';. Sugiro movê-lo para uma variável de ambiente para
+  facilitar futuras alterações.
