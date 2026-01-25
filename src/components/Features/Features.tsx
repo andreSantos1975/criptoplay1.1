@@ -24,7 +24,7 @@ const features = [
     icon: Headphones,
     title: "Suporte 24/7",
     description: "Nossa equipe especializada está sempre disponível para ajudar você a maximizar seus resultados no mercado.",
-    benefits: ["Suporte pelo Whatsapp", "Grupo no Telegram", "Tutoriais exclusivos"]
+    benefits: ["Suporte por Email", "Grupo no Telegram", "Tutoriais exclusivos"]
   }
 ];
 
