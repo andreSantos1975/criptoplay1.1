@@ -141,6 +141,8 @@ export default function RankingPage() {
               winRate={currentUserData.winRate}
               isAnonymous={!currentUserData.isPublicProfile}
               nickname={currentUserData.isPublicProfile ? currentUserData.nickname : undefined}
+              period={selectedPeriod}
+              market={selectedMarket}
             />
           </section>
         )}

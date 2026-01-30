@@ -11,6 +11,8 @@ interface UserPositionCardProps {
   winRate: number;
   isAnonymous?: boolean;
   nickname?: string;
+  period: string;
+  market: string; // Adicionado para clareza do mercado
 }
 
 export function UserPositionCard({
@@ -21,8 +23,26 @@ export function UserPositionCard({
   winRate,
   isAnonymous = false,
   nickname,
+  period,
+  market,
 }: UserPositionCardProps) {
   const percentile = Math.round(((totalTraders - position + 1) / totalTraders) * 100);
+
+  const periodLabels: { [key: string]: string } = {
+    '7d': '7d',
+    '30d': '30d',
+    '90d': '90d',
+    'all': 'Total',
+  };
+  const periodLabel = periodLabels[period] || period;
+
+  const marketLabels: { [key: string]: string } = {
+    'spot': 'Spot',
+    'futures': 'Futuros',
+    'all': 'Todos',
+  };
+  const marketLabel = marketLabels[market] || market;
+
 
   return (
     <div className={styles.positionCard}>
@@ -36,7 +56,7 @@ export function UserPositionCard({
             )}
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Sua Posição</p>
+            <p className="text-sm text-muted-foreground">Sua Posição ({marketLabel} | {periodLabel})</p>
             <p className="font-semibold text-foreground">
               {isAnonymous ? "Trader Anônimo" : nickname}
             </p>
