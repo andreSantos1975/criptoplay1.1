@@ -26,9 +26,22 @@ import { Button } from "@/components/ui/button";
 import styles from "./ranking.module.css";
 import toast from 'react-hot-toast';
 
-const PERIOD_OPTIONS = [ { label: '7 Dias', value: '7d' }, /* ... */ ];
-const MARKET_OPTIONS = [ { label: 'Spot', value: 'spot' }, /* ... */ ];
-const SORT_OPTIONS = [ { label: 'Maior ROI', value: 'roi' }, /* ... */ ];
+const PERIOD_OPTIONS = [
+  { label: '7 Dias', value: '7d' },
+  { label: '30 Dias', value: '30d' },
+  { label: '90 Dias', value: '90d' },
+  { label: 'Todo o Período', value: 'all' },
+];
+const MARKET_OPTIONS = [
+  { label: 'Spot', value: 'spot' },
+  { label: 'Futuros', value: 'futures' },
+  { label: 'Todos', value: 'all' },
+];
+const SORT_OPTIONS = [
+  { label: 'Maior ROI', value: 'roi' },
+  { label: 'Maior Lucro', value: 'profit' },
+  { label: 'Consistência', value: 'consistency' },
+];
 
 interface Trader {
   id: string; position: number; nickname: string; avatar: string; roi: number; profit: number; trades: number; winRate: number; drawdown: number; plan: "free" | "starter" | "pro" | "premium"; isCurrentUser?: boolean; badges?: string[];
@@ -41,7 +54,7 @@ export default function RankingPage() {
   const permissions = session?.user?.permissions;
   
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
-  const [selectedMarket, setSelectedMarket] = useState("spot");
+  const [selectedMarket, setSelectedMarket] = useState("all");
   const [selectedSort, setSelectedSort] = useState("roi");
   
   const rankingApiUrl = `/api/ranking?period=${selectedPeriod}&market=${selectedMarket}&sort=${selectedSort}`;

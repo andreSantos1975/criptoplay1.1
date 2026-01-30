@@ -97,7 +97,7 @@ export function UserPositionCard({
           )}>
             {profit >= 0 ? "+" : ""}{profit.toLocaleString("pt-BR")}
           </p>
-          <p className={styles.statLabel}>Lucro USDT</p>
+          <p className={styles.statLabel}>Lucro (BRL)</p>
         </div>
         
         <div className={styles.statBox}>

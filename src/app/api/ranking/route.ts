@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PositionStatus } from '@prisma/client'; // Importar PositionStatus diretamente
+import { PositionStatus, Prisma } from '@prisma/client';
+import { getCurrentPrice } from '@/lib/binance'; // Importar função de preço
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +14,17 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     
     const period = searchParams.get('period') || '30d';
-    const market = searchParams.get('market') || 'spot';
+    const market = searchParams.get('market') || 'all';
     const sort = searchParams.get('sort') || 'roi';
+
+    // --- OBTER TAXA DE CÂMBIO (USDT -> BRL) ---
+    // Fazemos isso uma vez fora do loop para otimização
+    let usdtBrlRate = new Prisma.Decimal(5.0); // Fallback
+    try {
+        usdtBrlRate = await getCurrentPrice('USDTBRL');
+    } catch (error) {
+        console.error('Falha ao obter taxa USDTBRL para o ranking. Usando fallback.', error);
+    }
 
     // 1. Definir Data de Corte (StartDate)
     let startDate = new Date();
@@ -25,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     // 2. Configurar filtros do Prisma
     const tradeFilter = {
-      status: 'CLOSED', // O TradeStatus está como string no modelo, então 'CLOSED' funciona.
+      status: 'CLOSED',
       exitDate: { gte: startDate }
     };
 
@@ -62,11 +72,11 @@ export async function GET(req: NextRequest) {
         isPublicProfile: true,
         trades: includeSpot ? {
             where: tradeFilter,
-            select: { pnl: true }
+            select: { pnl: true, symbol: true }
         } : false,
         futuresPositions: includeFutures ? {
             where: futuresFilter,
-            select: { pnl: true }
+            select: { pnl: true, symbol: true }
         } : false
       },
     });
@@ -79,35 +89,49 @@ export async function GET(req: NextRequest) {
       const futureTrades = (user.futuresPositions as any[]) || [];
 
       // Calcular Lucro do Período e Win Rate
-      let periodProfit = 0;
+      let periodProfit = new Prisma.Decimal(0); // Usar Decimal para precisão
       let winningTrades = 0;
       let totalTradesCount = 0;
 
       if (includeSpot) {
         spotTrades.forEach(t => {
-          const pnl = Number(t.pnl || 0);
-          periodProfit += pnl;
-          if (pnl > 0) winningTrades++;
+          const pnl = new Prisma.Decimal(t.pnl || 0);
+          let pnlInBrl = pnl;
+
+          // Se o PnL não for nulo e o par não for BRL, converte
+          if (!pnl.isZero() && t.symbol && !t.symbol.endsWith('BRL')) {
+            pnlInBrl = pnl.times(usdtBrlRate);
+          }
+          
+          periodProfit = periodProfit.add(pnlInBrl);
+          if (pnl.isPositive()) winningTrades++;
           totalTradesCount++;
         });
       }
 
       if (includeFutures) {
         futureTrades.forEach(t => {
-          const pnl = Number(t.pnl || 0);
-          periodProfit += pnl;
-          if (pnl > 0) winningTrades++;
+          const pnl = new Prisma.Decimal(t.pnl || 0);
+          let pnlInBrl = pnl;
+
+          // Se o PnL não for nulo e o par não for BRL, converte
+          if (!pnl.isZero() && t.symbol && !t.symbol.endsWith('BRL')) {
+            pnlInBrl = pnl.times(usdtBrlRate);
+          }
+
+          periodProfit = periodProfit.add(pnlInBrl);
+          if (pnl.isPositive()) winningTrades++;
           totalTradesCount++;
         });
       }
 
-      const currentBal = Number(user.virtualBalance);
+      const currentBal = user.virtualBalance.toNumber();
+      const periodProfitNumber = periodProfit.toNumber();
       
-      // Estimar Saldo Inicial do Período: Saldo Atual - Lucro Feito no Período
-      // Se o lucro foi 500 e tenho 10500, comecei com 10000.
-      let estimatedStartBal = currentBal - periodProfit;
+      // Estimar Saldo Inicial do Período: Saldo Atual - Lucro Feito no Período (em BRL)
+      let estimatedStartBal = currentBal - periodProfitNumber;
       
-      // Proteção contra denominador zero ou negativo (se o usuário depositou/sacou, isso distorce, mas para simulador serve)
+      // Proteção contra denominador zero ou negativo
       if (estimatedStartBal <= 0) estimatedStartBal = 10000; 
 
       const roi = ((currentBal - estimatedStartBal) / estimatedStartBal) * 100;
@@ -130,30 +154,28 @@ export async function GET(req: NextRequest) {
         nickname: user.username || `User ${user.id.slice(0, 4)}`,
         avatar: user.image || `https://api.dicebear.com/7.x/adventurer/png?seed=${user.id}`,
         roi: roi,
-        profit: periodProfit,
+        profit: periodProfitNumber, // Envia como número
         trades: totalTradesCount,
         winRate: winRate,
         drawdown: 0, 
         plan: plan,
         badges: badges,
         isCurrentUser: user.id === currentUserId,
-        isPublicProfile: user.isPublicProfile // Incluir a nova propriedade
+        isPublicProfile: user.isPublicProfile
       };
     });
-
-    // Encontrar os dados completos do usuário atual (antes de filtrar para visibilidade pública)
+    
+    // O resto do arquivo permanece o mesmo...
+    // ...
+    // ... (Encontrar currentUser, filtrar, ordenar, etc.)
+    // ...
     const currentUserFullData = allCalculatedUserData.find(t => t.isCurrentUser);
-
-    // Filtrar para exibição no ranking público (apenas perfis públicos)
     const publicTraders = allCalculatedUserData.filter(user => user.isPublicProfile);
-
-    // Ordenação Dinâmica (para traders públicos)
     publicTraders.sort((a, b) => {
       switch (sort) {
         case 'profit':
           return b.profit - a.profit;
         case 'consistency':
-          // Prioriza Win Rate. Desempate: Quem operou mais (evita o "sortudo de 1 trade")
           if (b.winRate === a.winRate) {
             return b.trades - a.trades;
           }
@@ -164,14 +186,12 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // Atribuir Posição e Rank Badges aos publicTraders
     const rankedPublicTraders = publicTraders.map((trader, index) => {
       const position = index + 1;
       if (position <= 10) trader.badges.push("top10");
       return { ...trader, position };
     });
 
-    // Atualizar a posição do currentUserFullData se ele for público
     let currentUserWithPosition: any = currentUserFullData;
     if (currentUserFullData && currentUserFullData.isPublicProfile) {
         const publicRankingPosition = rankedPublicTraders.findIndex(t => t.id === currentUserFullData.id);
@@ -182,16 +202,12 @@ export async function GET(req: NextRequest) {
             };
         }
     } else if (currentUserFullData && !currentUserFullData.isPublicProfile) {
-        // Se o usuário atual não for público, mas queremos mostrar sua card,
-        // garantimos que a posição não seja exibida ou seja marcada como privada
         currentUserWithPosition = {
-            ...currentUserFullData,
-            position: undefined // Ou null, ou um valor que indique "privado"
+            ...currentUserWithPosition,
+            position: undefined
         };
     }
 
-
-    // Calcular Métricas Gerais para o Top 100 (ou todos) usando publicTraders
     const activeTraders = rankedPublicTraders.filter(t => t.trades > 0);
     const top100 = activeTraders.slice(0, 100);
 
@@ -206,10 +222,10 @@ export async function GET(req: NextRequest) {
     const topTrader = rankedPublicTraders[0] || null;
 
     return NextResponse.json({
-      traders: rankedPublicTraders.slice(0, 50), // Paginação simples
-      currentUser: currentUserWithPosition, // Enviar os dados completos do usuário atual com a posição potencialmente atualizada
+      traders: rankedPublicTraders.slice(0, 50),
+      currentUser: currentUserWithPosition,
       metrics: {
-        totalTraders: users.length, // Total real de usuários na plataforma
+        totalTraders: users.length,
         avgRoi,
         avgWinRate,
         topTraderName: topTrader ? topTrader.nickname : "-",
