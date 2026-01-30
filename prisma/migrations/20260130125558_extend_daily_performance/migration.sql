@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "DailyPerformance" ADD COLUMN     "totalPnl" DECIMAL(12,2) NOT NULL DEFAULT 0,
+ADD COLUMN     "totalTrades" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "winningTrades" INTEGER NOT NULL DEFAULT 0;

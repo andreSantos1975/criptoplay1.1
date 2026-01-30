@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { getCurrentPrice } from '@/lib/binance';
 import { Decimal } from '@prisma/client/runtime/library';
 import { hasPremiumAccess } from '@/lib/permissions';
+import { updateUserDailyPerformance } from '@/lib/ranking';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,15 @@ export async function POST(
 
     const userId = session.user.id;
     const { tradeId } = params;
+
+    // Buscar usuário antes de qualquer operação para ter o saldo inicial
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      return new NextResponse(JSON.stringify({ message: 'Usuário não encontrado' }), { status: 404 });
+    }
+    const userVirtualBalance = user.virtualBalance;
 
     // 1. Tentar encontrar a operação na tabela Trade (Spot)
     const trade = await prisma.trade.findUnique({
@@ -49,8 +59,8 @@ export async function POST(
       }
 
       // No Spot (nesta implementação), o saldo não foi debitado na abertura, então apenas adicionamos o lucro/prejuízo.
-      const [updatedTrade, updatedUser] = await prisma.$transaction([
-        prisma.trade.update({
+      const [updatedTrade] = await prisma.$transaction(async (tx) => {
+        const tradeUpdate = tx.trade.update({
           where: { id: tradeId },
           data: {
             status: 'CLOSED',
@@ -58,16 +68,23 @@ export async function POST(
             exitDate: new Date(),
             pnl: pnl,
           },
-        }),
-        prisma.user.update({
+        });
+
+        const userUpdate = tx.user.update({
           where: { id: userId },
           data: {
             virtualBalance: {
               increment: pnl, 
             },
           },
-        }),
-      ]);
+        });
+        
+        // A função de ranking espera o client da transação
+        await updateUserDailyPerformance(tx, userId, pnl, userVirtualBalance);
+        
+        // A transação retorna as operações principais
+        return Promise.all([tradeUpdate, userUpdate]);
+      });
 
       return NextResponse.json(updatedTrade);
     }
@@ -101,24 +118,29 @@ export async function POST(
       // Ao fechar, devolvemos a Margem + PnL.
       const returnAmount = futuresPosition.margin.add(pnl);
 
-      const [updatedPosition, updatedUser] = await prisma.$transaction([
-        prisma.futuresPosition.update({
+      const [updatedPosition] = await prisma.$transaction(async (tx) => {
+        const positionUpdate = tx.futuresPosition.update({
           where: { id: tradeId },
           data: {
             status: 'CLOSED',
             closedAt: new Date(),
             pnl: pnl,
           },
-        }),
-        prisma.user.update({
+        });
+
+        const userUpdate = tx.user.update({
           where: { id: userId },
           data: {
             virtualBalance: {
               increment: returnAmount,
             },
           },
-        }),
-      ]);
+        });
+        
+        await updateUserDailyPerformance(tx, userId, pnl, userVirtualBalance);
+
+        return Promise.all([positionUpdate, userUpdate]);
+      });
 
       return NextResponse.json(updatedPosition);
     }
