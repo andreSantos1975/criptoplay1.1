@@ -152,7 +152,9 @@ export const SimulatorChart = memo(({
       isInitialLoad.current = true; // Reseta para a proxima carga de dados
     } else if (initialChartData) {
       // Sort initialChartData by time in ascending order to prevent Lightweight Charts assertion error
-      const sortedChartData = [...initialChartData].sort((a, b) => a.time - b.time);
+      const sortedChartData = [...initialChartData].sort(
+        (a, b) => new Date(a.time as string).getTime() - new Date(b.time as string).getTime()
+      );
       seriesRef.current.setData(sortedChartData);
       
       // Apenas faz o fitContent na carga inicial para não perder o zoom/posição do usuário
