@@ -271,9 +271,17 @@ export const ReportsSection = ({
       
     const totalPnlWithUnrealized = realizedPnl + unrealizedPnl;
 
+    // FIX: The `patrimonioAtual` calculation was incorrect.
+    // It relied on `simulatorProfile.virtualBalance` which could be stale or incorrect
+    // after a database reset, and it didn't properly account for realized PnL.
+    // The new formula calculates equity from a fixed initial balance (10,000)
+    // plus the total profit and loss (realized and unrealized), providing a consistent and accurate view.
+    const initialBalance = 10000; // Simulator's starting balance
+    const patrimonioAtual = initialBalance + totalPnlWithUnrealized;
+
     return {
       totalPnl: totalPnlWithUnrealized,
-      patrimonioAtual: Number(simulatorProfile?.virtualBalance || 0) + unrealizedEquity,
+      patrimonioAtual: patrimonioAtual,
     };
   }, [tradesWithDates, brlRate, binanceTickers, simulatorProfile]);
 

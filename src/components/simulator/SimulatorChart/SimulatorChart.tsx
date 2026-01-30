@@ -151,10 +151,12 @@ export const SimulatorChart = memo(({
       seriesRef.current.setData([]); // Limpa os dados enquanto carrega
       isInitialLoad.current = true; // Reseta para a proxima carga de dados
     } else if (initialChartData) {
-      seriesRef.current.setData(initialChartData);
+      // Sort initialChartData by time in ascending order to prevent Lightweight Charts assertion error
+      const sortedChartData = [...initialChartData].sort((a, b) => a.time - b.time);
+      seriesRef.current.setData(sortedChartData);
       
       // Apenas faz o fitContent na carga inicial para não perder o zoom/posição do usuário
-      if (isInitialLoad.current && initialChartData.length > 0) {
+      if (isInitialLoad.current && sortedChartData.length > 0) {
         chartRef.current.timeScale().fitContent();
         isInitialLoad.current = false;
       }
