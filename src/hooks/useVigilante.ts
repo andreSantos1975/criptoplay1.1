@@ -232,5 +232,6 @@ export const useVigilante = ({
 
       clearInterval(pollingInterval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openPositionsString, enabled]); // Removido onAddToClosingPositionSymbols das dependências
 };

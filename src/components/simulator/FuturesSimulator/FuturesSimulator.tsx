@@ -537,11 +537,27 @@ const FuturesSimulator = () => {
       };
   }, [realtimeChartUpdate, exchangeRate, symbol]);
 
-  const assetHeaderData = useMemo(() => {
-    if (!initialChartData || initialChartData.length === 0) return { open: 0, high: 0, low: 0, close: 0, time: 0 };
-    const lastCandle = initialChartData[initialChartData.length - 1];
-    return { ...lastCandle, close: realtimeChartUpdate?.close || lastCandle.close };
-  }, [initialChartData, realtimeChartUpdate]);
+  const { data: tickerData } = useQuery({
+    queryKey: ['futuresTicker24hr', symbol],
+    queryFn: async () => {
+      const response = await fetch(`/api/binance/futures-ticker-24hr?symbol=${symbol}`);
+      if (!response.ok) {
+        // Não lançar erro para não quebrar a UI, apenas logar
+        console.error('Falha ao buscar dados do ticker 24h.');
+        return null;
+      }
+      return response.json();
+    },
+    refetchInterval: 2000, // Atualiza a cada 2 segundos
+    enabled: !!symbol,
+  });
+
+  const headerData = {
+    price: tickerData ? parseFloat(tickerData.lastPrice) : 0,
+    open: tickerData ? parseFloat(tickerData.openPrice) : 0,
+    high: tickerData ? parseFloat(tickerData.highPrice) : 0,
+    low: tickerData ? parseFloat(tickerData.lowPrice) : 0,
+  };
 
   const prevPositionsLengthRef = useRef(0);
 
@@ -557,7 +573,7 @@ const FuturesSimulator = () => {
 
   // Efeito para aplicar Stop Loss e Take Profit padrão (apenas se defaultsAppliedRef for false)
   useEffect(() => {
-    let currentPrice = assetHeaderData.close;
+    let currentPrice = headerData.price;
     if (!symbol.endsWith('BRL') && exchangeRate > 0) {
         currentPrice = currentPrice * exchangeRate;
     }
@@ -581,7 +597,7 @@ const FuturesSimulator = () => {
         }
         defaultsAppliedRef.current = true;
     }
-  }, [assetHeaderData.close, side, symbol, exchangeRate, positions]); // 'positions' is now safe to use here
+  }, [headerData.price, side, symbol, exchangeRate, positions]); // 'positions' is now safe to use here
 
   const createAlertMutation = useMutation<Alert, Error, Partial<Alert>>({
     mutationFn: createAlert,
@@ -692,9 +708,16 @@ const FuturesSimulator = () => {
   });
 
   const handleStartCreateAlert = () => {
-    const lastCloseBRL = chartDataInBRL && chartDataInBRL.length > 0 
+    const lastCloseFromChart = chartDataInBRL && chartDataInBRL.length > 0 
         ? chartDataInBRL[chartDataInBRL.length - 1].close 
-        : (assetHeaderData.close * exchangeRate);
+        : 0;
+
+    // Fallback para o preço do ticker se os dados do gráfico não estiverem prontos
+    const fallbackPriceBRL = symbol.endsWith('BRL')
+        ? headerData.price
+        : headerData.price * exchangeRate;
+        
+    const lastCloseBRL = lastCloseFromChart > 0 ? lastCloseFromChart : fallbackPriceBRL;
 
     if (lastCloseBRL > 0) {
       setProspectiveAlert({ price: lastCloseBRL });
@@ -762,10 +785,10 @@ const FuturesSimulator = () => {
     <div className={styles.simulatorContainer}>
       <AssetHeader 
         symbol={symbol} 
-        price={assetHeaderData.close} 
-        open={assetHeaderData.open} 
-        high={assetHeaderData.high} 
-        low={assetHeaderData.low}
+        price={headerData.price} 
+        open={headerData.open} 
+        high={headerData.high} 
+        low={headerData.low}
         exchangeRate={exchangeRate}
       />
 
@@ -806,7 +829,7 @@ const FuturesSimulator = () => {
           setSymbol={setSymbol} 
           createPositionMutation={createPositionMutation} 
           isCreating={createPositionMutation.isPending}
-          currentPrice={assetHeaderData.close} 
+          currentPrice={headerData.price} 
           exchangeRate={exchangeRate}
           tradeLevels={tradeLevels}
           onLevelsChange={setTradeLevels}

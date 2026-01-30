@@ -283,7 +283,7 @@ export const ReportsSection = ({
       totalPnl: totalPnlWithUnrealized,
       patrimonioAtual: patrimonioAtual,
     };
-  }, [tradesWithDates, brlRate, binanceTickers, simulatorProfile]);
+  }, [tradesWithDates, brlRate, binanceTickers]);
 
   if (isLoading)
     return (

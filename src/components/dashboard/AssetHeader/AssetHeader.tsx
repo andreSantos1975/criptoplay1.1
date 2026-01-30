@@ -11,8 +11,8 @@ interface AssetHeaderProps {
 }
 
 const formatCurrency = (value: number, symbol: string, exchangeRate?: number) => {
-  // Se a taxa de câmbio for fornecida, converte para BRL
-  if (exchangeRate && exchangeRate > 0) {
+  // Se o par NÃO for BRL e a taxa de câmbio for fornecida, converte para BRL
+  if (!symbol.endsWith('BRL') && exchangeRate && exchangeRate > 0) {
     const convertedValue = value * exchangeRate;
     return convertedValue.toLocaleString('pt-BR', {
       style: 'currency',
@@ -22,14 +22,18 @@ const formatCurrency = (value: number, symbol: string, exchangeRate?: number) =>
     });
   }
 
-  // Lógica original como fallback
-  const currency = symbol.endsWith('USDT') ? 'USD' : 'BRL';
-  const locale = symbol.endsWith('USDT') ? 'en-US' : 'pt-BR';
+  // Lógica original: formata BRL diretamente ou USDT (dólar) como fallback
+  const isUsdtPair = symbol.endsWith('USDT');
+  const currency = isUsdtPair ? 'USD' : 'BRL';
+  const locale = isUsdtPair ? 'en-US' : 'pt-BR';
+  const minDigits = isUsdtPair ? 2 : 2; // Ajuste para BRL
+  const maxDigits = isUsdtPair ? 8 : 2; // Ajuste para BRL
+
   return value.toLocaleString(locale, {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 8,
+    minimumFractionDigits: minDigits,
+    maximumFractionDigits: maxDigits,
   });
 };
 
