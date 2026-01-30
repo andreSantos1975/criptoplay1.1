@@ -76,7 +76,7 @@ export const RankingPodium: React.FC<RankingPodiumProps> = ({ topTraders }) => {
           <div className={styles.traderInfo}>
             <span className={styles.nickname}>{trader.nickname}</span>
             <span className={styles.roi}>{formatPercentage(trader.roi)}</span>
-            <span className={styles.profit}>{trader.profit >= 0 ? '+' : ''}{trader.profit.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USDT</span>
+            <span className={styles.profit}>{trader.profit >= 0 ? '+' : ''}{trader.profit.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} BRL</span>
           </div>
         </div>
       </div>

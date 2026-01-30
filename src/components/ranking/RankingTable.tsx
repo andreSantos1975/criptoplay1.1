@@ -113,7 +113,7 @@ export function RankingTable({ traders, currentUserId, userPlan }: RankingTableP
               <th className={styles.th}>#</th>
               <th className={styles.th}>Trader</th>
               <th className={cn(styles.th, "text-right")}>ROI</th>
-              <th className={cn(styles.th, "text-right hidden sm:table-cell")}>Lucro (USDT)</th>
+              <th className={cn(styles.th, "text-right hidden sm:table-cell")}>Lucro (BRL)</th>
               <th className={cn(styles.th, "text-right hidden md:table-cell")}>Trades</th>
               <th className={cn(styles.th, "text-right hidden lg:table-cell")}>Win Rate</th>
               <th className={cn(styles.th, "text-right hidden xl:table-cell")}>Drawdown</th>
@@ -171,7 +171,7 @@ export function RankingTable({ traders, currentUserId, userPlan }: RankingTableP
                     "font-mono font-medium",
                     trader.profit >= 0 ? "text-emerald-600" : "text-red-600"
                   )}>
-                    {trader.profit >= 0 ? "+" : ""}{trader.profit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    {trader.profit >= 0 ? "+" : ""}{trader.profit.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} BRL
                   </span>
                 </td>
                 <td className={cn(styles.td, "text-right hidden md:table-cell")}>
