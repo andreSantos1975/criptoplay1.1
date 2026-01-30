@@ -66,7 +66,13 @@ export async function POST(req: Request) {
       }
 
       if (!positionsToClose || positionsToClose.length === 0) {
-        throw new Error('Nenhuma posição aberta encontrada para fechar.');
+        // Não é um erro, apenas significa que a posição já foi fechada em uma chamada anterior.
+        // Retornar sucesso para evitar que o frontend mostre um erro desnecessário.
+        return {
+            message: 'Nenhuma posição aberta encontrada para fechar. A operação pode já ter sido processada.',
+            count: 0,
+            totalPnl: 0,
+        };
       }
 
       let totalAmountToReturn = 0; // Acumulador em BRL (moeda da conta)

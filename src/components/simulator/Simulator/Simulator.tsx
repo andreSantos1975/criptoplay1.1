@@ -117,7 +117,7 @@ const Simulator = () => {
     if (!session?.user) return false;
     
     const isTrialActive = session.user.createdAt ? 
-      Math.floor((new Date().getTime() - new Date(session.user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) < 7 : 
+      Math.floor((new Date().getTime() - new Date(new Date(session.user.createdAt).getTime())) / (1000 * 60 * 60 * 24)) < 7 :
       false;
 
     return (
@@ -132,8 +132,7 @@ const Simulator = () => {
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCBRL');
   const [marketType, setMarketType] = useState<'spot' | 'futures'>('spot');
   const [interval, setInterval] = useState("1m");
-  const [stopLoss, setStopLoss] = useState(0);
-  const [takeProfit, setTakeProfit] = useState(0);
+  const [tradeLevels, setTradeLevels] = useState<TradeLevels>({ entry: 0, stopLoss: 0, takeProfit: 0 });
   const [quantity, setQuantity] = useState(0.01);
   const [closingPositionSymbol, setClosingPositionSymbol] = useState<string | null>(null);
   const [watchedSymbols, setWatchedSymbols] = useState(['BTCBRL', 'ETHBRL', 'SOLBRL', 'ADABRL', 'DOGEBRL', 'SHIBBRL', 'BNBBRL']);
@@ -239,14 +238,13 @@ const Simulator = () => {
       queryClient.invalidateQueries({ queryKey: ['trades'] });
       queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
       setQuantity(0.01);
-      setStopLoss(0);
-      setTakeProfit(0);
+      setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 }); // Limpa os níveis
 
       // Abrir o modal do diário
       setJournalTradeId(newTrade.id);
       setIsJournalModalOpen(true);
     },
-    onError: (error) => toast.error(`Erro ao abrir ordem: ${error.message}`),
+    onError: (error: any) => toast.error(`Erro ao abrir ordem: ${error.message}`),
   });
 
   const createAlertMutation = useMutation<Alert, Error, Partial<Alert>>({
@@ -319,16 +317,21 @@ const Simulator = () => {
 
   // --- CÁLCULOS MEMOIZADOS E EFEITOS ---
   const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
-  const tradeLevelsForChart: TradeLevels = { entry: entryPrice, stopLoss, takeProfit };
-
+  
   // Efeito para aplicar Stop Loss (1%) e Take Profit (2%) padrão
   useEffect(() => {
-    if (entryPrice > 0 && !defaultsAppliedRef.current) {
-      setStopLoss(entryPrice * 0.99); // 1% abaixo
-      setTakeProfit(entryPrice * 1.02); // 2% acima
+    const hasOpenPositionForSymbol = simulatorProfile?.openPositions?.some(p => p.symbol === selectedCrypto);
+
+    if (entryPrice > 0 && !defaultsAppliedRef.current && !hasOpenPositionForSymbol) {
+      setTradeLevels(prev => ({
+        ...prev,
+        entry: entryPrice,
+        stopLoss: entryPrice * 0.99, // 1% abaixo
+        takeProfit: entryPrice * 1.02, // 2% acima
+      }));
       defaultsAppliedRef.current = true;
     }
-  }, [entryPrice, selectedCrypto]);
+  }, [entryPrice, selectedCrypto, simulatorProfile?.openPositions]);
   
   const assetHeaderData = useMemo(() => {
     if (!chartData || chartData.length === 0) return { open: 0, high: 0, low: 0, close: entryPrice, time: 0 };
@@ -340,8 +343,8 @@ const Simulator = () => {
   }, [chartData, realtimeChartUpdate, entryPrice]);
 
   const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  const riskAmount = entryPrice > 0 && stopLoss > 0 ? (entryPrice - stopLoss) * quantity : 0;
-  const rewardAmount = entryPrice > 0 && takeProfit > 0 ? (takeProfit - entryPrice) * quantity : 0;
+  const riskAmount = entryPrice > 0 && tradeLevels.stopLoss > 0 ? (entryPrice - tradeLevels.stopLoss) * quantity : 0;
+  const rewardAmount = entryPrice > 0 && tradeLevels.takeProfit > 0 ? (tradeLevels.takeProfit - entryPrice) * quantity : 0;
 
   const estimatedCostUSDT = quantity * entryPrice;
   const isBrlPair = selectedCrypto.endsWith('BRL');
@@ -362,17 +365,28 @@ const Simulator = () => {
   // --- MANIPULADORES ---
   const handleCryptoSelect = (symbol: string) => {
     setSelectedCrypto(symbol);
-    setStopLoss(0);
-    setTakeProfit(0);
+    setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 });
     setProspectiveAlert(null); // Clear prospective alert when changing crypto
     defaultsAppliedRef.current = false; // Permite reaplicar os padrões
   };
 
-  const handleLevelsChange = (newLevels: TradeLevels) => {
-    setStopLoss(newLevels.stopLoss);
-    setTakeProfit(newLevels.takeProfit);
+  const handleSimulatorSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!entryPrice) {
+      toast.error('Preço de entrada não disponível. Verifique sua conexão.');
+      return;
+    }
+    createSimulatorTradeMutation.mutate({ 
+      symbol: selectedCrypto, 
+      quantity, 
+      type: 'BUY', 
+      entryPrice, 
+      stopLoss: tradeLevels.stopLoss, 
+      takeProfit: tradeLevels.takeProfit, 
+      marketType 
+    });
   };
-
+  
   const handleStartCreateAlert = () => {
     if (entryPrice > 0) {
       setProspectiveAlert({ price: entryPrice });
@@ -397,15 +411,6 @@ const Simulator = () => {
   const handleCancelCreateAlert = () => {
     setProspectiveAlert(null);
   };
-  
-  const handleSimulatorSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!entryPrice) {
-      toast.error('Preço de entrada não disponível. Verifique sua conexão.');
-      return;
-    }
-    createSimulatorTradeMutation.mutate({ symbol: selectedCrypto, quantity, type: 'BUY', entryPrice, stopLoss, takeProfit, marketType });
-  };
 
   const handleAddSymbol = async () => {
     if (!newSymbol) return;
@@ -421,7 +426,7 @@ const Simulator = () => {
         if (!res.ok) throw new Error('Ativo não encontrado na Binance.');
         setWatchedSymbols(prev => [...prev, formattedSymbol]);
         toast.success(`${formattedSymbol} adicionado à lista!`);
-    } catch (error) {
+    } catch (error: any) {
         if (error instanceof Error) toast.error(error.message);
         else toast.error('Ocorreu um erro ao adicionar o ativo.');
     } finally {
@@ -470,8 +475,8 @@ const Simulator = () => {
                 key={selectedCrypto}
                 symbol={selectedCrypto}
                 marketType={marketType}
-                tradeLevels={tradeLevelsForChart}
-                onLevelsChange={handleLevelsChange}
+                tradeLevels={tradeLevels}
+                onLevelsChange={setTradeLevels}
                 tipoOperacao="compra"
                 initialChartData={chartData}
                 isChartLoading={isChartLoading}
@@ -534,8 +539,8 @@ const Simulator = () => {
                 <label htmlFor="stopLoss">Stop Loss</label>
                 <DecimalInput 
                   id="stopLoss" 
-                  value={stopLoss} 
-                  onChange={setStopLoss} 
+                  value={tradeLevels.stopLoss} 
+                  onChange={(val) => setTradeLevels(prev => ({...prev, stopLoss: val}))}
                   className={styles.input} 
                 />
                   {riskAmount > 0 && (
@@ -546,8 +551,8 @@ const Simulator = () => {
                 <label htmlFor="takeProfit">Take Profit</label>
                 <DecimalInput 
                   id="takeProfit" 
-                  value={takeProfit} 
-                  onChange={setTakeProfit} 
+                  value={tradeLevels.takeProfit} 
+                  onChange={(val) => setTradeLevels(prev => ({...prev, takeProfit: val}))}
                   className={styles.input} 
                 />
                 {rewardAmount > 0 && (

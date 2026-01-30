@@ -110,44 +110,38 @@ export const useTradeLines = ({
       cleanupLines(prospectivePriceLinesRef);
       return;
     }
-    
-    const isRedundant = (prospectiveVal: number, currentVal: number | undefined | null) => {
-      if (currentVal === undefined || currentVal === null || isNaN(Number(currentVal)) || Number(currentVal) === 0) return false;
-      const numCurrent = Number(currentVal);
-      const diff = Math.abs(prospectiveVal - numCurrent);
-      return diff < (numCurrent * 0.01) || diff < 0.01;
+
+    // Helper to check if values are close enough to be considered identical, avoiding float precision issues.
+    const isNearlyEqual = (val1: number, val2: number | undefined | null) => {
+      if (val2 === undefined || val2 === null || isNaN(Number(val2))) return false;
+      return Math.abs(val1 - Number(val2)) < 1e-9;
     };
+    
+    // --- Remove-Then-Add Strategy ---
+    
+    // 1. Always remove existing prospective lines before deciding to redraw.
+    if (prospectivePriceLinesRef.current.takeProfit) {
+      series.removePriceLine(prospectivePriceLinesRef.current.takeProfit);
+      delete prospectivePriceLinesRef.current.takeProfit;
+    }
+    if (prospectivePriceLinesRef.current.stopLoss) {
+      series.removePriceLine(prospectivePriceLinesRef.current.stopLoss);
+      delete prospectivePriceLinesRef.current.stopLoss;
+    }
 
     const currentPosition = openPositions?.find(pos => pos.symbol === symbol);
 
-    // Take Profit
-    if (tradeLevels.takeProfit > 0 && !isRedundant(tradeLevels.takeProfit, Number(currentPosition?.takeProfit))) {
+    // 2. Decide if the lines need to be re-created.
+    // Re-create Take Profit line if it's a new level and not redundant with an existing position's TP.
+    if (tradeLevels.takeProfit > 0 && !isNearlyEqual(tradeLevels.takeProfit, Number(currentPosition?.takeProfit))) {
       const tpOptions = createLineOptions(tradeLevels.takeProfit, '#66BB6A', 'TP Prev.', true);
-      if (prospectivePriceLinesRef.current.takeProfit) {
-        prospectivePriceLinesRef.current.takeProfit.applyOptions(tpOptions);
-      } else {
-        prospectivePriceLinesRef.current.takeProfit = series.createPriceLine(tpOptions);
-      }
-    } else {
-      if (prospectivePriceLinesRef.current.takeProfit) {
-        series.removePriceLine(prospectivePriceLinesRef.current.takeProfit);
-        delete prospectivePriceLinesRef.current.takeProfit;
-      }
+      prospectivePriceLinesRef.current.takeProfit = series.createPriceLine(tpOptions);
     }
 
-    // Stop Loss
-    if (tradeLevels.stopLoss > 0 && !isRedundant(tradeLevels.stopLoss, Number(currentPosition?.stopLoss))) {
+    // Re-create Stop Loss line if it's a new level and not redundant with an existing position's SL.
+    if (tradeLevels.stopLoss > 0 && !isNearlyEqual(tradeLevels.stopLoss, Number(currentPosition?.stopLoss))) {
       const slOptions = createLineOptions(tradeLevels.stopLoss, '#FF7043', 'SL Prev.', true);
-      if (prospectivePriceLinesRef.current.stopLoss) {
-        prospectivePriceLinesRef.current.stopLoss.applyOptions(slOptions);
-      } else {
-        prospectivePriceLinesRef.current.stopLoss = series.createPriceLine(slOptions);
-      }
-    } else {
-      if (prospectivePriceLinesRef.current.stopLoss) {
-        series.removePriceLine(prospectivePriceLinesRef.current.stopLoss);
-        delete prospectivePriceLinesRef.current.stopLoss;
-      }
+      prospectivePriceLinesRef.current.stopLoss = series.createPriceLine(slOptions);
     }
 
   }, [isChartReady, tradeLevels, openPositions, symbol, seriesRef, cleanupLines]);
