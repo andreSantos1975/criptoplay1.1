@@ -163,48 +163,99 @@ export const useTradeLines = ({
 
     const isNearPriceLine = (priceLine: IPriceLine, y: number) => {
       const priceY = series.priceToCoordinate(priceLine.options().price);
-      return priceY !== null && Math.abs(priceY - y) < 10;
+      return priceY !== null && Math.abs(priceY - y) < 20; // Increased tolerance for touch
     };
 
-    const handleMouseDown = (e: MouseEvent) => {
+    const getEventY = (e: MouseEvent | TouchEvent): number => {
       const rect = chartElement.getBoundingClientRect();
-      const y = e.clientY - rect.top;
+      if (e instanceof MouseEvent) {
+        return e.clientY - rect.top;
+      }
+      // For TouchEvent, use the first touch point
+      return e.touches[0].clientY - rect.top;
+    };
+
+    const startDrag = (y: number) => {
       for (const key of ['takeProfit', 'stopLoss'] as const) {
         const priceLine = prospectivePriceLinesRef.current[key];
         if (priceLine && isNearPriceLine(priceLine, y)) {
           setDraggingLine(key);
           chart.applyOptions({ handleScroll: false, handleScale: false });
           chartElement.style.cursor = 'ns-resize';
-          return;
+          return true;
         }
       }
+      return false;
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleDragMove = (y: number) => {
       if (!draggingLine) return;
-      const rect = chartElement.getBoundingClientRect();
-      const y = e.clientY - rect.top;
       const newPrice = series.coordinateToPrice(y);
       if (newPrice !== null) {
         onLevelsChangeRef.current({ ...tradeLevelsRef.current, [draggingLine]: newPrice });
       }
     };
-
-    const handleMouseUp = () => {
+    
+    const stopDrag = () => {
       if (!draggingLine) return;
       setDraggingLine(null);
       chart.applyOptions({ handleScroll: true, handleScale: true });
       chartElement.style.cursor = 'default';
     };
 
+    // --- Mouse Event Handlers ---
+    const handleMouseDown = (e: MouseEvent) => {
+      const y = getEventY(e);
+      startDrag(y);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const y = getEventY(e);
+      handleDragMove(y);
+    };
+
+    const handleMouseUp = () => {
+      stopDrag();
+    };
+
+    // --- Touch Event Handlers ---
+    const handleTouchStart = (e: TouchEvent) => {
+      const y = getEventY(e);
+      if (startDrag(y)) {
+        // Prevent page scroll when dragging a line
+        e.preventDefault();
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!draggingLine) return;
+      // Prevent page scroll
+      e.preventDefault(); 
+      const y = getEventY(e);
+      handleDragMove(y);
+    };
+
+    const handleTouchEnd = () => {
+      stopDrag();
+    };
+
+    // Add Listeners
     chartElement.addEventListener('mousedown', handleMouseDown);
     chartElement.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
+    chartElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+    chartElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+
 
     return () => {
+      // Remove Listeners
       chartElement.removeEventListener('mousedown', handleMouseDown);
       chartElement.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      chartElement.removeEventListener('touchstart', handleTouchStart);
+      chartElement.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isChartReady, chartRef, seriesRef, chartContainerRef, draggingLine]);
 
