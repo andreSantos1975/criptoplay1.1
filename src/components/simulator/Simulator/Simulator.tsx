@@ -278,15 +278,6 @@ const Simulator = () => {
   });
 
   // --- HOOKS ---
-  const [closingPositionSymbols, setClosingPositionSymbols] = useState<Set<string>>(new Set());
-
-  const handleAddToClosingPositionSymbols = (symbol: string) => {
-    setClosingPositionSymbols((prev) => {
-      const newSet = new Set(prev);
-      newSet.add(symbol);
-      return newSet;
-    });
-  };
 
   useVigilante({
     openPositions: simulatorProfile?.openPositions,
@@ -296,8 +287,6 @@ const Simulator = () => {
       mutate: (payload) => closePositionMutation.mutate(payload.symbol)
     },
     enabled: isPremiumUser && !!simulatorProfile?.openPositions,
-    closingPositionSymbols,
-    onAddToClosingPositionSymbols: handleAddToClosingPositionSymbols,
   });
 
   const { realtimeChartUpdate } = useRealtimeChartUpdate({

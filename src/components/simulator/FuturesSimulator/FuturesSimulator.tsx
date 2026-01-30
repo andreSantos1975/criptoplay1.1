@@ -689,8 +689,6 @@ const FuturesSimulator = () => {
       }
     } as any,
     enabled: true,
-    closingPositionSymbols,
-    onAddToClosingPositionSymbols: handleAddToClosing,
   });
 
   const handleStartCreateAlert = () => {

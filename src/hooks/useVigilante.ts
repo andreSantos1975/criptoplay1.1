@@ -82,21 +82,28 @@ export const useVigilante = ({
   openPositions,
   closeMutation,
   enabled = true,
-  closingPositionSymbols,
-  onAddToClosingPositionSymbols,
-}: VigilanteOptions) => {
-  const openPositionsString = JSON.stringify(openPositions);
-  
-  const closingSymbolsRef = useRef(closingPositionSymbols);
-  closingSymbolsRef.current = closingPositionSymbols;
+}: Omit<VigilanteOptions, 'closingPositionSymbols' | 'onAddToClosingPositionSymbols'>) => {
+  // Ref local para controle síncrono, prevenindo o loop
+  const closingSymbolsRef = useRef(new Set<string>());
 
+  const openPositionsString = JSON.stringify(openPositions);
   const closeMutationRef = useRef(closeMutation);
   closeMutationRef.current = closeMutation;
 
   useEffect(() => {
     if (!enabled || !openPositions || openPositions.length === 0) {
+      // Limpa a ref se não houver posições
+      closingSymbolsRef.current.clear();
       return;
     }
+
+    // Sincroniza a ref: remove símbolos que não estão mais nas posições abertas
+    const openSymbols = new Set(openPositions.map(p => p.symbol));
+    closingSymbolsRef.current.forEach(symbol => {
+      if (!openSymbols.has(symbol)) {
+        closingSymbolsRef.current.delete(symbol);
+      }
+    });
 
     const positionsBySymbol: { [key: string]: SimulatorPosition } = {};
     openPositions.forEach(pos => {
@@ -129,24 +136,23 @@ export const useVigilante = ({
         const currentPrice = marketType === 'futures' ? parseFloat(message.p) : parseFloat(message.k?.c);
 
         if (isNaN(currentPrice)) return;
-
         if (closeMutationRef.current.isPending) return;
 
         const pos = positionsBySymbol[symbol];
         if (!pos) return;
+
+        // Se o símbolo já está sendo fechado, ignora
+        if (closingSymbolsRef.current.has(pos.symbol)) return;
 
         const stopLoss = getNumericValue(pos.stopLoss);
         const takeProfit = getNumericValue(pos.takeProfit);
 
         if ((!stopLoss || stopLoss === 0) && (!takeProfit || takeProfit === 0)) return;
 
-        const shouldClose = checkTrigger(currentPrice, pos, stopLoss, takeProfit);
-
-        if (shouldClose) {
-          if (closingSymbolsRef.current.has(pos.symbol)) return;
-
+        if (checkTrigger(currentPrice, pos, stopLoss, takeProfit)) {
           console.log(`[VIGILANTE-WS] Closing ${pos.symbol} at ${currentPrice} (Mark Price)`);
-          onAddToClosingPositionSymbols(pos.symbol);
+          // Adiciona à ref local *antes* de chamar a mutação
+          closingSymbolsRef.current.add(pos.symbol);
           closeMutationRef.current.mutate({ 
               symbol: pos.symbol, 
               price: currentPrice, 
@@ -157,17 +163,14 @@ export const useVigilante = ({
 
       ws.onerror = (error) => {
         console.warn(`[VIGILANTE-WS] Error for ${symbol}:`, error);
-        // The onclose event will handle reconnection.
       };
 
       ws.onclose = () => {
         console.log(`[VIGILANTE-WS] Connection closed for ${symbol}. Reconnecting in 5 seconds...`);
         sockets.delete(symbol);
-        // Clear any existing timeout for this symbol to avoid multiple reconnect loops
         if (reconnectTimeouts.has(symbol)) {
           clearTimeout(reconnectTimeouts.get(symbol)!);
         }
-        // Set a new timeout to reconnect
         const timeoutId = setTimeout(() => connect(symbol), 5000);
         reconnectTimeouts.set(symbol, timeoutId);
       };
@@ -180,6 +183,7 @@ export const useVigilante = ({
             if (closeMutationRef.current.isPending) continue;
             
             const pos = positionsBySymbol[symbol];
+            // Se o símbolo já está sendo fechado, ignora
             if (!pos || closingSymbolsRef.current.has(pos.symbol)) continue;
 
             const stopLoss = getNumericValue(pos.stopLoss);
@@ -187,7 +191,6 @@ export const useVigilante = ({
 
             if ((!stopLoss || stopLoss === 0) && (!takeProfit || takeProfit === 0)) continue;
             
-            // Skip polling if WebSocket is connected and healthy for this symbol
             const socket = sockets.get(symbol);
             if (socket && socket.readyState === WebSocket.OPEN) continue;
 
@@ -202,7 +205,8 @@ export const useVigilante = ({
 
                 if (checkTrigger(currentPrice, pos, stopLoss, takeProfit)) {
                     console.log(`[VIGILANTE-POLL] Closing ${pos.symbol} at ${currentPrice}`);
-                    onAddToClosingPositionSymbols(pos.symbol);
+                    // Adiciona à ref local *antes* de chamar a mutação
+                    closingSymbolsRef.current.add(pos.symbol);
                     closeMutationRef.current.mutate({ 
                         symbol: pos.symbol, 
                         price: currentPrice, 
@@ -217,13 +221,10 @@ export const useVigilante = ({
 
     return () => {
       console.log('[VIGILANTE-WS] Cleaning up all connections and timeouts.');
-      // Clear all reconnect timeouts
       reconnectTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
       reconnectTimeouts.clear();
       
-      // Close all active WebSocket connections
       sockets.forEach(ws => {
-        // Remove listeners to prevent reconnection attempts during cleanup
         ws.onclose = null; 
         ws.close();
       });
@@ -231,5 +232,5 @@ export const useVigilante = ({
 
       clearInterval(pollingInterval);
     };
-  }, [openPositions, openPositionsString, enabled, onAddToClosingPositionSymbols]);
+  }, [openPositionsString, enabled]); // Removido onAddToClosingPositionSymbols das dependências
 };
