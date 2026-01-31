@@ -113,7 +113,12 @@ export const ReportsSection = ({
                 <XAxis dataKey="date" />
                 <YAxis tickFormatter={(value) => formatCurrency(value)} />
                 <Tooltip
-                  formatter={(value: number) => [formatCurrency(value), "Saldo"]}
+                  formatter={(value) => {
+                    if (typeof value === 'number') {
+                      return [formatCurrency(value), "Saldo"];
+                    }
+                    return [null, null]; // Evita erro quando o valor é undefined
+                  }}
                 />
                 <Legend />
                 <Line
