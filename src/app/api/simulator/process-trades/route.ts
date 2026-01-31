@@ -33,17 +33,16 @@ export async function GET(request: Request) {
 
   const spotPricesCache = new Map<string, Decimal>();
   const futuresPricesCache = new Map<string, Decimal>();
-  let usdtBrlRate = new Decimal(5.0); // Fallback
+  const logs: string[] = []; // <-- Variável 'logs' declarada aqui.
+  let usdtBrlRate = new Decimal(1);
   try {
       usdtBrlRate = await getCurrentPrice('USDTBRL');
   } catch (error) {
       logs.push('Falha ao obter taxa USDTBRL para o processamento. Usando fallback.');
-  }
-
-  const logs: string[] = [];
+  } // <--- Adicionado } para fechar o bloco catch
 
   const spotToClose: { id: string; exitPrice: Decimal; pnl: Decimal; symbol: string }[] = [];
-  const futuresToClose: { id: string; exitPrice: Decimal; pnl: Decimal }[] = [];
+  const futuresToClose: { id: string; exitPrice: Decimal; pnl: Decimal }[] = []; // <-- Corrigido o tipo de 'id' para string
 
   // --- 2. PROCESS SPOT TRADES ---
   for (const trade of openSpotTrades) {

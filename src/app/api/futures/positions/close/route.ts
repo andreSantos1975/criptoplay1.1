@@ -12,7 +12,6 @@ export const dynamic = 'force-dynamic';
 const closePositionSchema = z.object({
   positionIds: z.array(z.string()).optional(),
   symbol: z.string().optional(),
-  exitPrice: z.number().positive('O preço de saída deve ser positivo.'),
 }).refine(data => data.positionIds || data.symbol, {
     message: "É necessário fornecer 'positionIds' ou 'symbol'.",
 });
@@ -27,110 +26,88 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const validation = closePositionSchema.safeParse(body);
-
     if (!validation.success) {
       return NextResponse.json({ error: 'Dados inválidos', details: validation.error.flatten() }, { status: 400 });
     }
+    const { positionIds, symbol } = validation.data;
 
-    const { positionIds, symbol, exitPrice } = validation.data;
+    // 1. Encontrar as posições a serem fechadas ANTES da transação
+    // para descobrir quais preços de mercado precisamos buscar.
+    const positionsToClose = await prisma.futuresPosition.findMany({
+        where: {
+            userId: userId,
+            status: 'OPEN',
+            ...(positionIds && { id: { in: positionIds } }),
+            ...(symbol && { symbol: symbol }),
+        },
+    });
 
-    // --- OBTER TAXA DE CÂMBIO (USDT -> BRL) ---
-    // Fazemos isso fora da transação para não bloquear o banco enquanto busca API externa
-    let usdtBrlRate = 1;
-    try {
-        const rateDecimal = await getCurrentPrice('USDTBRL');
-        usdtBrlRate = rateDecimal.toNumber();
-    } catch (error) {
-        console.error('Falha ao obter taxa USDTBRL para fechamento. Usando 1:1.', error);
+    if (positionsToClose.length === 0) {
+        return NextResponse.json({ message: 'Nenhuma posição aberta encontrada para fechar.' }, { status: 200 });
     }
+    
+    // 2. Coletar todos os símbolos únicos e buscar seus preços atuais ANTES da transação.
+    const symbolsToFetch = ['USDTBRL', ...new Set(positionsToClose.map(p => p.symbol))];
+    const pricePromises = symbolsToFetch.map(s => getCurrentPrice(s).then(price => ({ symbol: s, price: price.toNumber() })));
+    const prices = await Promise.all(pricePromises);
+    
+    const priceMap = new Map<string, number>();
+    prices.forEach(p => priceMap.set(p.symbol, p.price));
 
+    const usdtBrlRate = priceMap.get('USDTBRL') || 1;
+
+    // 3. Iniciar a transação atômica com todos os dados externos já em mãos.
     const result = await prisma.$transaction(async (tx) => {
-      let positionsToClose: any[] = [];
+      let totalOriginalPnl = 0;
+      let totalRealizedPnlInBrl = 0; 
+      let totalMarginToReturnInBrl = 0;
 
-      // 1. Encontrar as posições a serem fechadas
-      if (positionIds && positionIds.length > 0) {
-        positionsToClose = await tx.futuresPosition.findMany({
-          where: {
-            id: { in: positionIds },
-            userId: userId,
-            status: 'OPEN',
-          },
-        });
-      } else if (symbol) {
-        positionsToClose = await tx.futuresPosition.findMany({
-          where: {
-            symbol: symbol,
-            userId: userId,
-            status: 'OPEN',
-          },
-        });
-      }
-
-      if (!positionsToClose || positionsToClose.length === 0) {
-        // Não é um erro, apenas significa que a posição já foi fechada em uma chamada anterior.
-        // Retornar sucesso para evitar que o frontend mostre um erro desnecessário.
-        return {
-            message: 'Nenhuma posição aberta encontrada para fechar. A operação pode já ter sido processada.',
-            count: 0,
-            totalPnl: 0,
-        };
-      }
-
-      let totalOriginalPnl = 0; // Acumulador do PnL na moeda original (ex: USDT)
-      let totalRealizedPnlInBrl = 0; // Acumulador do PnL em BRL
-      let totalMarginToReturnInBrl = 0; // Acumulador para a margem a ser devolvida
-
-      // 2. Processar cada posição
       for (const position of positionsToClose) {
+        const exitPrice = priceMap.get(position.symbol);
+        if (!exitPrice) {
+            throw new Error(`Não foi possível obter o preço de mercado para ${position.symbol}. A transação foi revertida.`);
+        }
+        
         const entryPrice = position.entryPrice.toNumber();
         const quantity = position.quantity.toNumber();
         let pnl = 0;
 
-        // Cálculo do PnL na moeda da cotação (ex: USDT)
         if (position.side === 'LONG') {
           pnl = (exitPrice - entryPrice) * quantity;
         } else { // SHORT
           pnl = (entryPrice - exitPrice) * quantity;
         }
 
-        let exchangeRate = 1;
-        if (!position.symbol.endsWith('BRL')) {
-            exchangeRate = usdtBrlRate;
-        }
-
+        const exchangeRate = position.symbol.endsWith('BRL') ? 1 : usdtBrlRate;
         const pnlInBrl = pnl * exchangeRate;
         
-        totalOriginalPnl += pnl; // Acumula PnL na moeda original
-        totalRealizedPnlInBrl += pnlInBrl; // Acumula PnL em BRL
-        totalMarginToReturnInBrl += position.margin.toNumber(); // Acumula a margem
+        totalOriginalPnl += pnl;
+        totalRealizedPnlInBrl += pnlInBrl;
+        totalMarginToReturnInBrl += position.margin.toNumber();
 
-        // Atualizar a posição para 'CLOSED'
-        // Salvamos o PnL na moeda ORIGINAL e também em BRL
         await tx.futuresPosition.update({
           where: { id: position.id },
           data: {
             status: 'CLOSED',
             pnl: new Prisma.Decimal(pnl),
-            pnlInBrl: new Prisma.Decimal(pnlInBrl), // SALVAR O PNL EM BRL
+            pnlInBrl: new Prisma.Decimal(pnlInBrl),
             closedAt: new Date(),
           },
         });
       }
 
-      // 3. Obter o saldo virtual do usuário ANTES da atualização do PnL
       const userBeforeUpdate = await tx.user.findUnique({
           where: { id: userId },
           select: { virtualBalance: true },
       });
       const userVirtualBalanceBeforePnl = userBeforeUpdate?.virtualBalance || new Prisma.Decimal(0);
 
-      // 4. Atualizar o saldo do usuário
       const amountToReturn = totalRealizedPnlInBrl + totalMarginToReturnInBrl;
       const updatedUser = await tx.user.update({
         where: { id: userId },
         data: {
           virtualBalance: {
-            increment: new Prisma.Decimal(amountToReturn), // Incrementar com PnL + Margem
+            increment: new Prisma.Decimal(amountToReturn),
           },
         },
         select: {
@@ -139,39 +116,29 @@ export async function POST(req: Request) {
         }
       });
 
-      // 5. Atualizar DailyPerformance
       await updateUserDailyPerformance(tx, userId, new Prisma.Decimal(totalRealizedPnlInBrl), userVirtualBalanceBeforePnl);
 
-      // Lógica de falência e cooldown (até dia 1 do próximo mês)
       if (updatedUser.virtualBalance.lte(0)) {
         const now = new Date();
         const nextMonthFirstDay = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
         await tx.user.update({
           where: { id: userId },
-          data: {
-            virtualBalance: new Prisma.Decimal(0),
-            bankruptcyExpiryDate: nextMonthFirstDay,
-          },
+          data: { virtualBalance: new Prisma.Decimal(0), bankruptcyExpiryDate: nextMonthFirstDay },
         });
         throw new Error('Sua banca virtual foi liquidada. Você só poderá voltar a operar no dia 1º do próximo mês.');
       }
-
-      // Se a data de expiração de falência já passou e o usuário ainda está zerado, resetar a banca
+      
       if (updatedUser.bankruptcyExpiryDate && updatedUser.bankruptcyExpiryDate < new Date()) {
         await tx.user.update({
           where: { id: userId },
-          data: {
-            virtualBalance: new Prisma.Decimal(10000),
-            bankruptcyExpiryDate: null,
-          },
+          data: { virtualBalance: new Prisma.Decimal(10000), bankruptcyExpiryDate: null },
         });
       }
 
       return {
         message: 'Posições fechadas com sucesso',
         count: positionsToClose.length,
-        totalPnl: totalOriginalPnl // Retorna PnL na moeda original (ex: USDT)
+        totalPnl: totalOriginalPnl 
       };
     });
 
@@ -179,12 +146,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error('Erro ao fechar posição de futuros:', error);
-    if (error.message.includes('Nenhuma posição')) {
-        return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-    if (error.message.includes('liquidada')) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Ocorreu um erro no servidor.' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Ocorreu um erro no servidor.' }, { status: 500 });
   }
 }

@@ -1,18 +1,9 @@
 "use client";
 
-import { useMemo } from "react"; // Removed useQuery
-import { calculateTradingStats } from "@/lib/trading-math";
 import { TrendingUp, TrendingDown, Target, Activity, DollarSign, PieChart, AlertTriangle, ArrowRightLeft } from "lucide-react";
-import type { Trade } from "@/types/trade";
 import styles from "./TradingPerformanceSummary.module.css";
 
-// Interface for CryptoData if needed internally for new calculations.
-// For now, it's enough to pass brlRate to normalize trades.
-interface CryptoData {
-  symbol: string;
-  price: string;
-}
-
+// Funções de formatação permanecem no cliente para apresentação.
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -27,6 +18,7 @@ const formatNumber = (value: number, decimals = 2) => {
   }).format(value);
 };
 
+// O componente de Card permanece o mesmo.
 interface TradingCardProps {
     title: string;
     value: string | number;
@@ -48,63 +40,19 @@ const TradingCard: React.FC<TradingCardProps> = ({ title, value, icon: Icon, des
     </div>
 );
 
-
-// Define ProcessedTrade to match the data after date/decimal conversion
-export interface ProcessedTrade {
-  id: string;
-  symbol: string;
-  type: string;
-  status: string;
-  entryDate: Date;
-  exitDate?: Date | null;
-  entryPrice: number;
-  exitPrice?: number | null;
-  quantity: number;
-  stopLoss: number;
-  takeProfit: number;
-  pnl?: number | null;
-  margin?: number | string | null; // Added margin field
-  notes?: string | null;
-  sentiment?: string | null;
-  strategy: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  userId: string;
-  marketType: string;
-  isSimulator: boolean;
-}
-
+// A interface de props agora espera o objeto 'stats' pré-calculado.
 export interface TradingPerformanceSummaryProps {
-  trades: ProcessedTrade[];
-  binanceTickers: CryptoData[]; // Added for consistency and potential future use
-  brlRate: number;
+  stats: any; // O objeto completo de userTradingStats
 }
 
-export const TradingPerformanceSummary: React.FC<TradingPerformanceSummaryProps> = ({ trades, brlRate }) => {
-
-
-  // Normalizar trades para BRL uma única vez
-  const normalizedTrades = useMemo(() => {
-    return trades.map(t => {
-      // Se já fechou e tem PnL
-      if (t.status === 'CLOSED' && t.pnl !== null) {
-        const pnlNum = Number(t.pnl);
-        // Se for par USDT (ex: BTCUSDT), converte. Se for BRL (ex: BTCBRL), mantém. 
-        const isBrl = t.symbol.endsWith('BRL'); 
-        const normalizedPnl = isBrl ? pnlNum : pnlNum * brlRate;
-        
-        // Retorna um novo objeto trade com o pnl ajustado (apenas para visualização)
-        return {
-          ...t,
-          pnl: normalizedPnl,
-        };
-      }
-      return t;
-    });
-  }, [trades, brlRate]);
-
-  const stats = calculateTradingStats(normalizedTrades);
-
+export const TradingPerformanceSummary: React.FC<TradingPerformanceSummaryProps> = ({ stats }) => {
+  
+  // Se as estatísticas não foram carregadas, pode-se exibir um loader ou nada.
+  if (!stats) {
+    return <div className={styles.summaryGrid}><p>Carregando estatísticas...</p></div>;
+  }
+  
+  // Os dados para os cards agora vêm diretamente do objeto 'stats' recebido.
   const cardsData = [
     {
       title: "Total de Trades",

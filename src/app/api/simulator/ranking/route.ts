@@ -1,58 +1,48 @@
 // src/app/api/simulator/ranking/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getUserTradingStats } from '@/lib/financial-data'; // Importar a fonte da verdade
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // Buscar todos os usuários que possuem um username
+    // 1. Buscar todos os usuários que podem aparecer no ranking
     const users = await prisma.user.findMany({
       where: {
         username: {
-          not: null, // Apenas usuários com apelido definido
+          not: null, // Apenas usuários com apelido
         },
+        isPublicProfile: true, // Apenas usuários com perfil público
       },
       select: {
         id: true,
         username: true,
+        image: true,
       },
     });
 
-    const rankingData = [];
-
-    for (const user of users) {
-      // Calcular o PnL total para cada usuário
-      // Considerando apenas trades que já foram fechados e têm PnL registrado
-      const totalPnlResult = await prisma.trade.aggregate({
-        _sum: {
-          pnl: true,
-        },
-        where: {
-          userId: user.id,
-          status: 'CLOSED', // Apenas operações fechadas
-          pnl: {
-            not: null, // Apenas operações com PnL calculado
-          },
-        },
-      });
-
-      const totalPnl = totalPnlResult._sum.pnl ? totalPnlResult._sum.pnl.toNumber() : 0; // Converter para number e default 0
-
-      rankingData.push({
+    // 2. Calcular o PnL de cada usuário usando a fonte da verdade
+    const rankingDataPromises = users.map(async (user) => {
+      // Chamar a função centralizada para obter estatísticas precisas
+      const stats = await getUserTradingStats(user.id);
+      
+      return {
         username: user.username,
-        totalPnl: totalPnl,
-      });
-    }
+        image: user.image,
+        totalPnl: stats.totalPnl, // Usar o PnL consolidado e correto
+      };
+    });
 
-    // Ordenar os usuários pelo PnL total em ordem decrescente
+    const rankingData = await Promise.all(rankingDataPromises);
+
+    // 3. Ordenar os usuários pelo PnL total em ordem decrescente
     rankingData.sort((a, b) => b.totalPnl - a.totalPnl);
 
-    // Você pode limitar o ranking aqui se quiser, ex: .slice(0, 10) para top 10
     return NextResponse.json(rankingData, { status: 200 });
 
   } catch (error) {
-    console.error('Erro ao gerar ranking:', error);
+    console.error('Erro ao gerar ranking consolidado:', error);
     return NextResponse.json({ message: 'Ocorreu um erro ao buscar o ranking.' }, { status: 500 });
   }
 }

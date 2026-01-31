@@ -28,9 +28,17 @@ import { TrialReminderBanner } from '@/components/dashboard/TrialReminderBanner/
 
 // --- TYPE DEFINITIONS for Trading Data ---
 import type { Trade } from "@/types/trade";
+import type { SimulatorPosition } from "@/hooks/useVigilante"; // Adicionar esta importação
+
 interface CryptoData {
   symbol: string;
   price: string;
+}
+
+// Adicionar a definição de SimulatorProfile
+interface SimulatorProfile {
+  virtualBalance: number;
+  openPositions: SimulatorPosition[];
 }
 
 
@@ -460,13 +468,9 @@ const DashboardPage = () => {
 
         return (
           <ReportsSection
-            trades={trades}
-            binanceTickers={binanceTickers}
-            isLoadingTrades={isLoadingTrades}
-            isLoadingBinanceTickers={isLoadingBinanceTickers}
-            errorTrades={errorTrades || errorBinanceTickers}
-            totalPnl={userTradingStats?.totalPnl ?? 0}
-            patrimonioAtual={userTradingStats?.currentEquity ?? 0}
+            stats={userTradingStats}
+            isLoading={isLoadingTradingStats}
+            error={errorTradingStats}
           />
         );
       default:
