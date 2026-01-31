@@ -13,6 +13,8 @@ const INITIAL_SIMULATOR_BALANCE = 10000;
  */
 export async function getUserTradingStats(userId: string) {
   // 1. Fetch closed trades from both SPOT and FUTURES markets in parallel.
+  // PnL from SPOT trades is already in BRL.
+  // For FUTURES, we explicitly use `pnlInBrl`.
   const [spotTrades, futuresPositions] = await Promise.all([
     prisma.trade.findMany({
       where: {
@@ -22,7 +24,7 @@ export async function getUserTradingStats(userId: string) {
         pnl: { not: null },
       },
       select: {
-        pnl: true,
+        pnl: true, // This is in BRL for SPOT trades
         exitDate: true,
       },
     }),
@@ -30,23 +32,23 @@ export async function getUserTradingStats(userId: string) {
       where: {
         userId,
         status: { in: ['CLOSED', 'LIQUIDATED'] },
-        pnl: { not: null },
+        pnlInBrl: { not: null }, // Use pnlInBrl
       },
       select: {
-        pnl: true,
+        pnlInBrl: true, // Select pnlInBrl
         closedAt: true,
       },
     }),
   ]);
 
-  // 2. Map and combine all closed trades into a single, standardized list.
+  // 2. Map and combine all closed trades into a single, standardized list, ensuring all PnL is in BRL.
   const mappedSpotTrades = spotTrades.map(t => ({
-    pnl: t.pnl!.toNumber(),
+    pnl: t.pnl!.toNumber(), // This is already in BRL
     closedAt: t.exitDate!,
   }));
 
   const mappedFuturesTrades = futuresPositions.map(p => ({
-    pnl: p.pnl!.toNumber(),
+    pnl: p.pnlInBrl!.toNumber(), // Use pnlInBrl, which is in BRL
     closedAt: p.closedAt!,
   }));
 
