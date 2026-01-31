@@ -289,6 +289,10 @@ const Simulator = () => {
       queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
       queryClient.invalidateQueries({ queryKey: ['trades'] });
       queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
+      // Invalida a query de estatísticas do usuário para forçar a atualização no dashboard
+      if (session?.user?.id) {
+          queryClient.invalidateQueries({ queryKey: ['userTradingStats', session.user.id] });
+      }
     },
   });
 

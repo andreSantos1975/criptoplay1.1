@@ -186,7 +186,6 @@ model Trade {
   stopLoss   Decimal         @db.Decimal(18, 8)
   takeProfit Decimal         @db.Decimal(18, 8)
   pnl        Decimal?        @db.Decimal(18, 8)
-  pnlInBrl   Decimal?        @db.Decimal(18, 8)
   notes      String?
   sentiment  String?         // Ex: "CONFIDENT", "FEAR", "NEUTRAL"
   strategy   String?         // Ex: "BREAKOUT", "REVERSAL", "TREND"
@@ -335,7 +334,6 @@ model FuturesPosition {
   stopLoss         Decimal?         @db.Decimal(18, 8)
   takeProfit       Decimal?         @db.Decimal(18, 8)
   pnl              Decimal?         @db.Decimal(18, 8)
-  pnlInBrl         Decimal?         @db.Decimal(18, 8)
   notes            String?
   sentiment        String?          // Ex: "CONFIDENT", "FEAR", "NEUTRAL"
   strategy         String?          // Ex: "BREAKOUT", "REVERSAL", "TREND"

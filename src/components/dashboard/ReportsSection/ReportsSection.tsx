@@ -144,20 +144,14 @@ const generateMonthlyReportData = (
     .sort((a, b) => a.month.localeCompare(b.month));
 };
 
-interface SimulatorProfile {
-  virtualBalance: number;
-  openPositions: any[];
-}
-
 interface ReportsSectionProps {
   trades: Trade[]; // This still expects DTO Trade[]
   binanceTickers: CryptoData[];
   isLoadingTrades: boolean;
   isLoadingBinanceTickers: boolean;
   errorTrades: Error | null;
-  simulatorProfile: SimulatorProfile | undefined;
-  isLoadingSimulator: boolean;
-  errorSimulator: Error | null;
+  totalPnl: number;
+  patrimonioAtual: number;
 }
 
 export const ReportsSection = ({
@@ -166,9 +160,8 @@ export const ReportsSection = ({
   isLoadingTrades,
   isLoadingBinanceTickers,
   errorTrades,
-  simulatorProfile,
-  isLoadingSimulator,
-  errorSimulator,
+  totalPnl,
+  patrimonioAtual,
 }: ReportsSectionProps) => {
 
   const openTrades = useMemo(
@@ -190,8 +183,8 @@ export const ReportsSection = ({
       (await fetch("/api/exchange-rate")).json(),
   });
   
-  const isLoading = isLoadingTrades || l3 || isLoadingBinanceTickers || isLoadingSimulator;
-  const error = errorTrades || e3 || errorSimulator;
+  const isLoading = isLoadingTrades || l3 || isLoadingBinanceTickers;
+  const error = errorTrades || e3;
 
   const brlRate = exchangeRateData?.usdtToBrl || 1;
   
@@ -230,61 +223,6 @@ export const ReportsSection = ({
     [tradesWithDates, brlRate]
   );
 
-  const kpiData = useMemo(() => {
-    const realizedPnl = tradesWithDates
-      .filter((t) => t.status === "CLOSED" && t.pnl != null)
-      .reduce((acc, t) => {
-        const pnlInBrl = t.symbol.includes('BRL')
-          ? Number(t.pnl)
-          : (Number(t.pnl) || 0) * brlRate;
-        return acc + pnlInBrl;
-      }, 0);
-
-    let unrealizedPnl = 0;
-    const unrealizedEquity = tradesWithDates
-      .filter((t) => t.status === "OPEN")
-      .reduce((acc, trade) => {
-        const ticker = binanceTickers.find((t) => t.symbol === trade.symbol);
-        if (ticker) {
-          const currentPrice = parseFloat(ticker.price);
-          
-          let pnl = 0;
-          if (trade.type === 'BUY') {
-            pnl = (currentPrice - trade.entryPrice) * trade.quantity;
-          } else {
-            pnl = (trade.entryPrice - currentPrice) * trade.quantity;
-          }
-          
-          const pnlInBrl = trade.symbol.includes('BRL')
-            ? pnl
-            : pnl * brlRate;
-
-          unrealizedPnl += pnlInBrl;
-
-          const margin = trade.margin ? Number(trade.margin) : 0;
-          const marginInBrl = trade.symbol.includes('BRL') ? margin : margin * brlRate;
-
-          return acc + pnlInBrl + marginInBrl;
-        }
-        return acc;
-      }, 0);
-      
-    const totalPnlWithUnrealized = realizedPnl + unrealizedPnl;
-
-    // FIX: The `patrimonioAtual` calculation was incorrect.
-    // It relied on `simulatorProfile.virtualBalance` which could be stale or incorrect
-    // after a database reset, and it didn't properly account for realized PnL.
-    // The new formula calculates equity from a fixed initial balance (10,000)
-    // plus the total profit and loss (realized and unrealized), providing a consistent and accurate view.
-    const initialBalance = 10000; // Simulator's starting balance
-    const patrimonioAtual = initialBalance + totalPnlWithUnrealized;
-
-    return {
-      totalPnl: totalPnlWithUnrealized,
-      patrimonioAtual: patrimonioAtual,
-    };
-  }, [tradesWithDates, brlRate, binanceTickers]);
-
   if (isLoading)
     return (
       <Card>
@@ -316,7 +254,7 @@ export const ReportsSection = ({
             <CardTitle>Patrimônio Atual</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className={styles.kpiValue}>{formatCurrency(kpiData.patrimonioAtual)}</p>
+            <p className={styles.kpiValue}>{formatCurrency(patrimonioAtual)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -324,8 +262,8 @@ export const ReportsSection = ({
             <CardTitle>Lucro/Prejuízo Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className={`${styles.kpiValue} ${kpiData.totalPnl >= 0 ? styles.positive : styles.negative}`}>
-              {formatCurrency(kpiData.totalPnl)}
+            <p className={`${styles.kpiValue} ${totalPnl >= 0 ? styles.positive : styles.negative}`}>
+              {formatCurrency(totalPnl)}
             </p>
           </CardContent>
         </Card>

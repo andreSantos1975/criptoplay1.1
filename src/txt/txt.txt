@@ -598,6 +598,23 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
    - Usuários em período de teste e visitantes verão o conteúdo como bloqueado (com exceção
      da primeira aula, que serve como "teaser").
 
+     ---------------- 31/01/2026 ----------------------------------------------------
+
+      Todas as alterações em src/app/dashboard/page.tsx foram aplicadas.
+
+  Agora, ReportsSection.tsx e dashboard/page.tsx usam getUserTradingStats como fonte única
+  de verdade para PnL total e patrimônio líquido. ReportsSection não calcula mais esses
+  valores localmente; a página do dashboard os busca de uma função centralizada.
+
+  Isso deve resolver a discrepância, garantindo valores consistentes de lucro/prejuízo e
+  patrimônio, pois ambos serão derivados da mesma tabela DailyPerformance através de uma
+  função unificada.
+
+  A preocupação inicial do usuário sobre "4 centavos de diferença do ranking para o
+  relatorio lucro prejjuizo total" deve ter sido resolvida.
+
+  A tarefa foi concluída conforme o plano revisado.
+
 
   
 

@@ -35,6 +35,8 @@ export async function POST(
     }
     const userVirtualBalance = user.virtualBalance;
 
+    console.log(`[trades/[tradeId]/close] Closing trade ${tradeId} for user ${userId}`);
+
     // 1. Tentar encontrar a operação na tabela Trade (Spot)
     const trade = await prisma.trade.findUnique({
       where: { id: tradeId },
@@ -58,6 +60,8 @@ export async function POST(
         pnl = trade.entryPrice.sub(exitPrice).mul(trade.quantity);
       }
 
+      console.log(`[trades/[tradeId]/close] Spot Trade PnL calculated: ${pnl.toNumber()}`);
+
       // No Spot (nesta implementação), o saldo não foi debitado na abertura, então apenas adicionamos o lucro/prejuízo.
       const [updatedTrade] = await prisma.$transaction(async (tx) => {
         const tradeUpdate = tx.trade.update({
@@ -79,13 +83,14 @@ export async function POST(
           },
         });
         
-        // A função de ranking espera o client da transação
+        console.log(`[trades/[tradeId]/close] Calling updateUserDailyPerformance for Spot trade with pnl: ${pnl.toNumber()}, balance: ${userVirtualBalance.toNumber()}`);
         await updateUserDailyPerformance(tx, userId, pnl, userVirtualBalance);
         
         // A transação retorna as operações principais
         return Promise.all([tradeUpdate, userUpdate]);
       });
 
+      console.log(`[trades/[tradeId]/close] Spot Trade ${tradeId} closed. Updated Trade:`, updatedTrade);
       return NextResponse.json(updatedTrade);
     }
 
@@ -118,6 +123,8 @@ export async function POST(
       // Ao fechar, devolvemos a Margem + PnL.
       const returnAmount = futuresPosition.margin.add(pnl);
 
+      console.log(`[trades/[tradeId]/close] Futures Position PnL calculated: ${pnl.toNumber()}`);
+
       const [updatedPosition] = await prisma.$transaction(async (tx) => {
         const positionUpdate = tx.futuresPosition.update({
           where: { id: tradeId },
@@ -137,11 +144,13 @@ export async function POST(
           },
         });
         
+        console.log(`[trades/[tradeId]/close] Calling updateUserDailyPerformance for Futures trade with pnl: ${pnl.toNumber()}, balance: ${userVirtualBalance.toNumber()}`);
         await updateUserDailyPerformance(tx, userId, pnl, userVirtualBalance);
 
         return Promise.all([positionUpdate, userUpdate]);
       });
 
+      console.log(`[trades/[tradeId]/close] Futures Position ${tradeId} closed. Updated Position:`, updatedPosition);
       return NextResponse.json(updatedPosition);
     }
 
@@ -149,7 +158,7 @@ export async function POST(
     return new NextResponse(JSON.stringify({ message: 'Operação não encontrada' }), { status: 404 });
 
   } catch (error) {
-    console.error(`Erro ao fechar operação ${params.tradeId}:`, error);
+    console.error(`[trades/[tradeId]/close] Erro ao fechar operação ${params.tradeId}:`, error);
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido no servidor.';
     return new NextResponse(JSON.stringify({ message: errorMessage }), { status: 500 });
   }

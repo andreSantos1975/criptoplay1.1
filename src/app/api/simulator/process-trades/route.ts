@@ -33,9 +33,16 @@ export async function GET(request: Request) {
 
   const spotPricesCache = new Map<string, Decimal>();
   const futuresPricesCache = new Map<string, Decimal>();
+  let usdtBrlRate = new Decimal(5.0); // Fallback
+  try {
+      usdtBrlRate = await getCurrentPrice('USDTBRL');
+  } catch (error) {
+      logs.push('Falha ao obter taxa USDTBRL para o processamento. Usando fallback.');
+  }
+
   const logs: string[] = [];
 
-  const spotToClose: { id: string; exitPrice: Decimal; pnl: Decimal }[] = [];
+  const spotToClose: { id: string; exitPrice: Decimal; pnl: Decimal; symbol: string }[] = [];
   const futuresToClose: { id: string; exitPrice: Decimal; pnl: Decimal }[] = [];
 
   // --- 2. PROCESS SPOT TRADES ---
@@ -76,7 +83,7 @@ export async function GET(request: Request) {
           pnl = (entryPrice.minus(currentPrice)).times(quantity);
         }
 
-        spotToClose.push({ id: trade.id, exitPrice: currentPrice, pnl });
+        spotToClose.push({ id: trade.id, exitPrice: currentPrice, pnl, symbol: trade.symbol });
         logs.push(`Spot Trade ${trade.symbol} closed at ${currentPrice}`);
       }
     } catch (e: any) {
@@ -134,6 +141,11 @@ export async function GET(request: Request) {
       await prisma.$transaction(async (tx) => {
         // Close Spot Trades
         for (const item of spotToClose) {
+          let pnlInBrl = item.pnl;
+          if (!item.symbol.endsWith('BRL')) {
+            pnlInBrl = item.pnl.times(usdtBrlRate);
+          }
+
           await tx.trade.update({
             where: { id: item.id },
             data: {
@@ -141,6 +153,7 @@ export async function GET(request: Request) {
               exitPrice: item.exitPrice,
               exitDate: new Date(),
               pnl: item.pnl,
+              pnlInBrl: pnlInBrl, // SALVAR PNL EM BRL
             },
           });
         }

@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { getCurrentPrice } from '@/lib/binance';
+import { updateUserDailyPerformance } from '@/lib/ranking';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,8 +76,9 @@ export async function POST(req: Request) {
         };
       }
 
-      let totalAmountToReturn = 0; // Acumulador em BRL (moeda da conta)
-      let totalPnl = 0; // Acumulador em moeda original (apenas informativo na resposta)
+      let totalOriginalPnl = 0; // Acumulador do PnL na moeda original (ex: USDT)
+      let totalRealizedPnlInBrl = 0; // Acumulador do PnL em BRL
+      let totalMarginToReturnInBrl = 0; // Acumulador para a margem a ser devolvida
 
       // 2. Processar cada posição
       for (const position of positionsToClose) {
@@ -91,38 +93,44 @@ export async function POST(req: Request) {
           pnl = (entryPrice - exitPrice) * quantity;
         }
 
-        const margin = position.margin.toNumber();
-        
-        // --- CONVERSÃO PARA A MOEDA DA CONTA (BRL) ---
         let exchangeRate = 1;
         if (!position.symbol.endsWith('BRL')) {
             exchangeRate = usdtBrlRate;
         }
 
-        // Valor a ser creditado na conta: (Margem Original + PnL) * Taxa
-        const creditAmount = (margin + pnl) * exchangeRate;
+        const pnlInBrl = pnl * exchangeRate;
         
-        totalAmountToReturn += creditAmount;
-        totalPnl += pnl; // Mantém PnL original para retorno da API
+        totalOriginalPnl += pnl; // Acumula PnL na moeda original
+        totalRealizedPnlInBrl += pnlInBrl; // Acumula PnL em BRL
+        totalMarginToReturnInBrl += position.margin.toNumber(); // Acumula a margem
 
         // Atualizar a posição para 'CLOSED'
-        // Salvamos o PnL na moeda ORIGINAL para histórico consistente
+        // Salvamos o PnL na moeda ORIGINAL e também em BRL
         await tx.futuresPosition.update({
           where: { id: position.id },
           data: {
             status: 'CLOSED',
             pnl: new Prisma.Decimal(pnl),
+            pnlInBrl: new Prisma.Decimal(pnlInBrl), // SALVAR O PNL EM BRL
             closedAt: new Date(),
           },
         });
       }
 
-      // 3. Atualizar o saldo do usuário (Transação única)
+      // 3. Obter o saldo virtual do usuário ANTES da atualização do PnL
+      const userBeforeUpdate = await tx.user.findUnique({
+          where: { id: userId },
+          select: { virtualBalance: true },
+      });
+      const userVirtualBalanceBeforePnl = userBeforeUpdate?.virtualBalance || new Prisma.Decimal(0);
+
+      // 4. Atualizar o saldo do usuário
+      const amountToReturn = totalRealizedPnlInBrl + totalMarginToReturnInBrl;
       const updatedUser = await tx.user.update({
         where: { id: userId },
         data: {
           virtualBalance: {
-            increment: new Prisma.Decimal(totalAmountToReturn),
+            increment: new Prisma.Decimal(amountToReturn), // Incrementar com PnL + Margem
           },
         },
         select: {
@@ -130,6 +138,9 @@ export async function POST(req: Request) {
           bankruptcyExpiryDate: true,
         }
       });
+
+      // 5. Atualizar DailyPerformance
+      await updateUserDailyPerformance(tx, userId, new Prisma.Decimal(totalRealizedPnlInBrl), userVirtualBalanceBeforePnl);
 
       // Lógica de falência e cooldown (até dia 1 do próximo mês)
       if (updatedUser.virtualBalance.lte(0)) {
@@ -160,7 +171,7 @@ export async function POST(req: Request) {
       return {
         message: 'Posições fechadas com sucesso',
         count: positionsToClose.length,
-        totalPnl: totalPnl // Retorna PnL na moeda original (ex: USDT)
+        totalPnl: totalOriginalPnl // Retorna PnL na moeda original (ex: USDT)
       };
     });
 

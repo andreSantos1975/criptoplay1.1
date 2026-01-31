@@ -23,6 +23,8 @@ export async function updateUserDailyPerformance(
   pnl: Decimal,
   userVirtualBalance: Decimal
 ) {
+  console.log(`[updateUserDailyPerformance] Called for userId: ${userId}, pnl: ${pnl.toNumber()}, userVirtualBalance: ${userVirtualBalance.toNumber()}`);
+
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0); // Normaliza a data para o início do dia em UTC
 
@@ -35,6 +37,8 @@ export async function updateUserDailyPerformance(
     },
   });
 
+  console.log(`[updateUserDailyPerformance] existingPerformance for ${userId} on ${today.toISOString()}:`, existingPerformance);
+
   const isWin = pnl.isPositive();
 
   if (existingPerformance) {
@@ -44,22 +48,25 @@ export async function updateUserDailyPerformance(
     const dailyPercentageGain =
       ((newEndingBalance.toNumber() - existingPerformance.startingBalance.toNumber()) /
         existingPerformance.startingBalance.toNumber()) * 100;
+    
+    const updateData = {
+      endingBalance: newEndingBalance,
+      totalPnl: newTotalPnl,
+      dailyPercentageGain: dailyPercentageGain,
+      totalTrades: {
+        increment: 1,
+      },
+      winningTrades: {
+        increment: isWin ? 1 : 0,
+      },
+    };
+    console.log(`[updateUserDailyPerformance] Updating existing record with:`, updateData);
 
     await tx.dailyPerformance.update({
       where: {
         id: existingPerformance.id,
       },
-      data: {
-        endingBalance: newEndingBalance,
-        totalPnl: newTotalPnl,
-        dailyPercentageGain: dailyPercentageGain,
-        totalTrades: {
-          increment: 1,
-        },
-        winningTrades: {
-          increment: isWin ? 1 : 0,
-        },
-      },
+      data: updateData,
     });
   } else {
     // Se não existe, cria um novo registro para o dia
@@ -68,17 +75,20 @@ export async function updateUserDailyPerformance(
     const dailyPercentageGain =
       startingBalanceNumber > 0 ? (pnl.toNumber() / startingBalanceNumber) * 100 : 0;
 
+    const createData = {
+      userId: userId,
+      date: today,
+      startingBalance: userVirtualBalance,
+      endingBalance: newEndingBalance,
+      totalPnl: pnl,
+      dailyPercentageGain: dailyPercentageGain,
+      totalTrades: 1,
+      winningTrades: isWin ? 1 : 0,
+    };
+    console.log(`[updateUserDailyPerformance] Creating new record with:`, createData);
+
     await tx.dailyPerformance.create({
-      data: {
-        userId: userId,
-        date: today,
-        startingBalance: userVirtualBalance,
-        endingBalance: newEndingBalance,
-        totalPnl: pnl,
-        dailyPercentageGain: dailyPercentageGain,
-        totalTrades: 1,
-        winningTrades: isWin ? 1 : 0,
-      },
+      data: createData,
     });
   }
 }

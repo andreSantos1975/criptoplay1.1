@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { hasPremiumAccess } from "@/lib/permissions";
 
+
 // PERSONAL FINANCE IMPORTS
 import { Income, Expense, Category } from "@/types/personal-finance";
 import styles from "./dashboard.module.css";
@@ -32,10 +33,7 @@ interface CryptoData {
   price: string;
 }
 
-interface SimulatorProfile {
-  virtualBalance: number;
-  openPositions: any[]; 
-}
+
 
 const fetchTrades = async (): Promise<Trade[]> => {
   const res = await fetch("/api/simulator/trades");
@@ -345,15 +343,19 @@ const DashboardPage = () => {
     refetchInterval: 5000, // Refresh prices every 5 seconds
   });
 
+  const { data: userTradingStats, isLoading: isLoadingTradingStats, error: errorTradingStats } = useQuery({
+    queryKey: ["userTradingStats", session?.user?.id],
+    queryFn: async () => {
+      const res = await fetch("/api/user-trading-stats");
+      if (!res.ok) throw new Error("Falha ao buscar estatísticas de trading do usuário.");
+      return res.json();
+    },
+    enabled: hasPremiumAccess(session) && !!session?.user?.id,
+  });
+
   const priceMap = useMemo(() => {
     return new Map(binanceTickers.map(ticker => [ticker.symbol, parseFloat(ticker.price)]));
   }, [binanceTickers]);
-
-  const { data: simulatorProfile, isLoading: isLoadingSimulator, error: errorSimulator } = useQuery<SimulatorProfile>({
-    queryKey: ['simulatorProfile'],
-    queryFn: fetchSimulatorProfile,
-    enabled: hasPremiumAccess(session),
-  });
 
   // --- HANDLER FUNCTIONS (PERSONAL FINANCE ONLY) ---
   const handleCategoryChange = (id: string, field: 'name' | 'percentage', value: string | number) => setBudgetCategories(prev => prev.map(cat => cat.id === id ? { ...cat, [field]: value } : cat));
@@ -453,6 +455,9 @@ const DashboardPage = () => {
       }
       case "relatorios":
         if (!hasPremiumAccess(session)) return renderLockedContent();
+        if (isLoadingTradingStats) return <p>Carregando relatórios do simulador...</p>;
+        if (errorTradingStats) return <p>Erro ao carregar relatórios do simulador: {errorTradingStats.message}</p>;
+
         return (
           <ReportsSection
             trades={trades}
@@ -460,9 +465,8 @@ const DashboardPage = () => {
             isLoadingTrades={isLoadingTrades}
             isLoadingBinanceTickers={isLoadingBinanceTickers}
             errorTrades={errorTrades || errorBinanceTickers}
-            simulatorProfile={simulatorProfile}
-            isLoadingSimulator={isLoadingSimulator}
-            errorSimulator={errorSimulator}
+            totalPnl={userTradingStats?.totalPnl ?? 0}
+            patrimonioAtual={userTradingStats?.currentEquity ?? 0}
           />
         );
       default:

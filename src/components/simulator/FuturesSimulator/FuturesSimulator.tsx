@@ -448,8 +448,11 @@ const FuturesPositionsList = ({ positions, isLoading, closePositionMutation, exc
     );
 };
 
+import { useSession } from 'next-auth/react';
+
 const FuturesSimulator = () => {
   const queryClient = useQueryClient();
+  const { data: session } = useSession(); // Adicionado para obter o ID do usuário
   const [symbol, setSymbol] = useState('BTCUSDT');
   const [interval, setInterval] = useState("1m");
   const [prospectiveAlert, setProspectiveAlert] = useState<{ price: number } | null>(null);
@@ -645,6 +648,10 @@ const FuturesSimulator = () => {
         queryClient.invalidateQueries({ queryKey: ['trades'] });
         queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
         queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
+        // Invalida a query de estatísticas do usuário para forçar a atualização no dashboard
+        if (session?.user?.id) {
+          queryClient.invalidateQueries({ queryKey: ['userTradingStats', session.user.id] });
+        }
     },
     onError: (error: Error) => {
         toast.dismiss();

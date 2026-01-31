@@ -128,7 +128,7 @@ export async function POST(req: Request) {
         },
       }),
       // Criar a FuturesPosition no banco de dados.
-      // Salvamos a margin em MOEDA ORIGINAL (USDT) para consistência dos cálculos de trade
+      // Salvamos a margin em BRL para consistência, pois o saldo do usuário é em BRL
       prisma.futuresPosition.create({
         data: {
           userId,
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
           quantity,
           leverage,
           entryPrice,
-          margin, // Salvo em USDT
+          margin: marginInBrl, // Salvo em BRL
           liquidationPrice,
           stopLoss: stopLoss ?? undefined,
           takeProfit: takeProfit ?? undefined,

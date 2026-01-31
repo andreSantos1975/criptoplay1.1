@@ -3,7 +3,6 @@ import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PositionStatus, Prisma } from '@prisma/client';
-import { getCurrentPrice } from '@/lib/binance'; // Importar função de preço
 
 export const dynamic = 'force-dynamic';
 
@@ -17,34 +16,23 @@ export async function GET(req: NextRequest) {
     const market = searchParams.get('market') || 'all';
     const sort = searchParams.get('sort') || 'roi';
 
-    // --- OBTER TAXA DE CÂMBIO (USDT -> BRL) ---
-    // Fazemos isso uma vez fora do loop para otimização
-    let usdtBrlRate = new Prisma.Decimal(5.0); // Fallback
-    try {
-        usdtBrlRate = await getCurrentPrice('USDTBRL');
-    } catch (error) {
-        console.error('Falha ao obter taxa USDTBRL para o ranking. Usando fallback.', error);
-    }
-
-    // 1. Definir Data de Corte (StartDate)
+    // Data de Corte (StartDate)
     let startDate = new Date();
     if (period === '7d') startDate.setDate(startDate.getDate() - 7);
     else if (period === '30d') startDate.setDate(startDate.getDate() - 30);
     else if (period === '90d') startDate.setDate(startDate.getDate() - 90);
-    else if (period === 'all') startDate = new Date(0); // Início dos tempos
+    else if (period === 'all') startDate = new Date(0);
 
-    // 2. Configurar filtros do Prisma
+    // Filtros do Prisma
     const tradeFilter = {
       status: 'CLOSED',
       exitDate: { gte: startDate }
     };
-
     const futuresFilter = {
       status: { in: [PositionStatus.CLOSED, PositionStatus.LIQUIDATED] },
       closedAt: { gte: startDate }
     };
 
-    // Otimização: Selecionar apenas o necessário baseado no mercado escolhido
     const includeSpot = market === 'spot' || market === 'all';
     const includeFutures = market === 'futures' || market === 'all';
 
@@ -54,7 +42,6 @@ export async function GET(req: NextRequest) {
         { trialEndsAt: { gt: new Date() } },
       ],
     };
-
     if (currentUserId) {
       whereClause.OR.push({ id: currentUserId });
     }
@@ -68,83 +55,66 @@ export async function GET(req: NextRequest) {
         virtualBalance: true,
         subscriptionStatus: true,
         trialEndsAt: true,
-        monthlyStartingBalance: true,
         isPublicProfile: true,
         trades: includeSpot ? {
             where: tradeFilter,
-            select: { pnl: true, symbol: true }
+            select: { pnlInBrl: true, pnl: true } // pnl para win rate
         } : false,
         futuresPositions: includeFutures ? {
             where: futuresFilter,
-            select: { pnl: true, symbol: true }
+            select: { pnlInBrl: true, pnl: true } // pnl para win rate
         } : false
       },
     });
 
     const allCalculatedUserData = users.map(user => {
-      // Coletar trades filtrados
-      // @ts-ignore
       const spotTrades = (user.trades as any[]) || [];
-      // @ts-ignore
       const futureTrades = (user.futuresPositions as any[]) || [];
 
-      // Calcular Lucro do Período e Win Rate
-      let periodProfit = new Prisma.Decimal(0); // Usar Decimal para precisão
+      let periodProfitInBrl = new Prisma.Decimal(0);
       let winningTrades = 0;
       let totalTradesCount = 0;
 
       if (includeSpot) {
         spotTrades.forEach(t => {
-          const pnl = new Prisma.Decimal(t.pnl || 0);
-          let pnlInBrl = pnl;
-
-          // Se o PnL não for nulo e o par não for BRL, converte
-          if (!pnl.isZero() && t.symbol && !t.symbol.endsWith('BRL')) {
-            pnlInBrl = pnl.times(usdtBrlRate);
-          }
+          // Usa pnlInBrl se existir, senão usa o pnl antigo (para dados pré-migração)
+          const pnlForCalc = new Prisma.Decimal(t.pnlInBrl || t.pnl || 0);
+          periodProfitInBrl = periodProfitInBrl.add(pnlForCalc);
           
-          periodProfit = periodProfit.add(pnlInBrl);
-          if (pnl.isPositive()) winningTrades++;
+          // Win rate é baseado no pnl original (não BRL) para ser consistente
+          if (new Prisma.Decimal(t.pnl || 0).isPositive()) {
+            winningTrades++;
+          }
           totalTradesCount++;
         });
       }
 
       if (includeFutures) {
         futureTrades.forEach(t => {
-          const pnl = new Prisma.Decimal(t.pnl || 0);
-          let pnlInBrl = pnl;
+          const pnlForCalc = new Prisma.Decimal(t.pnlInBrl || 0);
+          periodProfitInBrl = periodProfitInBrl.add(pnlForCalc);
 
-          // Se o PnL não for nulo e o par não for BRL, converte
-          if (!pnl.isZero() && t.symbol && !t.symbol.endsWith('BRL')) {
-            pnlInBrl = pnl.times(usdtBrlRate);
+          if (new Prisma.Decimal(t.pnl || 0).isPositive()) {
+            winningTrades++;
           }
-
-          periodProfit = periodProfit.add(pnlInBrl);
-          if (pnl.isPositive()) winningTrades++;
           totalTradesCount++;
         });
       }
 
       const currentBal = user.virtualBalance.toNumber();
-      const periodProfitNumber = periodProfit.toNumber();
+      const periodProfitNumber = periodProfitInBrl.toNumber();
       
-      // Estimar Saldo Inicial do Período: Saldo Atual - Lucro Feito no Período (em BRL)
       let estimatedStartBal = currentBal - periodProfitNumber;
-      
-      // Proteção contra denominador zero ou negativo
       if (estimatedStartBal <= 0) estimatedStartBal = 10000; 
 
       const roi = ((currentBal - estimatedStartBal) / estimatedStartBal) * 100;
-
       const winRate = totalTradesCount > 0 
         ? (winningTrades / totalTradesCount) * 100 
         : 0;
-
-      // Verificar se o trial está ativo
+      
       const isTrialActive = user.trialEndsAt ? new Date(user.trialEndsAt).getTime() > Date.now() : false;
       const plan = (user.subscriptionStatus === 'active' || isTrialActive) ? 'pro' : 'free';
 
-      // Badges
       const badges = [];
       if (roi > 50) badges.push("proTrader");
       if (winRate > 70 && totalTradesCount > 5) badges.push("streak");
@@ -154,7 +124,7 @@ export async function GET(req: NextRequest) {
         nickname: user.username || `User ${user.id.slice(0, 4)}`,
         avatar: user.image || `https://api.dicebear.com/7.x/adventurer/png?seed=${user.id}`,
         roi: roi,
-        profit: periodProfitNumber, // Envia como número
+        profit: periodProfitNumber,
         trades: totalTradesCount,
         winRate: winRate,
         drawdown: 0, 
@@ -164,13 +134,10 @@ export async function GET(req: NextRequest) {
         isPublicProfile: user.isPublicProfile
       };
     });
-    
-    // O resto do arquivo permanece o mesmo...
-    // ...
-    // ... (Encontrar currentUser, filtrar, ordenar, etc.)
-    // ...
+
     const currentUserFullData = allCalculatedUserData.find(t => t.isCurrentUser);
     const publicTraders = allCalculatedUserData.filter(user => user.isPublicProfile);
+
     publicTraders.sort((a, b) => {
       switch (sort) {
         case 'profit':
@@ -196,16 +163,10 @@ export async function GET(req: NextRequest) {
     if (currentUserFullData && currentUserFullData.isPublicProfile) {
         const publicRankingPosition = rankedPublicTraders.findIndex(t => t.id === currentUserFullData.id);
         if (publicRankingPosition !== -1) {
-            currentUserWithPosition = {
-                ...currentUserFullData,
-                position: publicRankingPosition + 1
-            };
+            currentUserWithPosition = { ...currentUserFullData, position: publicRankingPosition + 1 };
         }
     } else if (currentUserFullData && !currentUserFullData.isPublicProfile) {
-        currentUserWithPosition = {
-            ...currentUserWithPosition,
-            position: undefined
-        };
+        currentUserWithPosition = { ...currentUserFullData, position: undefined };
     }
 
     const activeTraders = rankedPublicTraders.filter(t => t.trades > 0);
@@ -232,7 +193,6 @@ export async function GET(req: NextRequest) {
         topTraderRoi: topTrader ? topTrader.roi : 0
       }
     });
-
   } catch (error) {
     console.error("Erro na API de Ranking:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
