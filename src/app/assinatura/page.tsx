@@ -33,7 +33,7 @@ const plans: PlanConfig[] = [
     name: 'Starter',
     badge: 'Early Access',
     badgeType: "default",
-    monthlyPrice: 29.90,
+    monthlyPrice: 0.10,
     annualPrice: 299.00,
     description: "Para quem está começando a jornada no mundo cripto.",
     features: [

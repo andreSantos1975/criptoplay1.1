@@ -715,19 +715,26 @@ const FuturesSimulator = () => {
   });
 
   const handleStartCreateAlert = () => {
+    // 1. Prioritize real-time price from the WebSocket update
+    const realtimePriceBRL = realtimeUpdateInBRL?.close;
+
+    // 2. Fallback to the last candle's close price from the main chart data
     const lastCloseFromChart = chartDataInBRL && chartDataInBRL.length > 0 
         ? chartDataInBRL[chartDataInBRL.length - 1].close 
         : 0;
 
-    // Fallback para o preço do ticker se os dados do gráfico não estiverem prontos
+    // 3. Final fallback to the ticker price from the header
     const fallbackPriceBRL = symbol.endsWith('BRL')
         ? headerData.price
         : headerData.price * exchangeRate;
         
-    const lastCloseBRL = lastCloseFromChart > 0 ? lastCloseFromChart : fallbackPriceBRL;
+    // Determine the price to use in order of priority
+    const priceToUse = realtimePriceBRL && realtimePriceBRL > 0
+      ? realtimePriceBRL
+      : (lastCloseFromChart > 0 ? lastCloseFromChart : fallbackPriceBRL);
 
-    if (lastCloseBRL > 0) {
-      setProspectiveAlert({ price: lastCloseBRL });
+    if (priceToUse > 0) {
+      setProspectiveAlert({ price: priceToUse });
     }
   };
 
