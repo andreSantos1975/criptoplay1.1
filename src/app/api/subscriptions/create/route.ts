@@ -18,6 +18,8 @@ export async function POST(req: Request) {
   const userId = session.user.id;
   const { planId, planName, amount, description, planType, frequency } = await req.json();
 
+  console.log('Recebido do Frontend:', { planId, planName, amount, planType, frequency });
+
   if (!planId || !planName || !amount || !description || !planType) {
     return NextResponse.json({ message: 'Dados do plano incompletos' }, { status: 400 });
   }
@@ -128,7 +130,7 @@ export async function POST(req: Request) {
         notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`,
       };
 
-      console.log('📦 Payload PreApproval:', JSON.stringify(preapprovalData, null, 2));
+      console.log('📦 Enviando para o Mercado Pago (PreApproval):', JSON.stringify(preapprovalData, null, 2));
 
       const response = await preapproval.create({ body: preapprovalData });
 
