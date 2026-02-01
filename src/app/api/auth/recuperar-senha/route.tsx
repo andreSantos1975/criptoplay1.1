@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 
     // Enviar o e-mail
     const { data, error } = await resend.emails.send({
-      from: 'CriptoPlay <onboarding@resend.dev>', // TEMPORÁRIO: Mude para seu domínio verificado!
+      from: `CriptoPlay <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`,
       to: [email],
       subject: 'Redefina sua senha da CriptoPlay',
       html: emailHtml, // Passar o HTML gerado
