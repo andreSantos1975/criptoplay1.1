@@ -58,7 +58,6 @@ export const SimulatorChart = memo(({
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [isChartReady, setIsChartReady] = useState(false);
-  const isInitialLoad = useRef(true);
 
   // Verifica se o período de trial ainda está ativo
   const isTrialActive = session?.user?.trialEndsAt ? new Date(session.user.trialEndsAt) > new Date() : false;
@@ -139,27 +138,18 @@ export const SimulatorChart = memo(({
       chartRef.current = null;
       seriesRef.current = null;
       setIsChartReady(false);
-      isInitialLoad.current = true; // Reset for next chart instance
     };
   }, [symbol, hasAccess]); // Dependências simplificadas
 
   // Load initial data
   useEffect(() => {
-    if (!seriesRef.current || !chartRef.current || !isChartReady) return;
-  
+    if (!seriesRef.current || !chartRef.current) return;
+
     if (isChartLoading) {
-      seriesRef.current.setData([]); // Limpa os dados enquanto carrega
-      isInitialLoad.current = true; // Reseta para a proxima carga de dados
-    } else if (initialChartData) {
-      // A API da Binance já retorna os dados ordenados, então a ordenação no cliente é removida
-      // para evitar possíveis erros com formatos de timestamp.
+      seriesRef.current.setData([]); // Clear chart data while fetching
+    } else if (isChartReady && initialChartData) {
       seriesRef.current.setData(initialChartData);
-      
-      // Apenas faz o fitContent na carga inicial para não perder o zoom/posição do usuário
-      if (isInitialLoad.current && initialChartData.length > 0) {
-        chartRef.current.timeScale().fitContent();
-        isInitialLoad.current = false;
-      }
+      chartRef.current.timeScale().fitContent();
     }
   }, [isChartReady, initialChartData, isChartLoading]);
 
