@@ -27,6 +27,10 @@ async function generateUniqueUsername(): Promise<string> {
 
 export async function POST(request: Request) {
   try {
+    // Extrai a URL para ler os parâmetros de consulta
+    const { searchParams } = new URL(request.url);
+    const origem = searchParams.get('origem');
+
     const { name, email, password, username } = await request.json();
 
     if (!name || !email || !password) {
@@ -65,13 +69,16 @@ export async function POST(request: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Define a duração do trial com base na origem
+    const trialDuration = origem === 'hotmart' ? 30 : 7;
+
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
         username: finalUsername,
-        trialEndsAt: addDays(new Date(), 7), // Define o trialEndsAt para 7 dias a partir de agora
+        trialEndsAt: addDays(new Date(), trialDuration), // Usa a duração do trial definida
       },
     });
 

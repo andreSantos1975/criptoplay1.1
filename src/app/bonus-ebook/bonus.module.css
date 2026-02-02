@@ -1,0 +1,139 @@
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  color: #fff;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #FBBF24 0%, #F87171 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #a0a0a0;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.pricingCard {
+  background-color: #1a1a1a;
+  border: 1px solid #FBBF24;
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 10px 40px rgba(251, 191, 36, 0.2);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.pricingCard:hover {
+  transform: translateY(-10px);
+}
+
+.planName {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #FBBF24;
+}
+
+.originalPrice {
+  color: #a0a0a0;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.strikethrough {
+  text-decoration: line-through;
+  color: #777;
+}
+
+.price {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #fff;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+}
+
+.price span {
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: #a0a0a0;
+  margin-left: 0.5rem;
+}
+
+.period {
+  font-size: 1rem;
+  color: #a0a0a0;
+  margin-bottom: 2rem;
+}
+
+.featuresList {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 2.5rem;
+  text-align: left;
+}
+
+.featuresList li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  color: #e0e0e0;
+  font-size: 1rem;
+}
+
+.featuresList li svg {
+  margin-right: 0.8rem;
+  color: #92FE9D; /* Checkmark color */
+}
+
+.subscribeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2.5rem;
+  border-radius: 8px;
+  background-color: #FBBF24;
+  color: #18181b;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  width: 100%;
+  max-width: 350px;
+  margin-bottom: 1rem;
+}
+
+.subscribeButton:hover {
+  background-color: #fde047;
+  transform: scale(1.05);
+}
+
+.guarantee {
+    font-size: 0.9rem;
+    color: #a0a0a0;
+}

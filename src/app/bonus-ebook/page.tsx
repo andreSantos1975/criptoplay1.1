@@ -1,21 +1,23 @@
 import Link from "next/link";
-import { CheckCircle } from "lucide-react";
-import styles from "./pricing.module.css";
+import { CheckCircle, Gift } from "lucide-react";
+import styles from "./bonus.module.css";
 
-export default function PricingPage() {
-  const annualPrice = "199,90"; // O valor da assinatura anual padrão
+export default function BonusEbookPage() {
+  const annualPrice = "99,90"; // O valor da assinatura anual especial
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Nosso Plano</h1>
+        <Gift className="w-12 h-12 text-yellow-400" />
+        <h1 className={styles.title}>Seu Bônus Exclusivo Está Aqui!</h1>
         <p className={styles.subtitle}>
-          Acesso completo à plataforma para maximizar seus resultados no mercado cripto.
+          Parabéns por adquirir o e-book! Desbloqueie agora seu acesso completo à plataforma CriptoPlay com uma oferta única.
         </p>
       </header>
 
       <div className={styles.pricingCard}>
         <h2 className={styles.planName}>Plano Anual Premium</h2>
+        <p className={styles.originalPrice}>De <span className={styles.strikethrough}>R$ 238,80</span> por</p>
         <div className={styles.price}>
           R$ {annualPrice}<span>/ano</span>
         </div>
@@ -44,10 +46,11 @@ export default function PricingPage() {
           </li>
         </ul>
 
-        {/* O link leva para a página de assinatura, que por padrão usará o plano anual regular */}
-        <Link href="/assinatura" className={styles.subscribeButton}>
-          Assinar Agora
+        {/* Link para a página de assinatura com o plano especial */}
+        <Link href="/assinatura?oferta=anual_promo" className={styles.subscribeButton}>
+          Quero Meu Acesso Anual!
         </Link>
+        <p className={styles.guarantee}>Garantia de 7 dias. Cancele quando quiser.</p>
       </div>
     </div>
   );

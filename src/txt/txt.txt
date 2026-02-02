@@ -686,4 +686,33 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
   Se você estiver de acordo com este plano, posso começar com o Passo 1, que é a criação da
   API de webhook para a Hotmart.
 
+  =====================================================================================
+
+  ---------------------------- 02/02/2026 ---------------------------------------------
+
+  ✦ Certo, o receptor do webhook da Hotmart foi criado com sucesso.
+
+  Ação Necessária da sua parte:
+
+  Para que a validação funcione, você precisa conectar a Hotmart a este novo endpoint e
+  garantir a segurança.
+
+   1. No seu painel da Hotmart:
+       * Vá para a seção de Webhooks.
+       * Cadastre a URL do novo endpoint: https://criptoplay.com/api/webhooks/hotmart
+         (substitua criptoplay.com pelo seu domínio de produção).
+       * A Hotmart fornecerá uma "Palavra-chave" ou "Token Secreto" (em inglês, "Secret Key"
+         ou "Signature"). Copie este valor.
+
+   2. No seu projeto (arquivo `.env.local`):
+       * Adicione a seguinte linha, colando o token que você copiou da Hotmart:
+
+   1         HOTMART_WEBHOOK_SECRET="COLE_O_TOKEN_DA_HOTMART_AQUI"
+
+  Esta chave secreta é essencial para garantir que apenas a Hotmart possa enviar notificações
+  para o seu sistema.
+
+  Assim que você confirmar que entendeu este passo, eu partirei para a etapa final: modificar
+  a API de registro para usar esta nova informação e validar os e-mails.
+
   

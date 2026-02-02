@@ -372,3 +372,11 @@ model MonthlyRanking {
   @@unique([userId, month, year])
   @@index([month, year, rankPosition])
 }
+
+model HotmartPurchase {
+  id         String   @id @default(cuid())
+  buyerEmail String   @unique
+  status     String   @default("PENDING") // PENDING, REDEEMED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
