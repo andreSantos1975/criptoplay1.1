@@ -189,14 +189,26 @@ const Simulator = () => {
   const { data: tickerData, isError: isTickerError, error: tickerError } = useQuery({
     queryKey: ['spotTicker24hr', selectedCrypto],
     queryFn: async () => {
-      console.log('Buscando dados do ticker para o símbolo:', selectedCrypto); // Adicionando log
       if (!selectedCrypto) return null;
-      const response = await fetch(`/api/binance/ticker-24hr?symbol=${selectedCrypto}`);
-      if (!response.ok) {
-        console.error('Falha ao buscar dados do ticker 24h para Spot.');
+
+      try {
+        // Tenta buscar da Binance primeiro
+        const response = await fetch(`/api/binance/ticker-24hr?symbol=${selectedCrypto}`);
+        if (response.ok) {
+          return response.json();
+        }
+        console.warn('Falha ao buscar da Binance, tentando Bitget como fallback.');
+      } catch (error) {
+        console.error('Erro ao buscar da Binance:', error);
+      }
+
+      // Fallback para a Bitget
+      const bitgetResponse = await fetch(`/api/bitget/ticker-24hr?symbol=${selectedCrypto}`);
+      if (!bitgetResponse.ok) {
+        console.error('Falha ao buscar dados do ticker 24h para Spot na Bitget.');
         return null;
       }
-      return response.json();
+      return bitgetResponse.json();
     },
     refetchInterval: 2000,
     enabled: isPremiumUser && !!selectedCrypto,

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-    console.error(`Erro ao buscar ticker de 24h para ${symbol} (Spot):`, error);
+    console.error(`Erro ao buscar ticker de 24h para ${symbol} (Spot):`, errorMessage);
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
