@@ -151,9 +151,23 @@ export const SimulatorChart = memo(({
       seriesRef.current.setData([]); // Limpa os dados enquanto carrega
       isInitialLoad.current = true; // Reseta para a proxima carga de dados
     } else if (initialChartData && Array.isArray(initialChartData)) {
-      // A API da Binance já retorna os dados ordenados, então a ordenação no cliente é removida
-      // para evitar possíveis erros com formatos de timestamp.
-      seriesRef.current.setData(initialChartData);
+      // DEBUG RADICAL
+      if (interval === '1d') {
+        console.log(`[DEBUG ${marketType.toUpperCase()} 1d] DADOS COMPLETOS PARA setData():`, JSON.stringify(initialChartData));
+        if(initialChartData.length > 0) {
+          console.log(`[DEBUG ${marketType.toUpperCase()} 1d] PRIMEIRO CANDLE:`, initialChartData[0]);
+        }
+      }
+      
+      try {
+        // A API da Binance já retorna os dados ordenados, então a ordenação no cliente é removida
+        // para evitar possíveis erros com formatos de timestamp.
+        seriesRef.current.setData(initialChartData);
+      } catch (error) {
+        console.error("[ERRO FATAL] Falha ao chamar series.setData()", error);
+        // Log adicional para o objeto de erro
+        console.error("Detalhes do Erro:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      }
       
       // Apenas faz o fitContent na carga inicial para não perder o zoom/posição do usuário
       if (isInitialLoad.current && initialChartData.length > 0) {
@@ -161,7 +175,7 @@ export const SimulatorChart = memo(({
         isInitialLoad.current = false;
       }
     }
-  }, [isChartReady, initialChartData, isChartLoading]);
+  }, [isChartReady, initialChartData, isChartLoading, interval, marketType]);
 
   // Effect to handle real-time updates from WebSocket
   useEffect(() => {
