@@ -151,6 +151,10 @@ export const SimulatorChart = memo(({
       seriesRef.current.setData([]); // Limpa os dados enquanto carrega
       isInitialLoad.current = true; // Reseta para a proxima carga de dados
     } else if (initialChartData && Array.isArray(initialChartData)) {
+      // DEBUG LOG
+      if (interval === '1d') {
+        console.log(`[DEBUG ${marketType.toUpperCase()} 1d] DADOS INICIAIS PARA setData():`, initialChartData);
+      }
       // A API da Binance já retorna os dados ordenados, então a ordenação no cliente é removida
       // para evitar possíveis erros com formatos de timestamp.
       seriesRef.current.setData(initialChartData);
@@ -161,14 +165,18 @@ export const SimulatorChart = memo(({
         isInitialLoad.current = false;
       }
     }
-  }, [isChartReady, initialChartData, isChartLoading]);
+  }, [isChartReady, initialChartData, isChartLoading, interval, marketType]);
 
   // Effect to handle real-time updates from WebSocket
   useEffect(() => {
     if (seriesRef.current && realtimeChartUpdate) {
+      // DEBUG LOG
+      if (interval === '1d') {
+        console.log(`[DEBUG ${marketType.toUpperCase()} 1d] DADOS REALTIME PARA update():`, realtimeChartUpdate);
+      }
       seriesRef.current.update(realtimeChartUpdate);
     }
-  }, [realtimeChartUpdate]);
+  }, [realtimeChartUpdate, interval, marketType]);
 
   // Apply BRL formatting
   useEffect(() => {
