@@ -35,14 +35,20 @@ export const useRealtimeChartUpdate = ({
       const message = JSON.parse(event.data);
       const kline = message.k;
       if (kline) {
-        const candleUpdate: BarData = {
-          time: Math.floor(kline.t / 1000) as any,
+        const candleUpdate: {
+          time: number;
+          open: number;
+          high: number;
+          low: number;
+          close: number;
+        } = {
+          time: Math.floor(kline.t / 1000), // Garantir que é um número inteiro
           open: parseFloat(kline.o),
           high: parseFloat(kline.h),
           low: parseFloat(kline.l),
           close: parseFloat(kline.c),
         };
-        setRealtimeChartUpdate(candleUpdate);
+        setRealtimeChartUpdate(candleUpdate as BarData); // Faz o cast apenas na atribuição final
       }
     };
 
