@@ -128,11 +128,6 @@ const Simulator = () => {
     );
   }, [session]);
 
-  // Logs de diagnóstico
-  console.log('Sessão do usuário:', session);
-  console.log('Status do usuário Premium:', isPremiumUser);
-  console.log('Criptomoeda selecionada:', selectedCrypto);
-
   // --- GERENCIAMENTO DE ESTADO ---
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCBRL');
   const [marketType, setMarketType] = useState<'spot' | 'futures'>('spot');
@@ -195,26 +190,23 @@ const Simulator = () => {
     queryKey: ['spotTicker24hr', selectedCrypto],
     queryFn: async () => {
       if (!selectedCrypto) return null;
-
-      try {
-        const response = await fetch(`/api/bitget/ticker-24hr?symbol=${selectedCrypto}`);
-        const data = await response.json();
-
-        if (!response.ok || data.error) {
-          throw new Error(data.error || 'Falha ao buscar dados do ticker na Bitget.');
-        }
-
-        return data;
-      } catch (error) {
-        console.error('Erro ao buscar dados do ticker na Bitget:', error);
+      const response = await fetch(`/api/binance/ticker-24hr?symbol=${selectedCrypto}`);
+      if (!response.ok) {
+        console.error('Falha ao buscar dados do ticker 24h para Spot.');
         return null;
       }
+      return response.json();
     },
     refetchInterval: 2000,
     enabled: isPremiumUser && !!selectedCrypto,
   });
 
-
+  const headerData = useMemo(() => ({
+    price: tickerData ? parseFloat(tickerData.lastPrice) : 0,
+    open: tickerData ? parseFloat(tickerData.openPrice) : 0,
+    high: tickerData ? parseFloat(tickerData.highPrice) : 0,
+    low: tickerData ? parseFloat(tickerData.lowPrice) : 0,
+  }), [tickerData]);
 
   const {
     data: chartData,
@@ -336,24 +328,24 @@ const Simulator = () => {
   // Efeito para aplicar Stop Loss (1%) e Take Profit (2%) padrão
   useEffect(() => {
     const hasOpenPositionForSymbol = simulatorProfile?.openPositions?.some(p => p.symbol === selectedCrypto);
-    const currentEntryPrice = tickerData?.lastPrice;
+    const currentEntryPrice = headerData.price;
 
     if (currentEntryPrice > 0 && !defaultsAppliedRef.current && !hasOpenPositionForSymbol) {
       setTradeLevels(prev => ({
         ...prev,
         entry: currentEntryPrice,
-        stopLoss: tickerData?.lastPrice * 0.99, // 1% abaixo
-        takeProfit: tickerData?.lastPrice * 1.02, // 2% acima
+        stopLoss: headerData.price * 0.99, // 1% abaixo
+        takeProfit: headerData.price * 1.02, // 2% acima
       }));
       defaultsAppliedRef.current = true;
     }
-  }, [tickerData?.lastPrice, selectedCrypto, simulatorProfile?.openPositions]);
+  }, [headerData.price, selectedCrypto, simulatorProfile?.openPositions]);
   
   const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  const riskAmount = tickerData?.lastPrice > 0 && tradeLevels.stopLoss > 0 ? (tickerData?.lastPrice - tradeLevels.stopLoss) * quantity : 0;
-  const rewardAmount = tickerData?.lastPrice > 0 && tradeLevels.takeProfit > 0 ? (tradeLevels.takeProfit - tickerData?.lastPrice) * quantity : 0;
+  const riskAmount = headerData.price > 0 && tradeLevels.stopLoss > 0 ? (headerData.price - tradeLevels.stopLoss) * quantity : 0;
+  const rewardAmount = headerData.price > 0 && tradeLevels.takeProfit > 0 ? (tradeLevels.takeProfit - headerData.price) * quantity : 0;
 
-  const estimatedCostUSDT = quantity * tickerData?.lastPrice;
+  const estimatedCostUSDT = quantity * headerData.price;
   const isBrlPair = selectedCrypto.endsWith('BRL');
   const estimatedCostBRL = isBrlPair 
     ? estimatedCostUSDT 
@@ -379,7 +371,7 @@ const Simulator = () => {
 
   const handleSimulatorSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!tickerData?.lastPrice) {
+    if (!headerData.price) {
       toast.error('Preço de entrada não disponível. Verifique sua conexão.');
       return;
     }
@@ -387,7 +379,7 @@ const Simulator = () => {
       symbol: selectedCrypto, 
       quantity, 
       type: 'BUY', 
-      entryPrice: tickerData?.lastPrice, 
+      entryPrice: headerData.price, 
       stopLoss: tradeLevels.stopLoss, 
       takeProfit: tradeLevels.takeProfit, 
       marketType 
@@ -395,8 +387,8 @@ const Simulator = () => {
   };
   
   const handleStartCreateAlert = () => {
-    if (tickerData?.lastPrice > 0) {
-      setProspectiveAlert({ price: tickerData?.lastPrice });
+    if (headerData.price > 0) {
+      setProspectiveAlert({ price: headerData.price });
     } else {
       toast.error('Aguarde o carregamento do preço para criar um alerta.');
     }
@@ -465,10 +457,10 @@ const Simulator = () => {
       <div className={styles.chartContainer}>
         <AssetHeader
             symbol={selectedCrypto}
-            price={tickerData ? parseFloat(tickerData.lastPrice) : 0}
-            open={tickerData ? parseFloat(tickerData.openPrice) : 0}
-            high={tickerData ? parseFloat(tickerData.highPrice) : 0}
-            low={tickerData ? parseFloat(tickerData.lowPrice) : 0}
+            price={headerData.price}
+            open={headerData.open}
+            high={headerData.high}
+            low={headerData.low}
         />
         {(isTickerError || isErrorKlines) && (
           <div className={styles.errorMessage} style={{ color: 'red', margin: '1rem' }}>
@@ -538,7 +530,7 @@ const Simulator = () => {
                   className={styles.input} 
                   required 
                 />
-                {quantity > 0 && tickerData?.lastPrice > 0 && (
+                {quantity > 0 && headerData.price > 0 && (
                   <p className={styles.riskInfo}>Custo Total: {formatCurrency(estimatedCostBRL)}</p>
                 )}
               </div>
@@ -566,7 +558,7 @@ const Simulator = () => {
                   <p className={styles.rewardInfo}>Ganho Potencial: {formatCurrency(rewardAmountBRL)}</p>
                 )}
               </div>
-              <button type="submit" className={styles.submitButton} disabled={createSimulatorTradeMutation.isPending || !tickerData?.lastPrice}>
+              <button type="submit" className={styles.submitButton} disabled={createSimulatorTradeMutation.isPending || !headerData.price}>
                   {createSimulatorTradeMutation.isPending ? 'Enviando...' : 'Comprar'}
               </button>
               {createSimulatorTradeMutation.isError && <p style={{ color: 'red', marginTop: '1rem' }}>Erro: ${createSimulatorTradeMutation.error.message}</p>}

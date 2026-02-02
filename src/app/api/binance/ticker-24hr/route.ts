@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-/// Endpoint para buscar dados do ticker de 24h para um símbolo de Spot
+// Endpoint para buscar dados do ticker de 24h para um símbolo de Spot
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get('symbol');
