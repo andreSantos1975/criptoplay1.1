@@ -208,7 +208,8 @@ const Simulator = () => {
         console.error('Falha ao buscar dados do ticker 24h para Spot na Bitget.');
         return null;
       }
-      return bitgetResponse.json();
+      const bitgetData = await bitgetResponse.json();
+      return bitgetData;
     },
     refetchInterval: 2000,
     enabled: isPremiumUser && !!selectedCrypto,
