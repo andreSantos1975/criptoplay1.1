@@ -141,7 +141,7 @@ export const SimulatorChart = memo(({
       setIsChartReady(false);
       isInitialLoad.current = true; // Reset for next chart instance
     };
-  }, [symbol, hasAccess, interval]); // Dependências simplificadas
+  }, [symbol, hasAccess]); // Dependências simplificadas
 
   // Load initial data
   useEffect(() => {
@@ -150,7 +150,7 @@ export const SimulatorChart = memo(({
     if (isChartLoading) {
       seriesRef.current.setData([]); // Limpa os dados enquanto carrega
       isInitialLoad.current = true; // Reseta para a proxima carga de dados
-    } else if (initialChartData && Array.isArray(initialChartData)) {
+    } else if (initialChartData) {
       // A API da Binance já retorna os dados ordenados, então a ordenação no cliente é removida
       // para evitar possíveis erros com formatos de timestamp.
       seriesRef.current.setData(initialChartData);
