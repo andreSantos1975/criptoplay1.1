@@ -148,6 +148,12 @@ export const SimulatorChart = memo(({
     if (isChartLoading) {
       seriesRef.current.setData([]); // Clear chart data while fetching
     } else if (isChartReady && initialChartData) {
+      // VALIDAÇÃO DE SEGURANÇA
+      if (initialChartData.length > 0 && (typeof initialChartData[0].time !== 'number' || isNaN(initialChartData[0].time))) {
+        console.error("DADOS DO GRÁFICO INVÁLIDOS: O timestamp do primeiro candle não é um número válido.", initialChartData[0]);
+        return; // Impede a chamada ao setData com dados ruins
+      }
+
       seriesRef.current.setData(initialChartData);
       chartRef.current.timeScale().fitContent();
     }
