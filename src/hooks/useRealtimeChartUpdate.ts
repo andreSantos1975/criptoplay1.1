@@ -8,7 +8,7 @@ interface RealtimeChartUpdateOptions {
   enabled?: boolean;
 }
 
-// This hook is a "light" version of the old Vigilante. Its only job is to
+/// This hook is a "light" version of the old Vigilante. Its only job is to
 // connect to a single WebSocket stream and provide real-time price updates
 /// for the UI (e.g., the chart). It has no trading logic.
 export const useRealtimeChartUpdate = ({

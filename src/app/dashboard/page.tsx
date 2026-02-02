@@ -287,7 +287,7 @@ const DashboardPage = () => {
     }
    });
 
-  // --- MEMOIZED CALCULATIONS & EFFECTS (PERSONAL FINANCE ONLY) ---
+  /// --- MEMOIZED CALCULATIONS & EFFECTS (PERSONAL FINANCE ONLY) ---
   const processedBudgetCategories = useMemo(() => fetchedBudgetCategories.map(cat => ({ id: cat.id, name: cat.name, percentage: DEFAULT_ALLOCATION_PERCENTAGES[cat.name] || 0, amount: 0, actualSpending: 0 })), [fetchedBudgetCategories]);
   useEffect(() => { if (!isLoadingBudgetCategories && processedBudgetCategories.length > 0) setBudgetCategories(processedBudgetCategories); }, [processedBudgetCategories, isLoadingBudgetCategories]);
   const isBudgetLoading = isLoadingBudgetCategories;

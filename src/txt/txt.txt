@@ -32,7 +32,7 @@ biblioteca react-hot-toast usada para feedbacks alert para usuários
 
   O ChatGPT disse:
 
-Sim, dá para ver o motivo do erro 👍
+Sim, dá para ver o motivo do erro 
 
 O problema está nesta linha:
 

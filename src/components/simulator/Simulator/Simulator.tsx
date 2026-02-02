@@ -296,7 +296,7 @@ const Simulator = () => {
     enabled: isPremiumUser,
   });
 
-  // Temporarily keeping this for debugging purposes, will remove after confirming fix
+  /// Temporarily keeping this for debugging purposes, will remove after confirming fix
   useEffect(() => {
     if (simulatorProfile?.openPositions) {
       console.log('Simulator: openPositions passed to SimulatorChart:', simulatorProfile?.openPositions);
