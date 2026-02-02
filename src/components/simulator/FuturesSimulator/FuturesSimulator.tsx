@@ -556,7 +556,9 @@ const FuturesSimulator = () => {
   });
 
   const headerData = useMemo(() => {
-    // Garante que o tickerData seja a fonte primária se o gráfico ainda não carregou
+    const defaultData = { price: 0, open: 0, high: 0, low: 0 };
+
+    // Fallback para tickerData se o gráfico não carregou
     if ((!chartDataInBRL || chartDataInBRL.length === 0) && tickerData) {
       const price = parseFloat(tickerData.lastPrice);
       return {
@@ -567,19 +569,25 @@ const FuturesSimulator = () => {
       };
     }
     
-    // Se o gráfico carregou, use os dados do candle
+    // Se o gráfico carregou, usar os dados do candle
     if (!chartDataInBRL || chartDataInBRL.length === 0) {
-      return { price: 0, open: 0, high: 0, low: 0 };
+      return defaultData;
     }
 
     const lastCandle = chartDataInBRL[chartDataInBRL.length - 1];
-    const closePrice = realtimeUpdateInBRL?.close || lastCandle.close;
+    
+    // Verificação de segurança
+    if (!lastCandle) {
+        return defaultData;
+    }
+
+    const closePrice = realtimeUpdateInBRL?.close || lastCandle.close || 0;
 
     return {
       price: closePrice,
-      open: lastCandle.open,
-      high: lastCandle.high,
-      low: lastCandle.low,
+      open: lastCandle.open || 0,
+      high: lastCandle.high || 0,
+      low: lastCandle.low || 0,
     };
   }, [chartDataInBRL, realtimeUpdateInBRL, tickerData, exchangeRate, symbol]);
 

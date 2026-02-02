@@ -318,11 +318,23 @@ const Simulator = () => {
   }, [entryPrice, selectedCrypto]);
   
   const assetHeaderData = useMemo(() => {
-    if (!chartData || chartData.length === 0) return { open: 0, high: 0, low: 0, close: entryPrice, time: 0 };
+    const defaultData = { open: 0, high: 0, low: 0, close: entryPrice || 0, time: 0 };
+    if (!chartData || chartData.length === 0) {
+        return defaultData;
+    }
+    
     const lastCandle = chartData[chartData.length - 1];
+    
+    if(!lastCandle) {
+        return defaultData;
+    }
+
     return {
-        ...lastCandle,
-        close: realtimeChartUpdate?.close || lastCandle.close || entryPrice,
+        time: lastCandle.time || 0,
+        open: lastCandle.open || 0,
+        high: lastCandle.high || 0,
+        low: lastCandle.low || 0,
+        close: realtimeChartUpdate?.close || lastCandle.close || entryPrice || 0,
     };
   }, [chartData, realtimeChartUpdate, entryPrice]);
 
