@@ -148,12 +148,6 @@ export const SimulatorChart = memo(({
     if (isChartLoading) {
       seriesRef.current.setData([]); // Clear chart data while fetching
     } else if (isChartReady && initialChartData) {
-      // VALIDAÇÃO DE SEGURANÇA
-      if (initialChartData.length > 0 && (typeof initialChartData[0].time !== 'number' || isNaN(initialChartData[0].time))) {
-        console.error("DADOS DO GRÁFICO INVÁLIDOS: O timestamp do primeiro candle não é um número válido.", initialChartData[0]);
-        return; // Impede a chamada ao setData com dados ruins
-      }
-
       seriesRef.current.setData(initialChartData);
       chartRef.current.timeScale().fitContent();
     }
@@ -161,10 +155,11 @@ export const SimulatorChart = memo(({
 
   // Effect to handle real-time updates from WebSocket
   useEffect(() => {
-    if (seriesRef.current && realtimeChartUpdate) {
+    // Não faz update em tempo real para o gráfico diário para evitar o bug.
+    if (seriesRef.current && realtimeChartUpdate && interval !== '1d') {
       seriesRef.current.update(realtimeChartUpdate);
     }
-  }, [realtimeChartUpdate]);
+  }, [realtimeChartUpdate, interval]);
 
   // Apply BRL formatting
   useEffect(() => {
