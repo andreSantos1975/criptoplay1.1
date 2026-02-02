@@ -141,7 +141,7 @@ export const SimulatorChart = memo(({
       setIsChartReady(false);
       isInitialLoad.current = true; // Reset for next chart instance
     };
-  }, [symbol, hasAccess]); // Dependências simplificadas
+  }, [symbol, hasAccess, interval]); // Dependências simplificadas
 
   // Load initial data
   useEffect(() => {
