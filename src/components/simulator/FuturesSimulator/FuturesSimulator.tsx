@@ -626,11 +626,7 @@ const FuturesSimulator = () => {
 
   // Efeito para aplicar Stop Loss e Take Profit padrão (apenas se defaultsAppliedRef for false)
   useEffect(() => {
-    let currentPrice = headerData.price;
-    if (!symbol.endsWith('BRL') && exchangeRate > 0) {
-        currentPrice = currentPrice * exchangeRate;
-    }
-
+    const currentPrice = headerData.price;
     // Só aplica se não tiver aplicado ainda E se não tiver posições abertas
     if (currentPrice > 0 && !defaultsAppliedRef.current && (!positions || positions.length === 0)) {
         if (side === 'LONG') {
