@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
+    console.log('Dados brutos da Bitget:', JSON.stringify(data, null, 2));
 
     if (data.data.length === 0) {
       return NextResponse.json({ error: 'Símbolo não encontrado na Bitget.' }, { status: 404 });

@@ -203,13 +203,21 @@ const Simulator = () => {
       }
 
       // Fallback para a Bitget
-      const bitgetResponse = await fetch(`/api/bitget/ticker-24hr?symbol=${selectedCrypto}`);
-      if (!bitgetResponse.ok) {
-        console.error('Falha ao buscar dados do ticker 24h para Spot na Bitget.');
+      try {
+        const bitgetResponse = await fetch(`/api/bitget/ticker-24hr?symbol=${selectedCrypto}`);
+        const bitgetData = await bitgetResponse.json();
+        
+        console.log('Resposta completa da Bitget:', JSON.stringify(bitgetData, null, 2));
+
+        if (!bitgetResponse.ok || bitgetData.error) {
+          throw new Error(bitgetData.error || 'Falha ao buscar dados do ticker na Bitget.');
+        }
+
+        return bitgetData;
+      } catch (error) {
+        console.error('Erro final ao tentar fallback para Bitget:', error);
         return null;
       }
-      const bitgetData = await bitgetResponse.json();
-      return bitgetData;
     },
     refetchInterval: 2000,
     enabled: isPremiumUser && !!selectedCrypto,
