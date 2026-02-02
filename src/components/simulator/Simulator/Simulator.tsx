@@ -210,7 +210,7 @@ const Simulator = () => {
       }
       const data: BinanceKlineData[] = await response.json();
       // A API já retorna os dados em ordem crescente (antigo -> recente)
-      return data.map(k => ({ time: Number(k[0] / 1000) as UTCTimestamp, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) })).filter(k => k.time > 0 && !isNaN(k.time));
+      return data.map(k => ({ time: Math.floor(k[0] / 1000) as UTCTimestamp, open: parseFloat(k[1]), high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) })).filter(k => k.time > 0 && !isNaN(k.time));
     },
     staleTime: 60 * 60 * 1000, // 1 hora
     refetchOnWindowFocus: false,
