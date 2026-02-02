@@ -555,12 +555,46 @@ const FuturesSimulator = () => {
     enabled: !!symbol,
   });
 
-  const headerData = {
-    price: tickerData ? parseFloat(tickerData.lastPrice) : 0,
-    open: tickerData ? parseFloat(tickerData.openPrice) : 0,
-    high: tickerData ? parseFloat(tickerData.highPrice) : 0,
-    low: tickerData ? parseFloat(tickerData.lowPrice) : 0,
-  };
+  const headerData = useMemo(() => {
+    // Garante que o tickerData seja a fonte primária se o gráfico ainda não carregou
+    if ((!chartDataInBRL || chartDataInBRL.length === 0) && tickerData) {
+      const price = parseFloat(tickerData.lastPrice);
+      return {
+        price: !symbol.endsWith('BRL') ? price * exchangeRate : price,
+        open: !symbol.endsWith('BRL') ? parseFloat(tickerData.openPrice) * exchangeRate : parseFloat(tickerData.openPrice),
+        high: !symbol.endsWith('BRL') ? parseFloat(tickerData.highPrice) * exchangeRate : parseFloat(tickerData.highPrice),
+        low: !symbol.endsWith('BRL') ? parseFloat(tickerData.lowPrice) * exchangeRate : parseFloat(tickerData.lowPrice),
+      };
+    }
+    
+    // Se o gráfico carregou, use os dados do candle
+    if (!chartDataInBRL || chartDataInBRL.length === 0) {
+      return { price: 0, open: 0, high: 0, low: 0 };
+    }
+
+    const lastCandle = chartDataInBRL[chartDataInBRL.length - 1];
+    const closePrice = realtimeUpdateInBRL?.close || lastCandle.close;
+
+    return {
+      price: closePrice,
+      open: lastCandle.open,
+      high: lastCandle.high,
+      low: lastCandle.low,
+    };
+  }, [chartDataInBRL, realtimeUpdateInBRL, tickerData, exchangeRate, symbol]);
+
+  const currentPriceForForm = useMemo(() => {
+    if (tickerData) {
+      return parseFloat(tickerData.lastPrice);
+    }
+    if (realtimeChartUpdate) {
+      return realtimeChartUpdate.close;
+    }
+    if (initialChartData && initialChartData.length > 0) {
+      return initialChartData[initialChartData.length - 1].close;
+    }
+    return 0;
+  }, [tickerData, realtimeChartUpdate, initialChartData]);
 
   const prevPositionsLengthRef = useRef(0);
 
@@ -839,7 +873,7 @@ const FuturesSimulator = () => {
           setSymbol={setSymbol} 
           createPositionMutation={createPositionMutation} 
           isCreating={createPositionMutation.isPending}
-          currentPrice={headerData.price} 
+          currentPrice={currentPriceForForm} 
           exchangeRate={exchangeRate}
           tradeLevels={tradeLevels}
           onLevelsChange={setTradeLevels}
