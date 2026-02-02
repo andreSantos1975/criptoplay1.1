@@ -128,6 +128,11 @@ const Simulator = () => {
     );
   }, [session]);
 
+  // Logs de diagnóstico
+  console.log('Sessão do usuário:', session);
+  console.log('Status do usuário Premium:', isPremiumUser);
+  console.log('Criptomoeda selecionada:', selectedCrypto);
+
   // --- GERENCIAMENTO DE ESTADO ---
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCBRL');
   const [marketType, setMarketType] = useState<'spot' | 'futures'>('spot');
