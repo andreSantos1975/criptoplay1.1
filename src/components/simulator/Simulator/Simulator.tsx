@@ -192,30 +192,16 @@ const Simulator = () => {
       if (!selectedCrypto) return null;
 
       try {
-        // Tenta buscar da Binance primeiro
-        const response = await fetch(`/api/binance/ticker-24hr?symbol=${selectedCrypto}`);
-        if (response.ok) {
-          return response.json();
-        }
-        console.warn('Falha ao buscar da Binance, tentando Bitget como fallback.');
-      } catch (error) {
-        console.error('Erro ao buscar da Binance:', error);
-      }
+        const response = await fetch(`/api/bitget/ticker-24hr?symbol=${selectedCrypto}`);
+        const data = await response.json();
 
-      // Fallback para a Bitget
-      try {
-        const bitgetResponse = await fetch(`/api/bitget/ticker-24hr?symbol=${selectedCrypto}`);
-        const bitgetData = await bitgetResponse.json();
-        
-        console.log('Resposta completa da Bitget:', JSON.stringify(bitgetData, null, 2));
-
-        if (!bitgetResponse.ok || bitgetData.error) {
-          throw new Error(bitgetData.error || 'Falha ao buscar dados do ticker na Bitget.');
+        if (!response.ok || data.error) {
+          throw new Error(data.error || 'Falha ao buscar dados do ticker na Bitget.');
         }
 
-        return bitgetData;
+        return data;
       } catch (error) {
-        console.error('Erro final ao tentar fallback para Bitget:', error);
+        console.error('Erro ao buscar dados do ticker na Bitget:', error);
         return null;
       }
     },
