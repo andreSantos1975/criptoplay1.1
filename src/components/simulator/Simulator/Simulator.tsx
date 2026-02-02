@@ -316,15 +316,6 @@ const Simulator = () => {
       defaultsAppliedRef.current = true;
     }
   }, [entryPrice, selectedCrypto]);
-
-  useEffect(() => {
-    if (interval === '1d') {
-      console.log('[DEBUG Spot 1d] chartData:', chartData);
-      if (chartData && chartData.length > 0) {
-        console.log('[DEBUG Spot 1d] lastCandle:', chartData[chartData.length - 1]);
-      }
-    }
-  }, [chartData, interval]);
   
   
   const assetHeaderData = useMemo(() => {

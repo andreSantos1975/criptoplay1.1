@@ -36,7 +36,7 @@ export const useRealtimeChartUpdate = ({
       const kline = message.k;
       if (kline) {
         const candleUpdate: BarData = {
-          time: (kline.t / 1000) as any,
+          time: Number(kline.t / 1000) as any,
           open: parseFloat(kline.o),
           high: parseFloat(kline.h),
           low: parseFloat(kline.l),
