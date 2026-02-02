@@ -150,15 +150,13 @@ export const SimulatorChart = memo(({
     if (isChartLoading) {
       seriesRef.current.setData([]); // Limpa os dados enquanto carrega
       isInitialLoad.current = true; // Reseta para a proxima carga de dados
-    } else if (initialChartData) {
-      // Sort initialChartData by time in ascending order to prevent Lightweight Charts assertion error
-      const sortedChartData = [...initialChartData].sort(
-        (a, b) => new Date(a.time as string).getTime() - new Date(b.time as string).getTime()
-      );
-      seriesRef.current.setData(sortedChartData);
+    } else if (initialChartData && Array.isArray(initialChartData)) {
+      // A API da Binance já retorna os dados ordenados, então a ordenação no cliente é removida
+      // para evitar possíveis erros com formatos de timestamp.
+      seriesRef.current.setData(initialChartData);
       
       // Apenas faz o fitContent na carga inicial para não perder o zoom/posição do usuário
-      if (isInitialLoad.current && sortedChartData.length > 0) {
+      if (isInitialLoad.current && initialChartData.length > 0) {
         chartRef.current.timeScale().fitContent();
         isInitialLoad.current = false;
       }
