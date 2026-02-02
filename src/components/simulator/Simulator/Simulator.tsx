@@ -189,6 +189,7 @@ const Simulator = () => {
   const { data: tickerData, isError: isTickerError, error: tickerError } = useQuery({
     queryKey: ['spotTicker24hr', selectedCrypto],
     queryFn: async () => {
+      console.log('Buscando dados do ticker para o símbolo:', selectedCrypto); // Adicionando log
       if (!selectedCrypto) return null;
       const response = await fetch(`/api/binance/ticker-24hr?symbol=${selectedCrypto}`);
       if (!response.ok) {
