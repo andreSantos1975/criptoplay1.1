@@ -659,11 +659,7 @@ const FuturesSimulator = () => {
     }
   });
 
-  const [closingPositionSymbols, setClosingPositionSymbols] = useState<Set<string>>(new Set());
 
-  const handleAddToClosing = (symbol: string) => {
-    setClosingPositionSymbols(prev => new Set(prev).add(symbol));
-  };
 
   // Mapeamento para o Vigilante (Lógica de Backend - USDT)
   const vigilantePositions: SimulatorPosition[] = useMemo(() => {
