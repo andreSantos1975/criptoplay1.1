@@ -2,9 +2,10 @@ ngrok http 3000
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Mercado Pago Teste
+ http://localhost:3000/assinatura
 
 TESTUSER4672285030243367220@testuser.com
-seIVZhqvey
+0FFA4515#596a#4277#
 
 numero do cartao de teste
 5031 4332 1540 6351
@@ -614,8 +615,75 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
   relatorio lucro prejjuizo total" deve ter sido resolvida.
 
   A tarefa foi concluída conforme o plano revisado.
+==========================================================================
 
+------------------------ 01/02/2026--------------------------------------
 
-  
+  Plano de Ação: Implementação do Funil Otimizado
+
+  Passo 1: Integração com Hotmart via Webhook
+
+  O que faremos?
+  Criaremos um "ouvinte" automático (API Webhook) que será notificado pela Hotmart sempre que
+  uma venda do seu eBook for aprovada. Esse ouvinte irá criar uma conta para o comprador na
+  CriptoPlay e ativar os 30 dias de teste premium.
+
+  Como faremos?
+   1. Criar a Rota da API: Vou criar um novo arquivo em src/app/api/webhooks/hotmart/route.ts.
+      Este será o endereço que você configurará na Hotmart.
+   2. Lógica do Webhook:
+       * A API irá receber os dados da compra (nome e email do comprador).
+       * Ela verificará se já existe um usuário com aquele email.
+       * Se não existir: Criará um novo usuário.
+       * Para usuários novos ou existentes: A API definirá o campo trialEndsAt no banco de
+         dados para 30 dias no futuro. O seu schema.prisma já possui o campo trialEndsAt no
+         modelo User, o que é perfeito.
+   3. Segurança: A rota será protegida para aceitar requisições apenas da Hotmart, usando um
+      token secreto (Hottok) que você irá configurar na plataforma deles.
+
+  Passo 2: Criar o Banner de Conversão na Plataforma
+
+  O que faremos?
+  Desenvolveremos um banner não-intrusivo que aparecerá para os usuários que estão no período
+  de teste de 30 dias, incentivando a conversão para o plano anual.
+
+  Como faremos?
+   1. Componente de Banner: Criarei um novo componente React, por exemplo,
+      src/components/ui/TrialCountdownBanner.tsx.
+   2. Lógica de Exibição:
+       * O banner só será exibido para usuários que tenham uma data futura em trialEndsAt.
+       * Ele mostrará uma mensagem clara, como: "Sua avaliação Pro termina em XX dias.
+         Aproveite a oferta exclusiva para leitores e assine o plano anual por R$99,90!"
+       * O banner terá um botão "Assinar Agora" que levará para a página de checkout com o
+         desconto aplicado.
+
+  Passo 3: Ajustar a Página de Assinatura
+
+  O que faremos?
+  Modificaremos a página de preços/assinatura para que ela possa reconhecer e aplicar a oferta
+  de R$99,90/ano.
+
+  Como faremos?
+   1. Link com Parâmetro: O botão do banner levará para um link como /assinatura?oferta=ebook.
+   2. Lógica na Página: A página /assinatura irá ler o parâmetro oferta da URL.
+   3. Exibição do Preço: Se o parâmetro oferta=ebook estiver presente, a página mostrará o
+      Plano Anual com o preço promocional de R$99,90 e o conectará ao checkout correto do seu
+      provedor de pagamento (Mercado Pago, etc.).
+
+  Passo 4: Configuração na Hotmart (Sua Ação)
+
+  Ao final da implementação, você precisará realizar uma ação simples na Hotmart:
+   1. Acessar a configuração do seu produto (eBook).
+   2. Ir para a seção "Webhook" (ou "Postback").
+   3. Cadastrar a URL da API que criamos (ex: https://criptoplay.com.br/api/webhooks/hotmart)
+      e o token de segurança que definirmos.
+
+  ---
+
+  Este plano cria um funil automatizado e coeso, que transforma um leitor do seu eBook em um
+  cliente da plataforma de forma fluida e com uma percepção de valor muito maior.
+
+  Se você estiver de acordo com este plano, posso começar com o Passo 1, que é a criação da
+  API de webhook para a Hotmart.
 
   

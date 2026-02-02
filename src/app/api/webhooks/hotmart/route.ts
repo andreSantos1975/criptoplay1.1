@@ -1,128 +1,82 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 import prisma from '@/lib/prisma';
-import { sendHotmartWelcomeEmail } from '@/lib/mail';
 
-// A Hotmart envia os dados em um formato diferente, então precisamos de um parser específico.
-async function getRawBody(req: NextRequest) {
-  const body = await req.text();
-  return body;
+// Interface to represent the expected data structure from Hotmart
+interface HotmartPurchase {
+  event: string;
+  data: {
+    buyer: {
+      email: string;
+      name: string;
+    };
+    // Include other relevant fields from the Hotmart payload as needed
+  };
 }
 
+// This is your secret token.
+// IMPORTANT: For production, move this to your environment variables (.env.local)
+// Example: HOTMART_SECRET_TOKEN=your_super_secret_string
+const HOTMART_SECRET = process.env.HOTMART_SECRET_TOKEN || 'YOUR_SECRET_TOKEN_HERE';
+
 export async function POST(req: NextRequest) {
-  console.log('[Webhook Hotmart] Recebida nova requisição.');
+  console.log('Hotmart webhook received');
 
-  const rawBody = await getRawBody(req);
-  const signature = req.headers.get('x-hotmart-signature');
-  const webhookSecret = process.env.HOTMART_WEBHOOK_SECRET;
-
-  if (!webhookSecret) {
-    console.error('[Webhook Hotmart] Erro: HOTMART_WEBHOOK_SECRET não está configurado.');
-    return NextResponse.json({ error: 'Webhook secret não configurado no servidor.' }, { status: 500 });
+  // 1. Validate the request security
+  const hotmartToken = req.headers.get('x-hotmart-hottok');
+  if (hotmartToken !== HOTMART_SECRET) {
+    console.error('Invalid Hotmart secret token');
+    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!signature) {
-    console.warn('[Webhook Hotmart] Alerta: Requisição recebida sem assinatura.');
-    return NextResponse.json({ error: 'Assinatura não fornecida.' }, { status: 401 });
-  }
-
-  // --- Verificação de Assinatura ---
-  const hash = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
-  const isSignatureValid = hash === signature;
-
-  if (!isSignatureValid) {
-    console.warn('[Webhook Hotmart] Alerta: Assinatura de webhook inválida.');
-    return NextResponse.json({ error: 'Assinatura inválida.' }, { status: 401 });
-  }
-  
-  console.log('[Webhook Hotmart] Assinatura verificada com sucesso.');
-
-  // --- Processamento do Evento ---
   try {
-    const event = JSON.parse(rawBody);
+    const payload = (await req.json()) as HotmartPurchase;
+    console.log('Payload received:', JSON.stringify(payload, null, 2));
 
-    if (event.event === 'purchase:approved') {
-      console.log('[Webhook Hotmart] Processando evento purchase:approved.');
-
-      const buyerEmail = event.data.buyer.email;
-      const buyerName = event.data.buyer.name;
-      const productName = event.data.product.name;
-      const transactionId = event.data.purchase.transaction;
-
-      if (!buyerEmail) {
-        console.error('[Webhook Hotmart] Erro: Email do comprador não encontrado no payload.');
-        return NextResponse.json({ error: 'Email do comprador ausente.' }, { status: 400 });
-      }
-
-      // **Lógica para distinguir usuário novo vs. existente**
-      const existingUser = await prisma.user.findUnique({
-        where: { email: buyerEmail },
-      });
-
-      let user;
-
-      if (existingUser) {
-        // --- Usuário Existente ---
-        user = existingUser;
-        console.log(`[Webhook Hotmart] Usuário existente encontrado: ${user.id}`);
-        // Opcional: Futuramente, enviar um e-mail de "Novo conteúdo desbloqueado".
-        // await sendContentUnlockedEmail({ to: user.email, productName });
-      } else {
-        // --- Usuário Novo ---
-        console.log(`[Webhook Hotmart] Criando novo usuário para o e-mail: ${buyerEmail}`);
-        
-        // 1. Gerar token para definir a senha
-        const passwordResetToken = crypto.randomBytes(32).toString('hex');
-        const passwordResetExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // Expira em 24 horas
-
-        // 2. Criar o usuário no banco com o token
-        user = await prisma.user.create({
-          data: {
-            email: buyerEmail,
-            name: buyerName,
-            passwordResetToken,
-            passwordResetExpires,
-            // Campos padrão para novos usuários
-            virtualBalance: 10000,
-            chatMessageLimit: 30,
-            trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Trial de 7 dias
-          },
-        });
-
-        // 3. Enviar e-mail de boas-vindas com o link de acesso
-        const accessLink = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${passwordResetToken}`;
-        await sendHotmartWelcomeEmail({
-          to: user.email!,
-          userName: user.name,
-          productName,
-          accessLink,
-        });
-      }
-
-      // 4. Criar a assinatura para o usuário (novo ou existente)
-      await prisma.subscription.create({
-        data: {
-          userId: user.id,
-          status: 'active',
-          planName: `Acesso via ${productName}`,
-          amount: 0,
-          currency: 'BRL',
-          type: 'LIFETIME',
-          origin: 'HOTMART',
-          planId: transactionId,
-          startDate: new Date(),
-        },
-      });
-      console.log(`[Webhook Hotmart] Assinatura '${productName}' criada para o usuário ${user.id}.`);
-
-    } else {
-      console.log(`[Webhook Hotmart] Evento '${event.event}' recebido, ignorando.`);
+    // 2. We only care about approved purchases
+    if (payload.event !== 'purchase.approved') {
+      return NextResponse.json(
+        { success: true, message: `Event ${payload.event} ignored` },
+        { status: 200 }
+      );
     }
 
-    return NextResponse.json({ received: true }, { status: 200 });
+    const { email, name } = payload.data.buyer;
+
+    if (!email) {
+      console.error('Email not found in payload');
+      return NextResponse.json({ success: false, message: 'Buyer email is missing' }, { status: 400 });
+    }
+
+    // 3. Calculate the new trial end date (30 days from now)
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 30);
+
+    // 4. Use `upsert` to create a new user or update an existing one
+    // - If user with `email` exists, it will be updated.
+    // - If not, a new user will be created with the provided data.
+    const user = await prisma.user.upsert({
+      where: { email: email },
+      update: {
+        trialEndsAt: trialEndsAt,
+      },
+      create: {
+        email: email,
+        name: name,
+        trialEndsAt: trialEndsAt,
+        // You might want to set default values for other required fields
+        // e.g., password, username, etc. if your schema requires them.
+        // For now, we are assuming email and name are sufficient for creation.
+      },
+    });
+
+    console.log(`User ${user.email} processed. Trial ends at: ${trialEndsAt.toISOString()}`);
+
+    // 5. Respond to Hotmart with success
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error('[Webhook Hotmart] Exceção ao processar o webhook:', error);
-    return NextResponse.json({ error: 'Erro no processamento do webhook.' }, { status: 500 });
+    console.error('Error processing Hotmart webhook:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ success: false, message: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 }

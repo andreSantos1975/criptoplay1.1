@@ -16,12 +16,14 @@ export async function POST(req: Request) {
   }
 
   const userId = session.user.id;
-  const { planId, planName, amount, description, planType, frequency } = await req.json();
+  // Agora recebe 'payerEmail' diretamente do corpo da requisição
+  const { planId, planName, amount, description, planType, frequency, payerEmail } = await req.json();
 
-  console.log('Recebido do Frontend:', { planId, planName, amount, planType, frequency });
+  console.log('Recebido do Frontend:', { planId, planName, amount, planType, frequency, payerEmail });
 
-  if (!planId || !planName || !amount || !description || !planType) {
-    return NextResponse.json({ message: 'Dados do plano incompletos' }, { status: 400 });
+  /// Adiciona validação para o payerEmail
+  if (!planId || !planName || !amount || !description || !planType || !payerEmail) {
+    return NextResponse.json({ message: 'Dados do plano ou e-mail do pagador incompletos' }, { status: 400 });
   }
   
   const client = new MercadoPagoConfig({
@@ -33,8 +35,8 @@ export async function POST(req: Request) {
     select: { email: true, name: true },
   });
 
-  if (!user || !user.email) {
-    return NextResponse.json({ message: 'Usuário não encontrado ou sem email' }, { status: 404 });
+  if (!user) {
+    return NextResponse.json({ message: 'Usuário não encontrado' }, { status: 404 });
   }
 
   try {
@@ -54,7 +56,7 @@ export async function POST(req: Request) {
           },
         ],
         payer: {
-          email: user.email,
+          email: payerEmail, // <<== ALTERAÇÃO APLICADA AQUI
           name: user.name ?? undefined,
         },
         back_urls: {
@@ -101,7 +103,7 @@ export async function POST(req: Request) {
           });
         }
         
-        return NextResponse.json({ init_point: response.init_point }, { status: 200 });
+        return NextResponse.json({ preferenceId: response.id }, { status: 200 });
       } else {
         console.error('Erro ao criar preferência de pagamento:', response);
         return NextResponse.json({ message: 'Erro ao iniciar pagamento com Mercado Pago' }, { status: 500 });
@@ -117,17 +119,15 @@ export async function POST(req: Request) {
       
       const preapprovalData = {
         reason: planName,
+        payer_email: payerEmail,
         external_reference: userId,
-        payer_email: user.email,
+        back_url: `${process.env.NEXTAUTH_URL}/assinatura?subscription=processed`,
         auto_recurring: {
           frequency: Number(frequency),
           frequency_type: "months",
-          transaction_amount: Number(amount),
+          transaction_amount: Number(amount.toFixed(2)),
           currency_id: "BRL",
         },
-        back_url: `${process.env.NEXTAUTH_URL}/dashboard?subscription=success`,
-        auto_return: 'approved',
-        notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`,
       };
 
       console.log('📦 Enviando para o Mercado Pago (PreApproval):', JSON.stringify(preapprovalData, null, 2));
@@ -154,7 +154,7 @@ export async function POST(req: Request) {
           data: { subscriptionStatus: response.status || 'pending' },
         });
 
-        return NextResponse.json({ init_point: response.init_point }, { status: 200 });
+        return NextResponse.json({ preferenceId: response.id }, { status: 200 });
       } else {
         console.error('Erro ao criar pre-aprovação:', response);
         return NextResponse.json({ message: 'Erro ao iniciar assinatura com Mercado Pago' }, { status: 500 });
@@ -162,26 +162,23 @@ export async function POST(req: Request) {
     }
 
   } catch (error: any) {
-    console.error('❌ ERRO CRÍTICO na API de criação de assinatura (Objeto Completo):', error);
+    console.error('❌ ERRO CRÍTICO na API de criação de assinatura:');
+    console.error('Mercado Pago Error Details:', {
+      status: error?.status || error?.response?.status,
+      message: error?.message,
+      cause: error?.cause ? JSON.stringify(error.cause) : 'undefined',
+      data: error?.response?.data ? JSON.stringify(error.response.data) : 'undefined',
+      fullError: JSON.stringify(error, null, 2)
+    });
     
-    // Tentativa de extrair detalhes ocultos
-    if (error.response) {
-         console.error('🔍 Error Response Data:', JSON.stringify(error.response.data, null, 2));
-         console.error('🔍 Error Response Status:', error.response.status);
-    }
-    if (error.data) {
-        console.error('🔍 Error Data:', JSON.stringify(error.data, null, 2));
-    }
-    if (error.status) {
-        console.error('🔍 Error Status:', error.status);
-    }
-    
-    // ... resto do código de erro ...
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2002') {
         return NextResponse.json({ message: `Falha de restrição única no campo: ${error.meta?.target}` }, { status: 409 });
       }
     }
-    return NextResponse.json({ message: 'Erro interno do servidor', error: error.message }, { status: 500 });
+    
+    const errorMessage = error?.response?.data?.message || error.message || 'Erro interno do servidor';
+    const errorStatus = error?.status || 500;
+    return NextResponse.json({ message: errorMessage }, { status: errorStatus });
   }
 }

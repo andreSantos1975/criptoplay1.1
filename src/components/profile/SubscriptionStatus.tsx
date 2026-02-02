@@ -59,7 +59,7 @@ const SubscriptionStatus = ({ status, trialEndsAt }: SubscriptionStatusProps) =>
                 Restam <strong>{trialDaysRemaining} dia{trialDaysRemaining !== 1 && 's'}</strong> do seu período de teste.
                 Aproveite os recursos Pro!
              </span>
-             <Link href="/precos" className={styles.btnSuccess} style={{marginTop: '1rem', width: '100%'}}>
+             <Link href="/assinatura" className={styles.btnSuccess} style={{marginTop: '1rem', width: '100%'}}>
                Fazer Upgrade
              </Link>
            </div>
