@@ -519,7 +519,7 @@ const FuturesSimulator = () => {
     symbol: symbol,
     interval,
     marketType: 'futures',
-    enabled: true,
+    enabled: interval === '1m',
   });
 
   const chartDataInBRL = useMemo(() => {
