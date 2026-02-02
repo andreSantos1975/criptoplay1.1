@@ -293,7 +293,7 @@ const Simulator = () => {
     symbol: selectedCrypto,
     interval,
     marketType,
-    enabled: isPremiumUser,
+    enabled: isPremiumUser && interval === '1m',
   });
 
   /// Temporarily keeping this for debugging purposes, will remove after confirming fix
