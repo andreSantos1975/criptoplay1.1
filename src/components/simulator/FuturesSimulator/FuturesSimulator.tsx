@@ -604,6 +604,15 @@ const FuturesSimulator = () => {
     return 0;
   }, [tickerData, realtimeChartUpdate, initialChartData]);
 
+  useEffect(() => {
+    if (interval === '1d') {
+      console.log('[DEBUG Futures 1d] chartDataInBRL:', chartDataInBRL);
+      if (chartDataInBRL && chartDataInBRL.length > 0) {
+        console.log('[DEBUG Futures 1d] lastCandle:', chartDataInBRL[chartDataInBRL.length - 1]);
+      }
+    }
+  }, [chartDataInBRL, interval]);
+
   const prevPositionsLengthRef = useRef(0);
 
   // Efeito para detectar o FECHAMENTO de posições e permitir reaplicar os defaults
