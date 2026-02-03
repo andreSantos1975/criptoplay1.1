@@ -32,41 +32,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function LessonPage({ params }: Props) {
   const session = await getServerSession(authOptions);
+  const permissions = session?.user?.permissions;
 
-  // Secure this page with the new, stricter permission check
-  if (!hasActiveSubscription(session)) {
-    // Redirect non-subscribers (including trial users) to the subscription page
-    redirect("/assinatura?reason=course_access");
-  }
+  const allLessons = getSortedCourseData();
+  const lessonData = allLessons.find((l) => l.slug === params.slug);
 
-  let lessonData;
-  try {
-    lessonData = await getCourseData(params.slug);
-  } catch (error) {
+  if (!lessonData) {
     notFound();
   }
 
-  // Find next lesson
-  const allLessons = getSortedCourseData();
+  // Lógica de proteção do lado do servidor
+  const hasCourseAccess = permissions?.hasCourseAccess ?? false;
+  const lessonId = lessonData.order;
+  
+  // Se o usuário não tiver acesso ao curso E o módulo for além dos 2 primeiros, redireciona
+  if (!hasCourseAccess && lessonId > 2) {
+    redirect("/precos");
+  }
+
+  // Obter o conteúdo HTML, que pode ser uma operação async
+  const fullLessonData = await getCourseData(params.slug);
+
+  // Encontrar a próxima lição
   const currentIndex = allLessons.findIndex((l) => l.slug === params.slug);
   const nextLesson = allLessons[currentIndex + 1];
 
-  // Although hasActiveSubscription should prevent session from being null here,
-  // this check is needed to satisfy TypeScript.
-  if (!session?.user) {
-    // This should not be reached, but it's a safeguard.
-    return redirect("/login");
-  }
-
-  // Check user progress for this specific lesson
-  const progress = await prisma.userProgress.findUnique({
-    where: {
-      userId_slug: {
-        userId: session.user.id,
-        slug: params.slug,
+  let progress = null;
+  if (session?.user) {
+    progress = await prisma.userProgress.findUnique({
+      where: {
+        userId_slug: {
+          userId: session.user.id,
+          slug: params.slug,
+        },
       },
-    },
-  });
+    });
+  }
 
   return (
     <>
@@ -79,15 +80,15 @@ export default async function LessonPage({ params }: Props) {
           </Link>
           
           <header className={styles.header}>
-            <h1 className={styles.title}>{lessonData.title}</h1>
+            <h1 className={styles.title}>{fullLessonData.title}</h1>
             <div className={styles.meta}>
-              Módulo {lessonData.order} • Leitura estimada: 5 min
+              Módulo {fullLessonData.order} • Leitura estimada: 5 min
             </div>
           </header>
 
           <article 
             className={styles.content}
-            dangerouslySetInnerHTML={{ __html: lessonData.contentHtml }} 
+            dangerouslySetInnerHTML={{ __html: fullLessonData.contentHtml }} 
           />
 
           <LessonActions 

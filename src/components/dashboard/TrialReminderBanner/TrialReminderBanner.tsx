@@ -38,7 +38,7 @@ export const TrialReminderBanner: React.FC = () => {
         para seu período de teste terminar em {formattedEndDate}.
         Não perca acesso às funcionalidades avançadas.
       </p>
-      <Link href="/assinatura" className={styles.upgradeButton}>
+      <Link href="/precos" className={styles.upgradeButton}>
         Ver Planos
       </Link>
     </div>

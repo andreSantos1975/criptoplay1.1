@@ -189,7 +189,7 @@ export const SimulatorChart = memo(({
           <p className={styles.lockedText}>
             Este recurso avançado é exclusivo para assinantes. Obtenha acesso com sua assinatura.
           </p>
-          <Link href="/assinatura" className={styles.upgradeButton}>
+          <Link href="/precos" className={styles.upgradeButton}>
             Ver Planos
           </Link>
         </div>

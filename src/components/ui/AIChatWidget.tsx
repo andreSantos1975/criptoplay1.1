@@ -151,7 +151,7 @@ export const AIChatWidget: React.FC = () => {
               : "O Chatbot IA é exclusivo para assinantes Starter, Pro ou Premium."
             }
           </p>
-          <Link href="/assinatura" className={styles.upgradeButton}>
+          <Link href="/precos" className={styles.upgradeButton}>
             Ver Planos
           </Link>
         </div>

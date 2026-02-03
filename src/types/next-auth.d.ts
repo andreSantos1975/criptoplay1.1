@@ -4,7 +4,9 @@ import { DefaultSession } from 'next-auth';
 
 // Interface para a estrutura de permissões
 export interface UserPermissions {
-  hasActiveSubscription: boolean;
+  hasActiveSubscription: boolean; // Acesso geral a features premium (inclui trial)
+  hasCourseAccess: boolean;       // Acesso específico ao curso (pago ou admin)
+  isInTrial: boolean;             // Indica se o usuário está no período de teste
 }
 
 declare module 'next-auth' {

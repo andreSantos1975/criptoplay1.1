@@ -75,8 +75,8 @@ export const authOptions: AuthOptions = {
         });
 
         if (dbUser) {
-          // 3. CALCULAR as permissões usando a função centralizada
-          const permissions = getUserPermissions(dbUser);
+          // 3. CALCULAR as permissões usando a função centralizada (agora assíncrona)
+          const permissions = await getUserPermissions(dbUser);
 
           // Atualizar token com dados do DB e permissões
           token.isAdmin = dbUser.isAdmin;
@@ -94,6 +94,7 @@ export const authOptions: AuthOptions = {
       if (token.email === process.env.LIFETIME_USER_EMAIL) {
         if (token.permissions) {
           token.permissions.hasActiveSubscription = true;
+          token.permissions.hasCourseAccess = true; // Garantir acesso ao curso também
         }
       }
 

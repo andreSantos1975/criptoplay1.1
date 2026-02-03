@@ -28,7 +28,11 @@ export const metadata: Metadata = {
 
 export default async function LearningPathPage() {
   const session = await getServerSession(authOptions);
-  const hasAccess = hasActiveSubscription(session); // Use the new, stricter access check
+  
+  // Lógica de permissão corrigida
+  const permissions = session?.user?.permissions;
+  const hasCourseAccess = permissions?.hasCourseAccess ?? false;
+  const isInTrial = permissions?.isInTrial ?? false;
   const isLoggedIn = !!session?.user;
 
   const courseData = getSortedCourseData();
@@ -47,16 +51,19 @@ export default async function LearningPathPage() {
 
     const markdownData = courseData.find(c => c.order === staticChapter.id);
     const slug = markdownData?.slug;
-    let status: ChapterStatus = "locked";
+    let status: ChapterStatus = "locked"; // Bloqueado por padrão
 
     if (slug) {
       const isCompleted = completedSlugs.includes(slug);
-      if (hasAccess) {
-        // Paid user has access to all chapters
+
+      if (hasCourseAccess) {
         status = isCompleted ? "completed" : "available";
-      } else {
-        // Non-paid users (incl. trial) only get the first chapter
-        status = staticChapter.id === 1 ? "available" : "locked";
+      } else if (isLoggedIn && isInTrial && staticChapter.id <= 2) {
+        // Usuário logado em trial, libera os 2 primeiros
+        status = isCompleted ? "completed" : "available";
+      } else if (!isLoggedIn && staticChapter.id <= 2) {
+        // Usuário não logado, libera os 2 primeiros como prévia
+        status = "available";
       }
     }
 
@@ -94,8 +101,8 @@ export default async function LearningPathPage() {
 
             <ChapterGrid chapters={processedChapters} />
 
-            {/* Show banner if the user does NOT have a paid subscription */}
-            {!hasAccess && <ProBanner />}
+            {/* Mostra o banner se o usuário não tiver acesso completo ao curso */}
+            {!hasCourseAccess && <ProBanner />}
 
             <footer className={styles.footer}>
               <div className={styles.container}>
