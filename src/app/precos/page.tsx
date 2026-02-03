@@ -1,53 +1,208 @@
-import Link from "next/link";
+"use client";
+
+import { useState } from "react";
+import { useSession, signIn } from "next-auth/react";
 import { CheckCircle } from "lucide-react";
 import styles from "./pricing.module.css";
 
+type Plan = {
+  id: string;
+  name: string;
+  description: string;
+  monthlyPrice: number;
+  annualPrice: number;
+  features: string[];
+  isMostPopular?: boolean;
+};
+
+const plans: Plan[] = [
+    {
+        id: "started",
+        name: "Started",
+        description: "Para quem está começando a explorar o mundo cripto.",
+        monthlyPrice: 0,
+        annualPrice: 0,
+        features: [
+          "Acesso aos módulos introdutórios do curso",
+          "Simulador com funcionalidades limitadas",
+          "Participação no Ranking da comunidade",
+          "20 mensagens/mês com o Chatbot IA",
+        ],
+      },
+      {
+        id: "pro",
+        name: "Pro",
+        description: "A melhor escolha para traders e investidores ativos.",
+        monthlyPrice: 29.9,
+        annualPrice: 299.9,
+        features: [
+          "Tudo do plano Started",
+          "Acesso completo a todos os cursos e módulos",
+          "Simulador PRO com trading de Futuros",
+          "Criação e backtest de estratégias",
+          "Relatórios de performance básicos",
+          "100 mensagens/mês com o Chatbot IA",
+        ],
+        isMostPopular: true,
+      },
+      {
+        id: "premium",
+        name: "Premium",
+        description: "Para o trader profissional que busca a máxima performance.",
+        monthlyPrice: 49.9,
+        annualPrice: 499.9,
+        features: [
+          "Tudo do plano Pro",
+          "Métricas de trading avançadas e exclusivas",
+          "Relatórios de performance detalhados",
+          "Alertas de mercado ilimitados",
+          "Suporte prioritário via WhatsApp",
+          "Mensagens ilimitadas com o Chatbot IA",
+        ],
+      },
+];
+
 export default function PricingPage() {
-  const annualPrice = "199,90"; // O valor da assinatura anual padrão
+  const { data: session, status } = useSession();
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
+  const [cpf, setCpf] = useState("");
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubscription = async (plan: Plan) => {
+    if (status === "unauthenticated") {
+      signIn("google"); // Ou redirecione para sua página de login
+      return;
+    }
+    
+    if (plan.monthlyPrice === 0) {
+      window.location.href = "/dashboard";
+      return;
+    }
+
+    if (!cpf.trim()) {
+        setError("Por favor, informe seu CPF para continuar.");
+        return;
+    }
+
+    setLoadingPlan(plan.id);
+    setError(null);
+
+    const isAnnual = billingCycle === "annual";
+    const amount = isAnnual ? plan.annualPrice : plan.monthlyPrice;
+    const frequency = isAnnual ? 12 : 1;
+
+    try {
+      if (!session?.user?.email) {
+        throw new Error("Não foi possível obter o e-mail do usuário. Faça login novamente.");
+      }
+
+      const response = await fetch("/api/subscriptions/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planId: plan.id,
+          planName: `${plan.name} - ${isAnnual ? "Anual" : "Mensal"}`,
+          amount: amount,
+          description: plan.description,
+          planType: "RECURRING",
+          frequency: frequency,
+          payerEmail: session.user.email,
+          cpf: cpf.replace(/\D/g, ''), // Envia apenas os números do CPF
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Ocorreu um erro ao criar a assinatura.");
+      }
+
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+         throw new Error("URL de pagamento não recebida do servidor.");
+      }
+
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Nosso Plano</h1>
+        <h1 className={styles.title}>Planos e Preços</h1>
         <p className={styles.subtitle}>
-          Acesso completo à plataforma para maximizar seus resultados no mercado cripto.
+          Escolha o plano ideal para sua jornada no mercado cripto. Cancele
+          quando quiser.
         </p>
       </header>
 
-      <div className={styles.pricingCard}>
-        <h2 className={styles.planName}>Plano Anual Premium</h2>
-        <div className={styles.price}>
-          R$ {annualPrice}<span>/ano</span>
-        </div>
-        <p className={styles.period}>Acesso completo por 12 meses.</p>
+      <div className={styles.toggleContainer}>
+        <span className={billingCycle === "monthly" ? styles.activeText : ""}>Mensal</span>
+        <label className={styles.switch}>
+          <input
+            type="checkbox"
+            onChange={() => setBillingCycle(billingCycle === "monthly" ? "annual" : "monthly")}
+          />
+          <span className={styles.slider}></span>
+        </label>
+        <span className={billingCycle === "annual" ? styles.activeText : ""}>Anual (Economize 2 meses)</span>
+      </div>
 
-        <ul className={styles.featuresList}>
-          <li>
-            <CheckCircle className="w-5 h-5" />
-            Acesso ilimitado ao Simulador Pro
-          </li>
-          <li>
-            <CheckCircle className="w-5 h-5" />
-            Todos os cursos e módulos avançados
-          </li>
-          <li>
-            <CheckCircle className="w-5 h-5" />
-            Métricas de trading exclusivas
-          </li>
-          <li>
-            <CheckCircle className="w-5 h-5" />
-            Alertas de mercado personalizáveis
-          </li>
-          <li>
-            <CheckCircle className="w-5 h-5" />
-            Suporte prioritário
-          </li>
-        </ul>
+      <div className={styles.cpfContainer}>
+        <label htmlFor="cpf" className={styles.cpfLabel}>CPF (necessário para pagamento)</label>
+        <input
+          id="cpf"
+          type="text"
+          value={cpf}
+          onChange={(e) => setCpf(e.target.value)}
+          placeholder="000.000.000-00"
+          className={styles.cpfInput}
+        />
+        {error && <p className={styles.error}>{error}</p>}
+      </div>
 
-        {/* O link leva para a página de assinatura, que por padrão usará o plano anual regular */}
-        <Link href="/assinatura" className={styles.subscribeButton}>
-          Assinar Agora
-        </Link>
+      <div className={styles.pricingGrid}>
+        {plans.map((plan) => (
+          <div
+            key={plan.id}
+            className={`${styles.pricingCard} ${plan.isMostPopular ? styles.mostPopular : ""}`}
+          >
+            {plan.isMostPopular && (<div className={styles.popularBadge}>MAIS POPULAR</div>)}
+            <h2 className={styles.planName}>{plan.name}</h2>
+            <p className={styles.period}>{plan.description}</p>
+            <div className={styles.price}>
+              R${" "}
+              {plan.monthlyPrice > 0
+                ? (billingCycle === "monthly"
+                    ? plan.monthlyPrice.toFixed(2)
+                    : (plan.annualPrice / 12).toFixed(2)
+                  ).replace(".", ",")
+                : "0"}
+              <span>
+                {plan.monthlyPrice > 0
+                  ? billingCycle === "monthly" ? "/mês" : "/mês no plano anual"
+                  : ""}
+              </span>
+            </div>
+
+            <ul className={styles.featuresList}>
+              {plan.features.map((feature) => (<li key={feature}><CheckCircle className="w-5 h-5" />{feature}</li>))}
+            </ul>
+
+            <button
+              onClick={() => handleSubscription(plan)}
+              className={styles.subscribeButton}
+              disabled={loadingPlan === plan.id || (status === 'loading')}
+            >
+              {loadingPlan === plan.id ? "Carregando..." : plan.monthlyPrice === 0 ? "Começar Agora" : "Assinar Agora"}
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -17,9 +17,9 @@ export async function POST(req: Request) {
 
   const userId = session.user.id;
   // Agora recebe 'payerEmail' diretamente do corpo da requisição
-  const { planId, planName, amount, description, planType, frequency, payerEmail } = await req.json();
+  const { planId, planName, amount, description, planType, frequency, payerEmail, cpf } = await req.json();
 
-  console.log('Recebido do Frontend:', { planId, planName, amount, planType, frequency, payerEmail });
+  console.log('Recebido do Frontend:', { planId, planName, amount, planType, frequency, payerEmail, cpf });
 
   /// Adiciona validação para o payerEmail
   if (!planId || !planName || !amount || !description || !planType || !payerEmail) {
@@ -42,6 +42,7 @@ export async function POST(req: Request) {
   try {
     if (planType === 'LIFETIME') {
       // --- LÓGICA PARA PAGAMENTO ÚNICO (VITALÍCIO) ---
+      // Lógica de pagamento único (Preference) continua a mesma, mas poderia ser adaptada para CPF se necessário.
       const preference = new Preference(client);
 
       const preferenceData = {
@@ -56,8 +57,9 @@ export async function POST(req: Request) {
           },
         ],
         payer: {
-          email: payerEmail, // <<== ALTERAÇÃO APLICADA AQUI
+          email: payerEmail,
           name: user.name ?? undefined,
+          ...(cpf && { identification: { type: 'CPF', number: cpf } }), // Adiciona CPF se fornecido
         },
         back_urls: {
           success: `${process.env.NEXTAUTH_URL}/dashboard?payment=success`,
@@ -82,13 +84,11 @@ export async function POST(req: Request) {
         });
 
         if (existingPendingSub) {
-          // Se já existe uma pendente, apenas atualiza o ID da preferência do MP
           await prisma.subscription.update({
             where: { id: existingPendingSub.id },
             data: { mercadoPagoSubscriptionId: response.id },
           });
         } else {
-          // Se não existe, cria uma nova
           await prisma.subscription.create({
             data: {
               userId: userId,
@@ -110,16 +110,25 @@ export async function POST(req: Request) {
       }
 
     } else { // Assumindo 'RECURRING'
-      // --- LÓGICA EXISTENTE PARA PAGAMENTO RECORRENTE ---
+      // --- LÓGICA PARA PAGAMENTO RECORRENTE COM CPF ---
       if (!frequency) {
         return NextResponse.json({ message: 'Frequência é necessária para planos recorrentes' }, { status: 400 });
+      }
+      if (!cpf) {
+        return NextResponse.json({ message: 'CPF é obrigatório para assinaturas recorrentes' }, { status: 400 });
       }
 
       const preapproval = new PreApproval(client);
       
       const preapprovalData = {
         reason: planName,
-        payer_email: payerEmail,
+        payer_email: payerEmail, // Adicionado de volta
+        payer: {
+          identification: {
+            type: "CPF",
+            number: cpf,
+          },
+        },
         external_reference: userId,
         back_url: `${process.env.NEXTAUTH_URL}/assinatura?subscription=processed`,
         auto_recurring: {

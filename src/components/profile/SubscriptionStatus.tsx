@@ -45,7 +45,7 @@ const SubscriptionStatus = ({ status, trialEndsAt }: SubscriptionStatusProps) =>
               Você não possui uma assinatura ativa. Assine agora para desbloquear recursos exclusivos!
             </p>
             
-            <Link href="/assinatura" className={styles.btnSuccess}>
+            <Link href="/precos" className={styles.btnSuccess}>
               <Sparkles size={16} />
               Assinar agora
             </Link>
@@ -59,7 +59,7 @@ const SubscriptionStatus = ({ status, trialEndsAt }: SubscriptionStatusProps) =>
                 Restam <strong>{trialDaysRemaining} dia{trialDaysRemaining !== 1 && 's'}</strong> do seu período de teste.
                 Aproveite os recursos Pro!
              </span>
-             <Link href="/assinatura" className={styles.btnSuccess} style={{marginTop: '1rem', width: '100%'}}>
+             <Link href="/precos" className={styles.btnSuccess} style={{marginTop: '1rem', width: '100%'}}>
                Fazer Upgrade
              </Link>
            </div>

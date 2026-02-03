@@ -44,8 +44,8 @@ export async function middleware(req: NextRequest) {
       }
     }
 
-    // Se não houver token ou se o usuário não atender a nenhum dos critérios de acesso (assinatura ou trial)
-    if (!token || (!isDeveloper && !hasRecurringSubscription && !hasLifetimePlan && !isTrialActive)) {
+    // Se não houver token ou se o usuário não atender aos critérios de acesso (apenas assinatura paga ou admin)
+    if (!token || (!isDeveloper && !hasRecurringSubscription && !hasLifetimePlan)) {
       const url = req.nextUrl.clone();
       url.pathname = '/assinatura';
       return NextResponse.redirect(url);
