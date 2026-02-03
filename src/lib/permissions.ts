@@ -33,7 +33,7 @@ export function getUserPermissions(user: {
   const hasPaidSubscription = subscriptions.some(sub => sub.status === 'active' || sub.status === 'authorized');
   
   // 3. Verifica se está em período de teste (trial)
-  const isInTrial = trialEndsAt && new Date(trialEndsAt) > now;
+  const isInTrial = !!(trialEndsAt && new Date(trialEndsAt) > now);
 
   // 4. Acesso é concedido para assinantes PAGOS ou quem está em TRIAL
   permissions.hasActiveSubscription = hasPaidSubscription || isInTrial;

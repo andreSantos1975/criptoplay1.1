@@ -28,6 +28,10 @@ const RelatoriosPage = () => {
   const { data: yearIncomes = [], isLoading: isLoadingIncomes } = useQuery<Income[]>({
     queryKey: ['incomes', selectedYear],
     queryFn: async () => {
+      const response = await fetch(`/api/incomes?year=${selectedYear}`);
+      if (!response.ok) throw new Error("Network response was not ok for incomes");
+      return response.json();
+    },
     enabled: permissions?.hasActiveSubscription,
   });
 

@@ -52,6 +52,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 export default function RankingPage() {
   const { data: session, status } = useSession(); // 2. Obter o status da sessão
   const permissions = session?.user?.permissions;
+  const userPlan = permissions?.hasActiveSubscription ? "premium" : "free"; // Definindo userPlan com base nas permissões
   
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
   const [selectedMarket, setSelectedMarket] = useState("all");

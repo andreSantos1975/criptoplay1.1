@@ -11,6 +11,8 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react'; // Import useSession
 import { PremiumLock } from '@/components/ui/PremiumLock'; // Import PremiumLock
 
+const MAX_ALERTS_FOR_SUBSCRIBERS = 5; // TODO: Este valor pode vir de uma configuração de permissões do usuário ou do backend
+
 const AlertasPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
@@ -24,6 +26,7 @@ const AlertasPage = () => {
   const { data: budgetCategories, isLoading: isLoadingCategories, error: errorCategories } = useBudgetCategories();
 
   const isLoading = status === 'loading' || isLoadingAlerts || isLoadingCategories;
+  const limitReached = (alerts?.length || 0) >= MAX_ALERTS_FOR_SUBSCRIBERS; // Definição de limitReached
 
   const handleOpenModal = () => {
     if (limitReached) return; // Extra safety check
