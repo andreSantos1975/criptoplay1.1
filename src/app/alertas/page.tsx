@@ -23,19 +23,7 @@ const AlertasPage = () => {
   const { data: alerts, isLoading: isLoadingAlerts, error: errorAlerts } = useAlerts();
   const { data: budgetCategories, isLoading: isLoadingCategories, error: errorCategories } = useBudgetCategories();
 
-  // --- LÓGICA DE FEATURE GATING ATUALIZADA ---
-  const FREE_TIER_ALERT_LIMIT = 1; // Limite de 1 alerta para usuários não-premium
-  
-  // Usuário é premium se tiver a permissão isPremium
-  const isPremiumUser = permissions?.isPremium === true; 
-  
-  const alertCount = alerts?.length || 0;
-  
-  // Limite atingido se NÃO for premium E a contagem for maior ou igual ao limite free
-  const limitReached = !isPremiumUser && alertCount >= FREE_TIER_ALERT_LIMIT;
-  
   const isLoading = status === 'loading' || isLoadingAlerts || isLoadingCategories;
-  // --- FIM DA LÓGICA DE FEATURE GATING ATUALIZADA ---
 
   const handleOpenModal = () => {
     if (limitReached) return; // Extra safety check
@@ -54,12 +42,12 @@ const AlertasPage = () => {
   };
 
   // 4. Exibir PremiumLock se o usuário não tiver acesso, mesmo após autenticação
-  if (status === 'authenticated' && !isPremiumUser) {
+  if (status === 'authenticated' && !permissions?.hasActiveSubscription) {
     return (
       <div className={styles.container}>
         <PremiumLock 
-          title="Alertas de Preço: Funcionalidade Premium"
-          message="Crie e gerencie alertas de preço personalizados para não perder nenhuma oportunidade. Obtenha acesso ilimitado com o plano PRO."
+          title="Alertas: Recurso para Assinantes"
+          message="Crie e gerencie alertas personalizados para não perder nenhuma oportunidade. Obtenha acesso com sua assinatura."
         />
       </div>
     );
@@ -96,18 +84,11 @@ const AlertasPage = () => {
           <button 
             onClick={handleOpenModal} 
             className={styles.addButton}
-            disabled={limitReached}
-            title={limitReached ? `Você já possui ${FREE_TIER_ALERT_LIMIT} alerta. Faça upgrade para criar mais.` : 'Criar um novo alerta'}
           >
             + Novo Alerta
           </button>
         </div>
-        {limitReached && (
-          <div className={styles.limitMessage}>
-            <p>Você atingiu o limite de {FREE_TIER_ALERT_LIMIT} alerta para seu plano atual.</p>
-            <Link href="/assinatura">Faça upgrade para o plano Pro e tenha alertas ilimitados!</Link>
-          </div>
-        )}
+
       </header>
       <main className={styles.mainContent}>
         {renderContent()}

@@ -59,15 +59,8 @@ export const SimulatorChart = memo(({
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [isChartReady, setIsChartReady] = useState(false);
 
-  // Verifica se o período de trial ainda está ativo
-  const isTrialActive = session?.user?.trialEndsAt ? new Date(session.user.trialEndsAt) > new Date() : false;
-
-  // Verifica se o usuário tem acesso ao gráfico com base na assinatura ou trial
-  const hasAccess = 
-    session?.user?.isAdmin || 
-    session?.user?.subscriptionStatus === 'authorized' || 
-    session?.user?.subscriptionStatus === 'lifetime' ||
-    isTrialActive;
+  // Verifica se o usuário tem acesso ao gráfico com base na assinatura
+  const hasAccess = session?.user?.permissions?.hasActiveSubscription;
 
   // Use the custom hook to draw and manage trade lines
   useTradeLines({
@@ -148,7 +141,9 @@ export const SimulatorChart = memo(({
     if (isChartLoading) {
       seriesRef.current.setData([]); // Clear chart data while fetching
     } else if (isChartReady && initialChartData) {
-      seriesRef.current.setData(initialChartData);
+      // Garantir que os dados estejam em ordem ascendente pelo tempo, conforme esperado pelo Lightweight Charts
+      const sortedData = [...initialChartData].sort((a, b) => (a.time as number) - (b.time as number));
+      seriesRef.current.setData(sortedData);
       chartRef.current.timeScale().fitContent();
     }
   }, [isChartReady, initialChartData, isChartLoading]);
@@ -190,12 +185,9 @@ export const SimulatorChart = memo(({
       <div className={styles.lockedChartContainer}>
         <div className={styles.lockedContent}>
           <div className={styles.lockedIcon}>🔒</div>
-          <h3 className={styles.lockedTitle}>Gráfico de Análise Técnica (Premium)</h3>
+          <h3 className={styles.lockedTitle}>Gráfico de Análise Técnica: Recurso para Assinantes</h3>
           <p className={styles.lockedText}>
-            {trialEnded
-              ? "Seu período de teste Premium gratuito terminou. Assine um plano para continuar usando este recurso avançado."
-              : "Este recurso avançado é exclusivo para assinantes Starter, Pro ou Premium."
-            }
+            Este recurso avançado é exclusivo para assinantes. Obtenha acesso com sua assinatura.
           </p>
           <Link href="/assinatura" className={styles.upgradeButton}>
             Ver Planos

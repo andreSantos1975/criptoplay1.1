@@ -9,76 +9,46 @@ import { UserPermissions } from "@/types/next-auth.d";
  */
 export function getUserPermissions(user: {
   isAdmin?: boolean;
-  subscriptionStatus?: string | null;
   subscriptions: Subscription[];
   trialEndsAt?: Date | null;
-  createdAt?: Date | null;
 }): UserPermissions {
   const now = new Date();
   
   // Estado padrão das permissões
   const permissions: UserPermissions = {
-    isPremium: false,
-    isSubscriber: false,
-    hasHotmartAccess: false,
+    hasActiveSubscription: false,
   };
 
   if (!user) return permissions;
   
-  const { isAdmin, subscriptionStatus, subscriptions, trialEndsAt, createdAt } = user;
+  const { isAdmin, subscriptions, trialEndsAt } = user;
 
   // 1. Admin tem acesso a tudo
   if (isAdmin) {
-    return { isPremium: true, isSubscriber: true, hasHotmartAccess: true };
+    permissions.hasActiveSubscription = true;
+    return permissions;
   }
 
-  // 2. Verifica acesso via Hotmart
-  permissions.hasHotmartAccess = subscriptions.some(
-    (sub) => sub.origin === 'HOTMART' && sub.status === 'active'
-  );
+  // 2. Verifica se tem alguma assinatura ativa (qualquer origem: Hotmart, Mercado Pago, etc.)
+  const hasPaidSubscription = subscriptions.some(sub => sub.status === 'active' || sub.status === 'authorized');
+  
+  // 3. Verifica se está em período de teste (trial)
+  const isInTrial = trialEndsAt && new Date(trialEndsAt) > now;
 
-  // 3. Verifica assinatura paga (Mercado Pago, etc.)
-  const hasPaidSubscription = subscriptionStatus === 'authorized' || subscriptionStatus === 'lifetime';
-  permissions.isSubscriber = hasPaidSubscription;
-
-  // 4. Verifica se está em período de teste (trial)
-  let isInTrial = false;
-  if (trialEndsAt && new Date(trialEndsAt) > now) {
-    isInTrial = true;
-  } else if (createdAt && !trialEndsAt) { // Fallback para usuários antigos sem trialEndsAt
-    const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
-    if (now.getTime() - new Date(createdAt).getTime() < sevenDaysInMs) {
-      isInTrial = true;
-    }
-  }
-
-  // 5. Acesso Premium é para assinantes PAGOS ou quem está em TRIAL
-  permissions.isPremium = permissions.isSubscriber || isInTrial;
+  // 4. Acesso é concedido para assinantes PAGOS ou quem está em TRIAL
+  permissions.hasActiveSubscription = hasPaidSubscription || isInTrial;
 
   return permissions;
 }
 
 
-// --- Funções Legadas (Refatoradas para usar o novo sistema) ---
-
 /**
- * (Refatorado) Verifica se o usuário tem acesso às funcionalidades Premium.
+ * (Refatorado) Verifica se o usuário tem uma assinatura ativa ou está em trial.
  * Agora consome o objeto de permissões da sessão.
  */
-export function hasPremiumAccess(session: Session | null): boolean {
+export function hasActiveSubscription(session: Session | null): boolean {
   if (!session?.user?.permissions) {
     return false;
   }
-  return session.user.permissions.isPremium;
-}
-
-/**
- * (Refatorado) Verifica se o usuário tem acesso ao conteúdo exclusivo para assinantes.
- * Agora consome o objeto de permissões da sessão.
- */
-export function hasSubscriptionAccess(session: Session | null): boolean {
-  if (!session?.user?.permissions) {
-    return false;
-  }
-  return session.user.permissions.isSubscriber;
+  return session.user.permissions.hasActiveSubscription;
 }

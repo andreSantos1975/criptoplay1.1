@@ -80,12 +80,12 @@ export default function RankingPage() {
   }
 
   // Se não for premium (após o loading), mostra a tela de bloqueio.
-  if (!permissions?.isPremium) {
+  if (!permissions?.hasActiveSubscription) {
     return (
       <div className={styles.container}>
         <PremiumLock 
-          title="Ranking de Traders é uma funcionalidade PRO"
-          message="Compare sua performance, aprenda com os melhores e conquiste seu lugar no topo. Faça o upgrade para ter acesso completo ao Ranking."
+          title="Ranking de Traders: Recurso para Assinantes"
+          message="Compare sua performance, aprenda com os melhores e conquiste seu lugar no topo. Obtenha acesso completo com sua assinatura."
         />
       </div>
     );
@@ -103,9 +103,8 @@ export default function RankingPage() {
   const metrics = data?.metrics || {};
   const totalTradersRanked = metrics.totalTraders || 0;
   
-  // 4. Lógica simplificada, já que sabemos que o usuário é premium aqui.
+  // 4. Lógica simplificada, já que sabemos que o usuário é assinante aqui.
   const isLoggedIn = !!session?.user?.id;
-  const userPlan = 'pro'; // Se chegou até aqui, é no mínimo PRO
 
   return (
     <div className={styles.container}>

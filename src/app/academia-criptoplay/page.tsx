@@ -10,7 +10,7 @@ import { ProBanner } from "@/components/learning-path/ProBanner";
 import { allChapters, Chapter, ChapterStatus } from "@/components/learning-path/chaptersData";
 import styles from "./page.module.css";
 import Navbar from "@/components/Navbar/Navbar";
-import { hasSubscriptionAccess } from "@/lib/permissions";
+import { hasActiveSubscription } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "Academia CriptoPlay | Aprenda do Zero ao Pro",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 
 export default async function LearningPathPage() {
   const session = await getServerSession(authOptions);
-  const hasAccess = hasSubscriptionAccess(session); // Use the new, stricter access check
+  const hasAccess = hasActiveSubscription(session); // Use the new, stricter access check
   const isLoggedIn = !!session?.user;
 
   const courseData = getSortedCourseData();

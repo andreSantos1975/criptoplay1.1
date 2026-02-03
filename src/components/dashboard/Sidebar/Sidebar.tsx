@@ -23,9 +23,8 @@ const Sidebar = () => {
   const permissions = session?.user?.permissions;
   const isLoading = status === 'loading';
 
-  // O card de upgrade só aparece se o usuário não for premium E não tiver acesso Hotmart
-  // (ou seja, um usuário completamente novo, sem bônus)
-  const showUpgradeCard = !permissions?.isPremium && !permissions?.hasHotmartAccess;
+  // O card de upgrade só aparece se o usuário não tiver uma assinatura ativa
+  const showUpgradeCard = !permissions?.hasActiveSubscription;
 
   if (isLoading) {
     return (
@@ -43,7 +42,7 @@ const Sidebar = () => {
       <h2 className={styles.title}>SeuFluxo</h2>
       <nav className={styles.nav}>
         {navLinks.map((link) => {
-          const isLocked = link.premium && !permissions?.isPremium;
+          const isLocked = link.premium && !permissions?.hasActiveSubscription;
 
           // 2. Renderização condicional para cada link
           if (isLocked) {
@@ -51,7 +50,7 @@ const Sidebar = () => {
               <div
                 key={link.href}
                 className={`${styles.link} ${styles.disabledLink}`}
-                title="Funcionalidade disponível no plano PRO."
+                title="Funcionalidade disponível para assinantes."
               >
                 <span>{link.label}</span>
                 <Lock size={16} className={styles.lockIcon} />

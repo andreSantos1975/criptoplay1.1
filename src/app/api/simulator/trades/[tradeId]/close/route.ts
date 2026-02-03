@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { getCurrentPrice } from '@/lib/binance';
 import { Decimal } from '@prisma/client/runtime/library';
-import { hasPremiumAccess } from '@/lib/permissions';
+import { hasActiveSubscription } from '@/lib/permissions';
 import { updateUserDailyPerformance } from '@/lib/ranking';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +19,7 @@ export async function POST(
       return new NextResponse(JSON.stringify({ message: 'Não autorizado' }), { status: 401 });
     }
 
-    if (!hasPremiumAccess(session)) {
+    if (!hasActiveSubscription(session)) {
       return new NextResponse(JSON.stringify({ message: 'Assinatura necessária ou período de teste expirado.' }), { status: 403 });
     }
 

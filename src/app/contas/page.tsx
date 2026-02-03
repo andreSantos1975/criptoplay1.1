@@ -33,13 +33,13 @@ export default function ContasPage() {
   const { data: bankAccounts, isLoading: isLoadingAccounts, error: errorAccounts } = useQuery({
     queryKey: ['bankAccounts'],
     queryFn: fetchBankAccounts,
-    enabled: permissions?.isPremium, // Só executa a query se for premium
+    enabled: permissions?.hasActiveSubscription, // Só executa a query se for premium
   });
 
   const { data: creditCards, isLoading: isLoadingCards, error: errorCards } = useQuery({
     queryKey: ['creditCards'],
     queryFn: fetchCreditCards,
-    enabled: permissions?.isPremium, // Só executa a query se for premium
+    enabled: permissions?.hasActiveSubscription, // Só executa a query se for premium
   });
 
   if (status === 'loading') {
@@ -50,12 +50,12 @@ export default function ContasPage() {
     );
   }
 
-  if (!permissions?.isPremium) {
+  if (!permissions?.hasActiveSubscription) {
     return (
       <div className={styles.container}>
         <PremiumLock 
-          title="Gestão de Contas e Cartões"
-          message="Conecte suas contas e cartões para ter uma visão unificada de suas finanças. Esta funcionalidade é exclusiva para assinantes PRO."
+          title="Gestão de Contas e Cartões: Recurso para Assinantes"
+          message="Conecte suas contas e cartões para ter uma visão unificada de suas finanças. Obtenha acesso com sua assinatura."
         />
       </div>
     );

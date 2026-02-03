@@ -12,6 +12,7 @@ const PLANS = {
     amount: 99.9,
     description: 'Oferta exclusiva para leitores do eBook. Acesso completo por um ano.',
     planType: 'ANNUAL',
+    frequency: 12,
   },
   anual_regular: {
     planId: 'criptoplay-anual-regular-199',
@@ -19,6 +20,7 @@ const PLANS = {
     amount: 199.9,
     description: 'Acesso completo a todas as funcionalidades da plataforma por um ano.',
     planType: 'ANNUAL',
+    frequency: 12,
   },
 };
 
@@ -76,10 +78,19 @@ const AssinaturaClientPage = () => {
         throw new Error(data.message || 'Falha ao criar a preferência de pagamento.');
       }
 
+      if (data.init_point) {
+        // Redireciona para o checkout de assinatura do Mercado Pago
+        window.location.href = data.init_point;
+        // O setIsLoading(false) não é estritamente necessário aqui por causa do redirecionamento,
+        // mas é uma boa prática para o caso do redirecionamento falhar.
+        return; 
+      }
+      
       if (data.preferenceId) {
+        // Configura o ID para o componente Wallet (pagamento único)
         setPreferenceId(data.preferenceId);
       } else {
-        throw new Error('ID da preferência não foi retornado do backend.');
+        throw new Error('Resposta inválida do backend. Nenhum ID de preferência ou URL de checkout foi retornado.');
       }
     } catch (err: any) {
       console.error(err);

@@ -30,7 +30,7 @@ const MetasPage = () => {
 
   // Load from LocalStorage on mount, only if user is premium
   useEffect(() => {
-    if (permissions?.isPremium) {
+    if (permissions?.hasActiveSubscription) {
       const savedGoals = localStorage.getItem('financialGoals');
       if (savedGoals) {
         setGoals(JSON.parse(savedGoals));
@@ -40,7 +40,7 @@ const MetasPage = () => {
 
   // Save to LocalStorage whenever goals change
   useEffect(() => {
-    if (permissions?.isPremium) {
+    if (permissions?.hasActiveSubscription) {
       localStorage.setItem('financialGoals', JSON.stringify(goals));
     }
   }, [goals, permissions]);
@@ -53,12 +53,12 @@ const MetasPage = () => {
     );
   }
 
-  if (!permissions?.isPremium) {
+  if (!permissions?.hasActiveSubscription) {
     return (
       <div className={styles.container}>
         <PremiumLock 
-          title="Metas Financeiras Personalizadas"
-          message="Defina objetivos, acompanhe seu progresso e alcance seus sonhos financeiros mais rápido. Funcionalidade exclusiva para assinantes PRO."
+          title="Metas Financeiras Personalizadas: Recurso para Assinantes"
+          message="Defina objetivos, acompanhe seu progresso e alcance seus sonhos financeiros mais rápido. Obtenha acesso com sua assinatura."
         />
       </div>
     );

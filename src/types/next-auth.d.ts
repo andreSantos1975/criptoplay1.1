@@ -4,9 +4,7 @@ import { DefaultSession } from 'next-auth';
 
 // Interface para a estrutura de permissões
 export interface UserPermissions {
-  isPremium: boolean;
-  isSubscriber: boolean;
-  hasHotmartAccess: boolean;
+  hasActiveSubscription: boolean;
 }
 
 declare module 'next-auth' {

@@ -29,13 +29,13 @@ export default function OrcamentoAnualPage() {
   const { data: categories = [], isLoading: isLoadingCategories } = useQuery<BudgetCategory[]>({
     queryKey: ["budgetCategories"],
     queryFn: fetchBudgetCategories,
-    enabled: permissions?.isPremium,
+    enabled: permissions?.hasActiveSubscription,
   });
 
   const { data: items = [], isLoading: isLoadingItems } = useQuery<BudgetItem[]>({
     queryKey: ["budgetItems", year],
     queryFn: () => fetchBudgetItems(year),
-    enabled: permissions?.isPremium,
+    enabled: permissions?.hasActiveSubscription,
   });
 
   const upsertItemMutation = useMutation({
@@ -98,12 +98,12 @@ export default function OrcamentoAnualPage() {
     return <div>Carregando...</div>;
   }
 
-  if (!permissions?.isPremium) {
+  if (!permissions?.hasActiveSubscription) {
     return (
       <div className={styles.container}>
         <PremiumLock 
-          title="Orçamento Anual Inteligente"
-          message="Planeje seu ano financeiro, defina tetos de gastos por categoria e veja seu progresso mês a mês. Funcionalidade exclusiva para assinantes PRO."
+          title="Orçamento Anual Inteligente: Recurso para Assinantes"
+          message="Planeje seu ano financeiro, defina tetos de gastos por categoria e veja seu progresso mês a mês. Obtenha acesso com sua assinatura."
         />
       </div>
     );

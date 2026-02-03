@@ -28,11 +28,7 @@ const RelatoriosPage = () => {
   const { data: yearIncomes = [], isLoading: isLoadingIncomes } = useQuery<Income[]>({
     queryKey: ['incomes', selectedYear],
     queryFn: async () => {
-      const response = await fetch(`/api/incomes?year=${selectedYear}`);
-      if (!response.ok) throw new Error("Network response was not ok for incomes");
-      return response.json();
-    },
-    enabled: permissions?.isPremium,
+    enabled: permissions?.hasActiveSubscription,
   });
 
   const { data: yearExpenses = [], isLoading: isLoadingExpenses } = useQuery<Expense[]>({
@@ -42,7 +38,7 @@ const RelatoriosPage = () => {
       if (!response.ok) throw new Error("Network response was not ok for expenses");
       return response.json();
     },
-    enabled: permissions?.isPremium,
+    enabled: permissions?.hasActiveSubscription,
   });
   
   const monthlyChartData = useMemo(() => {
@@ -67,13 +63,13 @@ const RelatoriosPage = () => {
     );
   }
 
-  if (!permissions?.isPremium) {
+  if (!permissions?.hasActiveSubscription) {
     return (
       <main className={styles.page}>
         <div className={styles.container}>
           <PremiumLock 
-            title="Relatórios Detalhados"
-            message="Acesse análises visuais sobre sua evolução financeira, compare receitas vs. despesas, e entenda para onde seu dinheiro está indo. Exclusivo para assinantes PRO."
+            title="Relatórios Detalhados: Recurso para Assinantes"
+            message="Acesse análises visuais sobre sua evolução financeira, compare receitas vs. despesas, e entenda para onde seu dinheiro está indo. Obtenha acesso com sua assinatura."
           />
         </div>
       </main>

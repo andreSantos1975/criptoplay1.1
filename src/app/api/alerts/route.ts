@@ -37,27 +37,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  // --- LÓGICA DE RESTRIÇÃO PROFISSIONAL ---
-  const { isPremium } = session.user.permissions;
-  const FREE_TIER_ALERT_LIMIT = 1; // Definindo o limite de 1 alerta
 
-  // Se o usuário NÃO for premium, aplicamos a restrição
-  if (!isPremium) {
-    const alertCount = await prisma.alert.count({
-      where: {
-        userId: session.user.id,
-        status: AlertStatus.ACTIVE,
-      },
-    });
-
-    if (alertCount >= FREE_TIER_ALERT_LIMIT) {
-      return NextResponse.json(
-        { message: `Você atingiu o limite de ${FREE_TIER_ALERT_LIMIT} alerta gratuito. Para alertas ilimitados, faça o upgrade para o plano PRO.` },
-        { status: 403 } // 403 Forbidden
-      );
-    }
-  }
-  // --- FIM DA LÓGICA DE RESTRIÇÃO ---
 
   try {
     const body = await request.json();

@@ -149,12 +149,7 @@ export async function POST(req: Request) {
           },
         });
 
-        await prisma.user.update({
-          where: { id: userId },
-          data: { subscriptionStatus: response.status || 'pending' },
-        });
-
-        return NextResponse.json({ preferenceId: response.id }, { status: 200 });
+        return NextResponse.json({ init_point: response.init_point }, { status: 200 });
       } else {
         console.error('Erro ao criar pre-aprovação:', response);
         return NextResponse.json({ message: 'Erro ao iniciar assinatura com Mercado Pago' }, { status: 500 });

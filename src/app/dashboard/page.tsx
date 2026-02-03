@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { hasPremiumAccess } from "@/lib/permissions";
+import { hasActiveSubscription } from "@/lib/permissions";
 
 
 // PERSONAL FINANCE IMPORTS
@@ -337,7 +337,7 @@ const DashboardPage = () => {
   const { data: trades = [], isLoading: isLoadingTrades, error: errorTrades } = useQuery<Trade[]>({
     queryKey: ["trades"], // Standardized key to match Simulator and other components
     queryFn: fetchTrades,
-    enabled: hasPremiumAccess(session), // Only fetch if user has premium access
+    enabled: hasActiveSubscription(session), // Only fetch if user has premium access
   });
 
   const openTradeSymbols = useMemo(() => {
@@ -347,7 +347,7 @@ const DashboardPage = () => {
   const { data: binanceTickers = [], isLoading: isLoadingBinanceTickers, error: errorBinanceTickers } = useQuery<CryptoData[]>({
     queryKey: ["dashboardBinancePrices", openTradeSymbols],
     queryFn: () => fetchBinancePrices(openTradeSymbols),
-    enabled: hasPremiumAccess(session) && openTradeSymbols.length > 0,
+    enabled: hasActiveSubscription(session) && openTradeSymbols.length > 0,
     refetchInterval: 5000, // Refresh prices every 5 seconds
   });
 
@@ -358,7 +358,7 @@ const DashboardPage = () => {
       if (!res.ok) throw new Error("Falha ao buscar estatísticas de trading do usuário.");
       return res.json();
     },
-    enabled: hasPremiumAccess(session) && !!session?.user?.id,
+    enabled: hasActiveSubscription(session) && !!session?.user?.id,
   });
 
   const priceMap = useMemo(() => {
@@ -395,7 +395,7 @@ const DashboardPage = () => {
     switch (activeTab) {
       case "painel":
         // Check for premium access for the main dashboard view
-        if (!hasPremiumAccess(session)) {
+        if (!hasActiveSubscription(session)) {
           return renderLockedContent();
         }
         return (
@@ -439,7 +439,7 @@ const DashboardPage = () => {
           </>
         );
       case "analise": {
-        if (!hasPremiumAccess(session)) return renderLockedContent();
+        if (!hasActiveSubscription(session)) return renderLockedContent();
         
         return (
           <div>
@@ -462,7 +462,7 @@ const DashboardPage = () => {
         );
       }
       case "relatorios":
-        if (!hasPremiumAccess(session)) return renderLockedContent();
+        if (!hasActiveSubscription(session)) return renderLockedContent();
         if (isLoadingTradingStats) return <p>Carregando relatórios do simulador...</p>;
         if (errorTradingStats) return <p>Erro ao carregar relatórios do simulador: {errorTradingStats.message}</p>;
 

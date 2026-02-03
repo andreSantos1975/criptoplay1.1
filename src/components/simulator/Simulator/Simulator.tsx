@@ -113,20 +113,7 @@ const Simulator = () => {
   const queryClient = useQueryClient();
   const { data: session, status } = useSession();
   
-  const isPremiumUser = useMemo(() => {
-    if (!session?.user) return false;
-    
-    const isTrialActive = session.user.createdAt ? 
-      Math.floor((new Date().getTime() - new Date(session.user.createdAt).getTime()) / (1000 * 60 * 60 * 24)) < 7 : 
-      false;
-
-    return (
-      session.user.subscriptionStatus === 'authorized' || 
-      session.user.subscriptionStatus === 'lifetime' || 
-      session.user.isAdmin === true ||
-      isTrialActive
-    );
-  }, [session]);
+  const hasActiveSubscription = session?.user?.permissions?.hasActiveSubscription ?? false;
 
   // --- GERENCIAMENTO DE ESTADO ---
   const [selectedCrypto, setSelectedCrypto] = useState<string>('BTCBRL');
@@ -154,7 +141,7 @@ const Simulator = () => {
       return response.json();
     },
     staleTime: 60000,
-    enabled: isPremiumUser,
+    enabled: hasActiveSubscription,
   });
   const usdtToBrlRate = exchangeRateData?.usdtToBrl || 1;
 
@@ -162,7 +149,7 @@ const Simulator = () => {
   const { data: simulatorProfile, isLoading: isLoadingSimulator } = useQuery<SimulatorProfile, Error>({
     queryKey: ['simulatorProfile'],
     queryFn: fetchSimulatorProfile,
-    enabled: isPremiumUser,
+    enabled: hasActiveSubscription,
   });
 
   const openPositionSymbols = useMemo(() => {
@@ -172,7 +159,7 @@ const Simulator = () => {
   const { data: binanceTickers, isLoading: isLoadingBinanceTickers } = useQuery<CryptoData[], Error>({
     queryKey: ['simulatorBinancePrices', openPositionSymbols],
     queryFn: () => fetchBinancePrices(openPositionSymbols),
-    enabled: isPremiumUser && openPositionSymbols.length > 0,
+    enabled: hasActiveSubscription && openPositionSymbols.length > 0,
     refetchInterval: 5000,
   });
 
@@ -184,14 +171,14 @@ const Simulator = () => {
   const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[], Error>({
     queryKey: ['alerts'],
     queryFn: fetchAlerts,
-    enabled: isPremiumUser,
+    enabled: hasActiveSubscription,
   });
 
   const { data: currentPriceData, isError: isErrorPrice, error: priceError } = useQuery<CurrentPrice, Error>({
       queryKey: ['currentPrice', selectedCrypto],
       queryFn: () => fetchCurrentPrice(selectedCrypto),
       refetchInterval: 5000,
-      enabled: isPremiumUser && !!selectedCrypto,
+      enabled: hasActiveSubscription && !!selectedCrypto,
   });
 
   const {
@@ -214,7 +201,7 @@ const Simulator = () => {
     },
     staleTime: 60 * 60 * 1000, // 1 hora
     refetchOnWindowFocus: false,
-    enabled: isPremiumUser && !!selectedCrypto,
+    enabled: hasActiveSubscription && !!selectedCrypto,
   });
 
   const createSimulatorTrade = async (tradeData: { symbol: string, quantity: number, type: 'BUY' | 'SELL', entryPrice: number, stopLoss?: number, takeProfit?: number, marketType: 'spot' | 'futures' }): Promise<Trade> => {
@@ -286,14 +273,14 @@ const Simulator = () => {
       ...closePositionMutation,
       mutate: (payload) => closePositionMutation.mutate(payload.symbol)
     },
-    enabled: isPremiumUser && !!simulatorProfile?.openPositions,
+    enabled: hasActiveSubscription && !!simulatorProfile?.openPositions,
   });
 
   const { realtimeChartUpdate } = useRealtimeChartUpdate({
     symbol: selectedCrypto,
     interval,
     marketType,
-    enabled: isPremiumUser && interval === '1m',
+    enabled: hasActiveSubscription && interval === '1m',
   });
 
   /// Temporarily keeping this for debugging purposes, will remove after confirming fix
@@ -438,11 +425,11 @@ const Simulator = () => {
     return <p>Carregando simulador...</p>;
   }
 
-  if (!isPremiumUser) {
+  if (!hasActiveSubscription) {
     return (
       <div className={styles.premiumRequiredContainer}>
-        <h2>Simulador é um recurso Premium</h2>
-        <p>Para ter acesso ao simulador de trading, por favor, assine um de nossos planos Premium.</p>
+        <h2>Simulador é um recurso para Assinantes</h2>
+        <p>Para ter acesso ao simulador de trading, por favor, realize a sua assinatura.</p>
         <a href="/assinatura" className={styles.premiumSubscribeButton}>Assinar Agora</a>
       </div>
     );

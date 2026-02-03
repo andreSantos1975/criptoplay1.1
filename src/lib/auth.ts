@@ -80,7 +80,6 @@ export const authOptions: AuthOptions = {
 
           // Atualizar token com dados do DB e permissões
           token.isAdmin = dbUser.isAdmin;
-          token.subscriptionStatus = dbUser.subscriptionStatus;
           token.username = dbUser.username;
           token.createdAt = dbUser.createdAt;
           token.emailVerified = dbUser.emailVerified;
@@ -94,8 +93,7 @@ export const authOptions: AuthOptions = {
       // Permitir que usuário LIFETIME contorne checagens de assinatura
       if (token.email === process.env.LIFETIME_USER_EMAIL) {
         if (token.permissions) {
-          token.permissions.isSubscriber = true;
-          token.permissions.isPremium = true;
+          token.permissions.hasActiveSubscription = true;
         }
       }
 
