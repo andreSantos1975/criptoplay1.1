@@ -38,7 +38,9 @@ export async function POST(req: Request) {
   const rawBody = await req.text();
   const signature = req.headers.get('x-signature');
 
-
+  console.log('--- DEBUG WEBHOOK ---');
+  console.log('Raw Body Recebido:', rawBody); 
+  console.log('X-Signature Recebido:', signature); 
 
   // 2. Verificar se o segredo e a assinatura estão presentes
   if (!MERCADOPAGO_WEBHOOK_SECRET) {
@@ -46,13 +48,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Erro de configuração do servidor.' }, { status: 500 });
   }
 
-
+  // --- INÍCIO DO BLOCO DE VERIFICAÇÃO DE ASSINATURA (COMENTADO TEMPORARIAMENTE) ---
   if (!signature) {
     console.warn('Webhook: Cabeçalho x-signature ausente.');
     return NextResponse.json({ message: 'Requisição inválida: Cabeçalho x-signature ausente.' }, { status: 400 });
   }
 
-  // 3. Verificar a assinatura
   const parts = signature.split(',');
   let timestamp = '';
   let hash = '';
@@ -63,6 +64,7 @@ export async function POST(req: Request) {
     } else if (part.startsWith('v1=')) {
       hash = part.substring(3); // Remove 'v1='
     }
+    
   }
 
   // Verificar se o timestamp e hash foram encontrados
@@ -73,18 +75,43 @@ export async function POST(req: Request) {
 
   const secretBuffer = Buffer.from(MERCADOPAGO_WEBHOOK_SECRET);
   const dataToHash = `${timestamp}:${rawBody}`;
+
+  // --- NOVOS LOGS DE DEBUG ---
+  console.log('DEBUG: MERCADOPAGO_WEBHOOK_SECRET (length):', MERCADOPAGO_WEBHOOK_SECRET?.length);
+  console.log('DEBUG: MERCADOPAGO_WEBHOOK_SECRET (value):', MERCADOPAGO_WEBHOOK_SECRET);
+  console.log('DEBUG: timestamp:', timestamp);
+  console.log('DEBUG: rawBody (length):', rawBody.length);
+  console.log('DEBUG: rawBody (value):', rawBody);
+  console.log('DEBUG: dataToHash:', dataToHash);
+  // --- FIM DOS NOVOS LOGS DE DEBUG ---
+
   const computedHash = crypto.createHmac('sha256', secretBuffer).update(dataToHash).digest('hex');
 
+  console.log('DEBUG: Hash Recebido (from signature):', hash);
+  console.log('DEBUG: Hash Calculado (computedHash):', computedHash);
 
 
   if (computedHash !== hash) {
     console.warn('Webhook: Assinatura inválida.');
     return NextResponse.json({ message: 'Requisição não autorizada: Assinatura inválida.' }, { status: 401 });
   }
+  // --- FIM DO BLOCO DE VERIFICAÇÃO DE ASSINATURA (COMENTADO TEMPORARIAMENTE) ---
 
   // Se a verificação passou, parsear o corpo como JSON
-  const body = JSON.parse(rawBody);
+  let body;
+  try {
+    body = JSON.parse(rawBody);
+    console.log('Corpo JSON Processado:', body);
+  } catch (error) {
+    console.error('Erro ao parsear rawBody como JSON:', error);
+    // Adicione um log para o rawBody aqui se ainda não tiver, para ver se é vazio ou inválido
+    console.error('Raw Body que falhou no parse:', rawBody);
+    return NextResponse.json({ message: 'Corpo da requisição inválido.' }, { status: 400 });
+  }
+  
 
+
+  // BLOC
   try {
     console.log('Webhook Mercado Pago recebido:', body);
     const { type, data } = body;
@@ -188,5 +215,6 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Erro ao processar webhook do Mercado Pago:', error);
     return NextResponse.json({ message: 'Erro interno ao processar webhook.' }, { status: 500 });
-  }
+  } // FIM DO BLOCO COMENTADO
+
 }
