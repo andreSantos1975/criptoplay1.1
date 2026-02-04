@@ -11,7 +11,7 @@ import ProfileHeader from '@/components/profile/ProfileHeader';
 import AccountInfo from '@/components/profile/AccountInfo';
 import ChangeNickname from '@/components/profile/ChangeNickname';
 import ChangePassword from '@/components/profile/ChangePassword';
-import SubscriptionStatus from '@/components/profile/SubscriptionStatus';
+import AccessStatusSection from '@/components/profile/AccessStatusSection'; // Importar o novo componente
 
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
@@ -138,9 +138,10 @@ export default function ProfilePage() {
           />
         )}
 
-        <SubscriptionStatus 
-          status={user?.subscriptionStatus || null} 
-          trialEndsAt={user?.trialEndsAt} 
+        <AccessStatusSection 
+          permissions={user?.permissions} 
+          trialEndsAt={user?.trialEndsAt}
+          userEmail={user?.email}
         />
       </div>
     </div>

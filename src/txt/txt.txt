@@ -1,4 +1,6 @@
 ngrok http 3000
+Para acessar o painel de inspeção do ngrok:
+http://localhost:4040
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Mercado Pago Teste
@@ -826,6 +828,14 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
 
  1 GEMINI.md file
 
+-----------------------------------------------------------------------------------
+ Os logs confirmam que a URL de notificação está correta, mas não há registro de recebimento
+  do webhook. O problema é de comunicação, mesmo com o ngrok. A causa mais provável é a falta
+  de configuração da URL do webhook no painel do Mercado Pago. Vou orientar o usuário a fazer
+  login em seu painel de desenvolvedor, ir para "Suas Aplicações", encontrar a seção
+  "Webhooks" e inserir a URL completa do webhook
+  (https://geodic-wynell-sagely.ngrok-free.dev/api/webhooks/mercadopago) no campo de
+  "Sandbox/Testes". Após salvar, ele deve tentar o pagamento de teste novamente.
 
 
 

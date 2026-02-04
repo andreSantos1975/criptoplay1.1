@@ -130,6 +130,7 @@ export async function POST(req: Request) {
           },
         },
         external_reference: userId,
+        notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`, // <-- Adicionar esta linha
         back_url: `${process.env.NEXTAUTH_URL}/assinatura?subscription=processed`,
         auto_recurring: {
           frequency: Number(frequency),

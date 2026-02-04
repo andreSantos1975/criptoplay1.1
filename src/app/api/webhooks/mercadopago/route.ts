@@ -1,7 +1,10 @@
 // src/app/api/webhooks/mercadopago/route.ts
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago';
+import crypto from 'crypto'; // Importar o módulo crypto
 import prisma from '@/lib/prisma';
+
+const MERCADOPAGO_WEBHOOK_SECRET = process.env.MERCADOPAGO_WEBHOOK_SECRET;
 
 export const dynamic = 'force-dynamic';
 
@@ -30,8 +33,59 @@ const client = new MercadoPagoConfig({
 });
 
 export async function POST(req: Request) {
+
+  // 1. Obter o corpo RAW e o cabeçalho de assinatura
+  const rawBody = await req.text();
+  const signature = req.headers.get('x-signature');
+
+
+
+  // 2. Verificar se o segredo e a assinatura estão presentes
+  if (!MERCADOPAGO_WEBHOOK_SECRET) {
+    console.error('MERCADOPAGO_WEBHOOK_SECRET não configurado.');
+    return NextResponse.json({ message: 'Erro de configuração do servidor.' }, { status: 500 });
+  }
+
+
+  if (!signature) {
+    console.warn('Webhook: Cabeçalho x-signature ausente.');
+    return NextResponse.json({ message: 'Requisição inválida: Cabeçalho x-signature ausente.' }, { status: 400 });
+  }
+
+  // 3. Verificar a assinatura
+  const parts = signature.split(',');
+  let timestamp = '';
+  let hash = '';
+
+  for (const part of parts) {
+    if (part.startsWith('ts=')) {
+      timestamp = part.substring(3); // Remove 'ts='
+    } else if (part.startsWith('v1=')) {
+      hash = part.substring(3); // Remove 'v1='
+    }
+  }
+
+  // Verificar se o timestamp e hash foram encontrados
+  if (!timestamp || !hash) {
+    console.warn('Webhook: Formato de x-signature inválido.');
+    return NextResponse.json({ message: 'Requisição não autorizada: Formato de x-signature inválido.' }, { status: 401 });
+  }
+
+  const secretBuffer = Buffer.from(MERCADOPAGO_WEBHOOK_SECRET);
+  const dataToHash = `${timestamp}:${rawBody}`;
+  const computedHash = crypto.createHmac('sha256', secretBuffer).update(dataToHash).digest('hex');
+
+
+
+  if (computedHash !== hash) {
+    console.warn('Webhook: Assinatura inválida.');
+    return NextResponse.json({ message: 'Requisição não autorizada: Assinatura inválida.' }, { status: 401 });
+  }
+
+  // Se a verificação passou, parsear o corpo como JSON
+  const body = JSON.parse(rawBody);
+
   try {
-    const body = await req.json();
     console.log('Webhook Mercado Pago recebido:', body);
     const { type, data } = body;
 
