@@ -43,8 +43,8 @@ export async function POST(req: Request) {
     // 3. Chamar a API do Mercado Pago para cancelar a assinatura
     await preApproval.update({
       id: mercadoPagoSubscriptionId,
-      updateRequest: {
-        status: 'cancelled', // Status para cancelar a assinatura recorrente
+      body: { // This 'body' wrapper is crucial for mercadopago@2.12.0
+        status: 'cancelled',
       },
     });
 
@@ -57,15 +57,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Assinatura cancelada com sucesso!' }, { status: 200 });
 
   } catch (error: any) {
-    console.error('Erro ao cancelar assinatura:', error);
-    // Erros do Mercado Pago podem vir em error.cause ou ter uma estrutura específica
-    let errorMessage = 'Erro interno do servidor ao processar o cancelamento.';
-    if (error.status && error.message) { // Erro da API do Mercado Pago
-        errorMessage = `Erro do Mercado Pago: ${error.message} (Status: ${error.status})`;
-    } else if (error.message) {
-        errorMessage = error.message;
-    }
-    
-    return NextResponse.json({ message: errorMessage }, { status: 500 });
+    console.error('Erro ao cancelar assinatura (RAW error object):', error);
+    return NextResponse.json({ message: 'Erro interno do servidor ao processar o cancelamento.' }, { status: 500 });
   }
 }
