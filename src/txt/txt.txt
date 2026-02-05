@@ -995,7 +995,104 @@ Configuração do Mercado Pago: Confirme que sua conta no Mercado Pago está con
    3. Status do Pagamento/Assinatura: O pagamento ou a assinatura não está atingindo um status final
       (ex: "aprovado", "autorizado") que o Mercado Pago considera que deve gerar um evento de
       webhook.
+Assim que a verificação de assinatura passar, o passo final será atualizar os PLAN_LIMITS com os
+  IDs reais dos seus planos do Mercado Pago. Aguardarei sua confirmação após testar a verificação de
+  assinatura.
 
+
+  ==================================================================================
+
+  ------------------- 04/02/2026 -------21:22--------------------------------------
+
+  Excelente! Seus logs confirmam que a verificação de assinatura agora está funcionando corretamente!
+
+
+  As linhas chave DEBUG: Hash Recebido (v1) e DEBUG: Hash Calculado são idênticas para todos os
+  webhooks recebidos neste log. Isso significa que a verificação de assinatura passou, e seu webhook
+  está retornando 200 OK para todas essas notificações válidas!
+
+  Feedback:
+
+
+  Seu webhook agora está recebendo e validando corretamente a X-Signature do Mercado Pago. Isso é um
+  grande avanço!
+
+  No entanto, há um novo problema:
+
+
+   1 Webhook: Nenhuma assinatura pendente encontrada para o usuário cml7yhdan00005oguexfu6bg4 e plano
+     LIFETIME_PLAN.
+  Esta mensagem é da sua lógica de processamento, especificamente do manipulador do tipo payment. Ela
+  indica que:
+   * Um webhook do tipo payment foi recebido e validado.
+   * Seu código tentou encontrar uma assinatura pendente para o userId: "cml7yhdan00005oguexfu6bg4" e
+     planId: "LIFETIME_PLAN".
+   * Ele não conseguiu encontrar uma assinatura pendente correspondente.
+
+
+  Isso significa que o usuário (cml7yhdan00005oguexfu6bg4) iniciou um pagamento LIFETIME_PLAN com
+  sucesso, mas seu banco de dados (Prisma) não tinha uma entrada de assinatura pending correspondente
+  para esse usuário e ID do plano.
+
+  Possíveis razões para "Nenhuma assinatura pendente encontrada":
+
+
+   1. `planId: "LIFETIME_PLAN"` está incorreto: Como discutimos anteriormente, PLAN_LIMITS ainda usa
+      IDs de placeholder. O código também define planId = ((payment as unknown) as
+      PaymentWithAdditionalInfo).additional_info?.items?.[0]?.id || 'LIFETIME_PLAN';
+       * Se payment.additional_info?.items?.[0]?.id não estiver presente ou não corresponder à chave
+         em PLAN_LIMITS, o padrão será "LIFETIME_PLAN".
+       * Se sua chamada prisma.subscription.create em src/app/api/subscriptions/create/route.ts
+         estiver usando um planId diferente para planos lifetime (por exemplo, o ID real do Mercado
+         Pago), então a busca no webhook falhará se o padrão for "LIFETIME_PLAN".
+   2. Incompatibilidade de `userId`: Menos provável, pois external_reference parece estar sendo
+      passado corretamente, mas vale a pena verificar novamente se cml7yhdan00005oguexfu6bg4 é o ID
+      real de um usuário em seu banco de dados.
+   3. Status da assinatura: A assinatura pode não ter sido criada com status: 'pending' ou pode já
+      ter sido atualizada por outro webhook.
+   4. Tempo: Pode haver um pequeno atraso entre seu prisma.subscription.create em
+      api/subscriptions/create e o momento em que o webhook chega e tenta consultá-lo.
+
+
+  Plano de Ação:
+
+
+   1. Atualize `PLAN_LIMITS` com os IDs reais do Mercado Pago. Este é o próximo passo mais crítico.
+       * Vá para o seu painel Sandbox do Mercado Pago.
+       * Encontre o ID real do seu plano "LIFETIME" (e quaisquer outros planos como "Starter",
+         "Pro").
+       * Atualize PLAN_LIMITS em src/app/api/webhooks/mercadopago/route.ts com esses IDs reais.
+       * Além disso, e crucialmente, certifique-se de que o `planId` que você está armazenando em
+         `prisma.subscription.create` para planos LIFETIME em
+         `src/app/api/subscriptions/create/route.ts` é o mesmo ID real do Mercado Pago.
+
+
+      Exemplo:
+      Se o ID real do seu plano Lifetime no Mercado Pago for lifetime_mp_id_123, então:
+       * Em src/app/api/subscriptions/create/route.ts, ao criar uma assinatura LIFETIME,
+         certifique-se de que planId: "lifetime_mp_id_123" seja usado.
+       * Em src/app/api/webhooks/mercadopago/route.ts:
+
+
+   1         const PLAN_LIMITS: { [key: string]: number } = {
+   2           // ... outros planos
+   3           "lifetime_mp_id_123": 5000,
+   4         };
+   5         // E a linha que define o padrão:
+   6         const planId = ((payment as unknown) as
+     PaymentWithAdditionalInfo).additional_info?.items?.[0]?.id || 'lifetime_mp_id_123';
+
+
+  Depois que a consistência de PLAN_LIMITS e planId for resolvida, execute outro teste completo. Isso
+  deve permitir que seu webhook encontre e ative a assinatura pendente.
+
+
+
+ 1 GEMINI.md file
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+ >   Type your message or @path/to/file                                                              
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+ criptoplay-checkout-pro (main*)        
 
 
 

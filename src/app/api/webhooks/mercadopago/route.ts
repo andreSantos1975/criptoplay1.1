@@ -36,79 +36,78 @@ export async function POST(req: Request) {
 
   // 1. Obter o corpo RAW e o cabeçalho de assinatura
   const rawBody = await req.text();
-  const signature = req.headers.get('x-signature');
-
-  console.log('--- DEBUG WEBHOOK ---');
-  console.log('Raw Body Recebido:', rawBody); 
-  console.log('X-Signature Recebido:', signature); 
-
-  // 2. Verificar se o segredo e a assinatura estão presentes
-  if (!MERCADOPAGO_WEBHOOK_SECRET) {
-    console.error('MERCADOPAGO_WEBHOOK_SECRET não configurado.');
-    return NextResponse.json({ message: 'Erro de configuração do servidor.' }, { status: 500 });
-  }
-
-  // --- INÍCIO DO BLOCO DE VERIFICAÇÃO DE ASSINATURA (COMENTADO TEMPORARIAMENTE) ---
-  if (!signature) {
-    console.warn('Webhook: Cabeçalho x-signature ausente.');
-    return NextResponse.json({ message: 'Requisição inválida: Cabeçalho x-signature ausente.' }, { status: 400 });
-  }
-
-  const parts = signature.split(',');
-  let timestamp = '';
-  let hash = '';
-
-  for (const part of parts) {
-    if (part.startsWith('ts=')) {
-      timestamp = part.substring(3); // Remove 'ts='
-    } else if (part.startsWith('v1=')) {
-      hash = part.substring(3); // Remove 'v1='
-    }
-    
-  }
-
-  // Verificar se o timestamp e hash foram encontrados
-  if (!timestamp || !hash) {
-    console.warn('Webhook: Formato de x-signature inválido.');
-    return NextResponse.json({ message: 'Requisição não autorizada: Formato de x-signature inválido.' }, { status: 401 });
-  }
-
-  const secretBuffer = Buffer.from(MERCADOPAGO_WEBHOOK_SECRET);
-  const dataToHash = `${timestamp}:${rawBody}`;
-
-  // --- NOVOS LOGS DE DEBUG ---
-  console.log('DEBUG: MERCADOPAGO_WEBHOOK_SECRET (length):', MERCADOPAGO_WEBHOOK_SECRET?.length);
-  console.log('DEBUG: MERCADOPAGO_WEBHOOK_SECRET (value):', MERCADOPAGO_WEBHOOK_SECRET);
-  console.log('DEBUG: timestamp:', timestamp);
-  console.log('DEBUG: rawBody (length):', rawBody.length);
-  console.log('DEBUG: rawBody (value):', rawBody);
-  console.log('DEBUG: dataToHash:', dataToHash);
-  // --- FIM DOS NOVOS LOGS DE DEBUG ---
-
-  const computedHash = crypto.createHmac('sha256', secretBuffer).update(dataToHash).digest('hex');
-
-  console.log('DEBUG: Hash Recebido (from signature):', hash);
-  console.log('DEBUG: Hash Calculado (computedHash):', computedHash);
-
-
-  if (computedHash !== hash) {
-    console.warn('Webhook: Assinatura inválida.');
-    return NextResponse.json({ message: 'Requisição não autorizada: Assinatura inválida.' }, { status: 401 });
-  }
-  // --- FIM DO BLOCO DE VERIFICAÇÃO DE ASSINATURA (COMENTADO TEMPORARIAMENTE) ---
-
-  // Se a verificação passou, parsear o corpo como JSON
-  let body;
-  try {
-    body = JSON.parse(rawBody);
-    console.log('Corpo JSON Processado:', body);
-  } catch (error) {
-    console.error('Erro ao parsear rawBody como JSON:', error);
-    // Adicione um log para o rawBody aqui se ainda não tiver, para ver se é vazio ou inválido
-    console.error('Raw Body que falhou no parse:', rawBody);
-    return NextResponse.json({ message: 'Corpo da requisição inválido.' }, { status: 400 });
-  }
+    const signature = req.headers.get('x-signature');
+    const requestId = req.headers.get('x-request-id'); // Novo: Capturar x-request-id
+    const url = new URL(req.url);
+    const dataId = url.searchParams.get('data.id'); // Novo: Capturar data.id da query string
   
+    console.log('--- DEBUG WEBHOOK ---');
+    console.log('Raw Body Recebido:', rawBody);
+    console.log('X-Signature Recebido:', signature);
+    console.log('X-Request-Id Recebido:', requestId); // Novo log para debug
+    console.log('Data.Id da Query:', dataId); // Novo log para debug
+  
+    // 2. Verificar se o segredo e a assinatura estão presentes
+    if (!MERCADOPAGO_WEBHOOK_SECRET) {
+      console.error('MERCADOPAGO_WEBHOOK_SECRET não configurado.');
+      return NextResponse.json({ message: 'Erro de configuração do servidor.' }, { status: 500 });
+    }
+  
+    // 2. Extrair ts e v1 do x-signature
+    if (!signature) {
+      console.warn('Webhook: Cabeçalho x-signature ausente.');
+      return NextResponse.json({ message: 'Requisição inválida: Cabeçalho x-signature ausente.' }, { status: 400 });
+    }
+  
+    const parts = signature.split(',');
+    let timestamp = '';
+    let hash = '';
+  
+    for (const part of parts) {
+      const [key, value] = part.trim().split('=');
+      if (key === 'ts') timestamp = value;
+      if (key === 'v1') hash = value;
+    }
+  
+    if (!timestamp || !hash) {
+      console.warn('Webhook: Formato de x-signature inválido.');
+      return NextResponse.json({ message: 'Requisição não autorizada: Formato de x-signature inválido.' }, { status: 401 });
+    }
+  
+    // 3. Construir a manifest (ignorar partes ausentes)
+    const manifestParts: string[] = [];
+    if (dataId) manifestParts.push(`id:${dataId}`);
+    if (requestId) manifestParts.push(`request-id:${requestId}`);
+    if (timestamp) manifestParts.push(`ts:${timestamp}`);
+    const manifest = manifestParts.join(';') + ';'; // Termina com ';'
+  
+    // 4. Computar o HMAC-SHA256
+    const secretBuffer = Buffer.from(MERCADOPAGO_WEBHOOK_SECRET!);
+    const computedHash = crypto.createHmac('sha256', secretBuffer).update(manifest).digest('hex');
+  
+    // Logs de debug atualizados
+    console.log('DEBUG: MERCADOPAGO_WEBHOOK_SECRET (value):', MERCADOPAGO_WEBHOOK_SECRET);
+    console.log('DEBUG: timestamp:', timestamp);
+    console.log('DEBUG: manifest:', manifest);
+    console.log('DEBUG: Hash Recebido (v1):', hash);
+    console.log('DEBUG: Hash Calculado:', computedHash);
+  
+    if (computedHash !== hash) {
+      console.warn('Webhook: Assinatura inválida.');
+      return NextResponse.json({ message: 'Requisição não autorizada: Assinatura inválida.' }, { status: 401 });
+    }
+  
+    // Se a verificação passou, parsear o corpo como JSON
+    let body;
+    try {
+      body = JSON.parse(rawBody);
+      console.log('Corpo JSON Processado:', body);
+    } catch (error) {
+      console.error('Erro ao parsear rawBody como JSON:', error);
+      // Adicione um log para o rawBody aqui se ainda não tiver, para ver se é vazio ou inválido
+      console.error('Raw Body que falhou no parse:', rawBody);
+      return NextResponse.json({ message: 'Corpo da requisição inválido.' }, { status: 400 });
+    }  
 
 
   // BLOC
