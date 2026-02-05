@@ -54,7 +54,7 @@ export const authOptions: AuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, trigger }) {
-      // No login inicial
+      /// No login inicial
       if (user) {
         token.id = user.id;
         token.isAdmin = (user as any).isAdmin || false;
@@ -87,6 +87,12 @@ export const authOptions: AuthOptions = {
           token.hasPassword = !!dbUser.password;
           token.image = dbUser.image;
           token.permissions = permissions; // 4. ANEXAR permissões ao token
+          token.subscriptionStatus = dbUser.subscriptionStatus; // Popula token.subscriptionStatus do dbUser
+
+          console.log("DEBUG JWT Callback - dbUser.subscriptionStatus:", dbUser.subscriptionStatus);
+          console.log("DEBUG JWT Callback - dbUser.subscriptions:", dbUser.subscriptions);
+          console.log("DEBUG JWT Callback - permissions.hasActiveSubscription:", permissions.hasActiveSubscription);
+          console.log("DEBUG JWT Callback - token.subscriptionStatus (after update):", token.subscriptionStatus);
         }
       }
       

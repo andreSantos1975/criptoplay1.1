@@ -13,6 +13,7 @@ export async function getUserPermissions(user: {
   isAdmin?: boolean;
   subscriptions: Subscription[];
   trialEndsAt?: Date | null;
+  subscriptionStatus?: string | null; // Adicionado para refletir o status global do usuário
 }): Promise<UserPermissions> {
   const now = new Date();
 
@@ -21,17 +22,19 @@ export async function getUserPermissions(user: {
     hasActiveSubscription: false,
     hasCourseAccess: false,
     isInTrial: false,
+    hasPaidSubscription: false, // Inicializa a nova propriedade
   };
 
   if (!user) return permissions;
 
-  const { email, isAdmin, subscriptions, trialEndsAt } = user;
+  const { email, isAdmin, subscriptions, trialEndsAt, subscriptionStatus } = user;
 
   // 1. Admin tem acesso a tudo
   if (isAdmin) {
     permissions.hasActiveSubscription = true;
     permissions.hasCourseAccess = true;
     permissions.isInTrial = false; // Admin não está em "trial"
+    permissions.hasPaidSubscription = true; // Admin sempre tem acesso pago
     return permissions;
   }
 
@@ -39,8 +42,19 @@ export async function getUserPermissions(user: {
   const isInTrial = !!(trialEndsAt && new Date(trialEndsAt) > now);
   permissions.isInTrial = isInTrial;
 
-  // 3. Verifica se tem alguma assinatura paga ativa
-  const hasPaidSubscription = subscriptions.some(sub => sub.status === 'active' || sub.status === 'authorized');
+  // 3. Verifica se tem alguma assinatura paga ativa (Prioriza o status geral do usuário)
+  let hasPaidSubscription = false;
+  if (subscriptionStatus === 'active' || subscriptionStatus === 'authorized') {
+    hasPaidSubscription = true;
+  } else if (subscriptionStatus === 'cancelled' || subscriptionStatus === 'paused' || subscriptionStatus === 'pending') {
+    hasPaidSubscription = false; // Se o status geral do usuário é inativo, não tem assinatura paga ativa
+  } else {
+    // Fallback: Se user.subscriptionStatus não for conclusivo, verificar o array de subscriptions
+    // Isso pode ocorrer para usuários legados ou inconsistências, mas o ideal é que user.subscriptionStatus
+    // seja a fonte primária para a elegibilidade geral de assinatura.
+    hasPaidSubscription = subscriptions.some(sub => sub.status === 'active' || sub.status === 'authorized');
+  }
+  permissions.hasPaidSubscription = hasPaidSubscription;
 
   // 4. Verifica se tem compra registrada na Hotmart
   let hasPurchasedFromHotmart = false;
@@ -58,6 +72,7 @@ export async function getUserPermissions(user: {
   permissions.hasCourseAccess = hasPaidSubscription || hasPurchasedFromHotmart;
 
   // 6. Acesso geral a funcionalidades (incluindo trial)
+  // hasActiveSubscription é baseado em ter uma assinatura paga ATIVA ou estar em período de teste
   permissions.hasActiveSubscription = hasPaidSubscription || isInTrial;
 
   return permissions;

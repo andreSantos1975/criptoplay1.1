@@ -7,6 +7,7 @@ export interface UserPermissions {
   hasActiveSubscription: boolean; // Acesso geral a features premium (inclui trial)
   hasCourseAccess: boolean;       // Acesso específico ao curso (pago ou admin)
   isInTrial: boolean;             // Indica se o usuário está no período de teste
+  hasPaidSubscription: boolean;   // Indica se o usuário possui uma assinatura paga ativa (independentemente do trial)
 }
 
 declare module 'next-auth' {
