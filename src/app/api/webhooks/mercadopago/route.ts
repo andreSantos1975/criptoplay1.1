@@ -1,8 +1,9 @@
-// src/app/api/webhooks/mercadopago/route.ts
+/// src/app/api/webhooks/mercadopago/route.ts
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago';
 import crypto from 'crypto'; // Importar o módulo crypto
 import prisma from '@/lib/prisma';
+import { revalidatePath } from 'next/cache';
 
 const MERCADOPAGO_WEBHOOK_SECRET = process.env.MERCADOPAGO_WEBHOOK_SECRET;
 
@@ -141,7 +142,7 @@ export async function POST(req: Request) {
 
         let userUpdateData: any = { subscriptionStatus: newStatus };
         
-        // Se a assinatura for autorizada, atualiza o limite de chat
+        // Se a assinatura for autorizada, atualiza o limite de chat e encerra o período de teste
         if (newStatus === 'authorized') {
           if (subscription.planId !== null) { // Adicionando a verificação de nulidade aqui
             const newLimit = PLAN_LIMITS[subscription.planId];
@@ -151,6 +152,7 @@ export async function POST(req: Request) {
           } else {
             console.warn(`Webhook: assinatura ${subscription.id} tem planId nulo. Limite de chat não atualizado.`);
           }
+          userUpdateData.trialEndsAt = null; // Encerra o período de teste
         }
 
         await prisma.user.update({
@@ -182,7 +184,7 @@ export async function POST(req: Request) {
       }
 
       // Do fetch, obter preapproval_id (que é o ID da assinatura)
-      const preapprovalId = authorizedPayment.preapproval_id; // Campo chave para linkar à assinatura
+      const preapprovalId = (authorizedPayment as any).preapproval_id; // Campo chave para linkar à assinatura
       if (!preapprovalId) {
         console.error('Webhook: Authorized payment sem preapproval_id.', authorizedPayment);
         return NextResponse.json({ message: 'Pagamento autorizado sem link para assinatura.' }, { status: 400 });
@@ -215,7 +217,7 @@ export async function POST(req: Request) {
 
         let userUpdateData: any = { subscriptionStatus: newStatus };
         
-        // Se o pagamento for autorizado/aprovado, atualiza o limite de chat
+        // Se o pagamento for autorizado/aprovado, atualiza o limite de chat e encerra o período de teste
         if (newStatus === 'authorized' || newStatus === 'approved') {
           if (subscription.planId !== null) {
             const newLimit = PLAN_LIMITS[subscription.planId];
@@ -226,6 +228,7 @@ export async function POST(req: Request) {
           } else {
             console.warn(`[MercadoPago Webhook - subscription_authorized_payment] Assinatura ${subscription.id} tem planId nulo. Limite de chat não atualizado.`);
           }
+          userUpdateData.trialEndsAt = null; // Encerra o período de teste
         }
         console.log(`[MercadoPago Webhook - subscription_authorized_payment] Atualizando User ${userId} com dados:`, userUpdateData);
         await prisma.user.update({
