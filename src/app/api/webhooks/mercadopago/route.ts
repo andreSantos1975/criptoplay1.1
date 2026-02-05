@@ -116,7 +116,7 @@ export async function POST(req: Request) {
     const { type, data } = body;
 
     // Lógica para assinaturas recorrentes
-    if (type === 'preapproval') {
+    if (type === 'subscription_preapproval') {
       const preapprovalId = data.id;
       const preapprovalInstance = new PreApproval(client);
       const preapproval = await preapprovalInstance.get({ id: preapprovalId });
@@ -162,6 +162,85 @@ export async function POST(req: Request) {
       }
 
       return NextResponse.json({ message: 'Webhook de assinatura recorrente processado.' }, { status: 200 });
+    }
+
+    // Nova lógica para pagamentos autorizados em assinaturas recorrentes
+    if (type === 'subscription_authorized_payment') {
+      const authorizedPaymentId = data.id;
+      const paymentInstance = new Payment(client);
+      let authorizedPayment;
+      try {
+        authorizedPayment = await paymentInstance.get({ id: authorizedPaymentId });
+      } catch (err) {
+        console.error(`[MercadoPago Webhook - subscription_authorized_payment] Erro ao buscar o pagamento ${authorizedPaymentId}:`, err);
+        return NextResponse.json({ message: 'Erro ao buscar o pagamento autorizado.' }, { status: 500 });
+      }
+
+      if (!authorizedPayment) {
+        console.error('Webhook: Authorized payment não encontrado.', authorizedPayment);
+        return NextResponse.json({ message: 'Pagamento autorizado inválido.' }, { status: 400 });
+      }
+
+      // Do fetch, obter preapproval_id (que é o ID da assinatura)
+      const preapprovalId = authorizedPayment.preapproval_id; // Campo chave para linkar à assinatura
+      if (!preapprovalId) {
+        console.error('Webhook: Authorized payment sem preapproval_id.', authorizedPayment);
+        return NextResponse.json({ message: 'Pagamento autorizado sem link para assinatura.' }, { status: 400 });
+      }
+
+      // Agora, fetch a preapproval (assinatura) para obter external_reference (userId)
+      const preapprovalInstance = new PreApproval(client);
+      const preapproval = await preapprovalInstance.get({ id: preapprovalId });
+
+      if (!preapproval || !preapproval.external_reference) {
+        console.error('Webhook: Preapproval não encontrada ou sem external_reference.', preapproval);
+        return NextResponse.json({ message: 'Preapproval inválida.' }, { status: 400 });
+      }
+
+      const userId = preapproval.external_reference;
+      const newStatus = authorizedPayment.status; // e.g., "authorized", "approved"
+      console.log(`[MercadoPago Webhook - subscription_authorized_payment] Processando authorizedPaymentId: ${authorizedPaymentId}, preapprovalId: ${preapprovalId}, userId: ${userId}, newStatus: ${newStatus}`);
+
+      const subscription = await prisma.subscription.findFirst({
+        where: { mercadoPagoSubscriptionId: preapprovalId },
+      });
+      
+      if (subscription) {
+        console.log(`[MercadoPago Webhook - subscription_authorized_payment] Encontrada assinatura Prisma ID: ${subscription.id}. Atualizando status para: ${newStatus}.`);
+        await prisma.subscription.update({
+          where: { id: subscription.id },
+          data: { status: newStatus === 'approved' ? 'active' : newStatus },
+        });
+        console.log(`[MercadoPago Webhook - subscription_authorized_payment] Status da assinatura Prisma atualizado para ${newStatus}.`);
+
+        let userUpdateData: any = { subscriptionStatus: newStatus };
+        
+        // Se o pagamento for autorizado/aprovado, atualiza o limite de chat
+        if (newStatus === 'authorized' || newStatus === 'approved') {
+          if (subscription.planId !== null) {
+            const newLimit = PLAN_LIMITS[subscription.planId];
+            if (newLimit) {
+              userUpdateData.chatMessageLimit = newLimit;
+              console.log(`[MercadoPago Webhook - subscription_authorized_payment] Pagamento autorizado. Definindo chatMessageLimit para: ${newLimit}.`);
+            }
+          } else {
+            console.warn(`[MercadoPago Webhook - subscription_authorized_payment] Assinatura ${subscription.id} tem planId nulo. Limite de chat não atualizado.`);
+          }
+        }
+        console.log(`[MercadoPago Webhook - subscription_authorized_payment] Atualizando User ${userId} com dados:`, userUpdateData);
+        await prisma.user.update({
+          where: { id: userId },
+          data: userUpdateData,
+        });
+        console.log(`[MercadoPago Webhook - subscription_authorized_payment] User ${userId} atualizado com sucesso.`);
+        revalidatePath('/dashboard/profile'); // Revalida a página de perfil
+        revalidatePath('/'); // Revalida o root para o middleware
+        console.log(`[MercadoPago Webhook - subscription_authorized_payment] revalidatePath executado para '/dashboard/profile' e '/'.`);
+
+        console.log(`Webhook: Pagamento autorizado recorrente ${authorizedPaymentId} para assinatura ${preapprovalId} do usuário ${userId} atualizado para ${newStatus}. Limite de chat definido se aplicável.`);
+      }
+
+      return NextResponse.json({ message: 'Webhook de pagamento autorizado recorrente processado.' }, { status: 200 });
     }
 
     // Lógica para pagamentos únicos (Plano Vitalício)
