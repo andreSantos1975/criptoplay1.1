@@ -21,13 +21,18 @@ const plans: Plan[] = [
         id: "started",
         name: "Started",
         description: "Para quem está começando a explorar o mundo cripto.",
-        monthlyPrice: 0,
-        annualPrice: 0,
+        monthlyPrice: 19.90,
+        annualPrice: 199.90,
         features: [
           "Acesso aos módulos introdutórios do curso",
-          "Simulador com funcionalidades limitadas",
-          "Participação no Ranking da comunidade",
-          // "20 mensagens/mês com o Chatbot IA", // Removido
+          "Dashboard",
+          "Orçamentos",
+          "Metas financeiras",
+          "Calculadora de juros",
+          "Relatório de finanças pessoais",
+          "Alertas limitados",
+          "🔜 Chatbot IA básico (em breve)",
+          //Breve "20 mensagens/mês com o Chatbot IA", // Removido
         ],
       },
       {
@@ -39,9 +44,12 @@ const plans: Plan[] = [
         features: [
           "Tudo do plano Started",
           "Acesso completo a todos os cursos e módulos",
-          "Simulador PRO com trading de Futuros",
-          // "Criação e backtest de estratégias", // Removido
-          "Relatórios de performance básicos",
+          "Simuladores Spot e Futuro",
+          "Alertas do mercado ilimitados",
+          "Diário de trader",
+          "Relatorios de trades",
+          "Ranking",
+          "🔜 Assistente IA com limites mensais (em breve)", 
           // "100 mensagens/mês com o Chatbot IA", // Removido
         ],
         isMostPopular: true,
@@ -54,10 +62,11 @@ const plans: Plan[] = [
         annualPrice: 499.9,
         features: [
           "Tudo do plano Pro",
-          // "Métricas de trading avançadas e exclusivas", // Removido
-          "Relatórios de performance detalhados",
-          "Alertas de mercado ilimitados",
+          "Prioridade em novas features",
+          "Acesso ao grupo do Telegram",
           "Suporte prioritário via WhatsApp",
+          "Bonus audio ebook Hotmart",
+          "🔜 Assistente IA avançado (em breve)",
           // "Mensagens ilimitadas com o Chatbot IA", // Removido
         ],
       },
