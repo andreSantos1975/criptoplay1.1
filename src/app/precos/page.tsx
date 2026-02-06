@@ -27,7 +27,7 @@ const plans: Plan[] = [
           "Acesso aos módulos introdutórios do curso",
           "Simulador com funcionalidades limitadas",
           "Participação no Ranking da comunidade",
-          "20 mensagens/mês com o Chatbot IA",
+          // "20 mensagens/mês com o Chatbot IA", // Removido
         ],
       },
       {
@@ -40,9 +40,9 @@ const plans: Plan[] = [
           "Tudo do plano Started",
           "Acesso completo a todos os cursos e módulos",
           "Simulador PRO com trading de Futuros",
-          "Criação e backtest de estratégias",
+          // "Criação e backtest de estratégias", // Removido
           "Relatórios de performance básicos",
-          "100 mensagens/mês com o Chatbot IA",
+          // "100 mensagens/mês com o Chatbot IA", // Removido
         ],
         isMostPopular: true,
       },
@@ -54,11 +54,11 @@ const plans: Plan[] = [
         annualPrice: 499.9,
         features: [
           "Tudo do plano Pro",
-          "Métricas de trading avançadas e exclusivas",
+          // "Métricas de trading avançadas e exclusivas", // Removido
           "Relatórios de performance detalhados",
           "Alertas de mercado ilimitados",
           "Suporte prioritário via WhatsApp",
-          "Mensagens ilimitadas com o Chatbot IA",
+          // "Mensagens ilimitadas com o Chatbot IA", // Removido
         ],
       },
 ];
@@ -150,29 +150,31 @@ export default function PricingPage() {
         </p>
       </header>
 
-      <div className={styles.toggleContainer}>
-        <span className={billingCycle === "monthly" ? styles.activeText : ""}>Mensal</span>
-        <label className={styles.switch}>
-          <input
-            type="checkbox"
-            onChange={() => setBillingCycle(billingCycle === "monthly" ? "annual" : "monthly")}
-          />
-          <span className={styles.slider}></span>
-        </label>
-        <span className={billingCycle === "annual" ? styles.activeText : ""}>Anual (Economize 2 meses)</span>
-      </div>
+      <div className={styles.controlsWrapper}>
+        <div className={styles.toggleContainer}>
+          <span className={billingCycle === "monthly" ? styles.activeText : ""}>Mensal</span>
+          <label className={styles.switch}>
+            <input
+              type="checkbox"
+              onChange={() => setBillingCycle(billingCycle === "monthly" ? "annual" : "monthly")}
+            />
+            <span className={styles.slider}></span>
+          </label>
+          <span className={billingCycle === "annual" ? styles.activeText : ""}>Anual (Economize 2 meses)</span>
+        </div>
 
-      <div className={styles.cpfContainer}>
-        <label htmlFor="cpf" className={styles.cpfLabel}>CPF (necessário para pagamento)</label>
-        <input
-          id="cpf"
-          type="text"
-          value={cpf}
-          onChange={(e) => setCpf(e.target.value)}
-          placeholder="000.000.000-00"
-          className={styles.cpfInput}
-        />
-        {/* {error && <p className={styles.error}>{error}</p>} // REMOVIDO */}
+        <div className={styles.cpfContainer}>
+          <label htmlFor="cpf" className={styles.cpfLabel}>CPF (necessário para pagamento)</label>
+          <input
+            id="cpf"
+            type="text"
+            value={cpf}
+            onChange={(e) => setCpf(e.target.value)}
+            placeholder="000.000.000-00"
+            className={styles.cpfInput}
+          />
+          {/* {error && <p className={styles.error}>{error}</p>} // REMOVIDO */}
+        </div>
       </div>
 
       <div className={styles.pricingGrid}>

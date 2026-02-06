@@ -1,13 +1,14 @@
 .container {
-  max-width: 1000px;
+  /* max-width: 1000px; Removido para permitir expansão do grid */
   margin: 0 auto;
   padding: 4rem 2rem;
-  color: #fff;
+  /* color: #fff; */ /* Definir cor do texto principal em nível mais específico se necessário */
   min-height: 80vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  /* justify-content: center; Removido para não centralizar o conteúdo verticalmente */
+  /* align-items: center; Removido para permitir que o grid se estenda */
+  color: #333; /* Texto padrão para o container ser escuro */
 }
 
 .header {
@@ -26,7 +27,7 @@
 
 .subtitle {
   font-size: 1.2rem;
-  color: #a0a0a0;
+  color: #666; /* Cor mais escura para o subtítulo */
   max-width: 600px;
   margin: 0 auto;
 }
@@ -36,21 +37,26 @@
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
   width: 100%;
-  max-width: 1000px;
-  margin-top: 2rem;
+  max-width: 1000px; /* Mantém a largura máxima em 1000px */
+  margin: 2rem auto; /* Centraliza o grid */
+  justify-content: center; /* Centraliza os itens do grid */
 }
 
 .pricingCard {
-  background-color: #1a1a1a;
-  border: 1px solid #333;
+  background-color: #ffffff; /* Fundo branco para o card */
+  border: 1px solid #e0e0e0; /* Borda cinza claro */
   border-radius: 12px;
-  padding: 3rem;
+  padding: 2rem; /* Padding vertical e horizontal reduzido */
   text-align: center;
   width: 100%;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); /* Sombra mais suave */
   transition: transform 0.3s ease, border-color 0.3s ease;
   position: relative; /* Necessário para o badge */
   overflow: hidden; /* Para o badge rotacionado */
+  color: #333; /* Cor do texto padrão para o card */
+  display: flex; /* Adicionado para flexbox interno */
+  flex-direction: column; /* Conteúdo em coluna */
+  justify-content: space-between; /* Distribui o espaço entre os itens */
 }
 
 .pricingCard:hover {
@@ -59,48 +65,49 @@
 }
 
 .planName {
-  font-size: 2rem;
+  font-size: 1.8rem; /* Fonte ligeiramente menor */
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem; /* Margem inferior reduzida */
   color: #00C9FF;
 }
 
 .price {
-  font-size: 3.5rem;
+  font-size: 3rem; /* Fonte ligeiramente menor */
   font-weight: 700;
   margin-bottom: 0.5rem;
-  color: #fff;
+  color: #333; /* Cor mais escura para o preço */
   display: flex;
   align-items: baseline;
   justify-content: center;
 }
 
 .price span {
-  font-size: 1.5rem;
+  font-size: 1.2rem; /* Fonte ligeiramente menor */
   font-weight: 400;
-  color: #a0a0a0;
+  color: #666; /* Cor mais escura para o texto "/ano" */
   margin-left: 0.5rem;
 }
 
 .period {
-  font-size: 1rem;
-  color: #a0a0a0;
-  margin-bottom: 2rem;
+  font-size: 0.9rem; /* Fonte ligeiramente menor */
+  color: #666; /* Cor mais escura para o período */
+  margin-bottom: 1.5rem; /* Margem inferior reduzida */
 }
 
 .featuresList {
   list-style: none;
   padding: 0;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem; /* Margem inferior reduzida */
   text-align: left;
+  flex-grow: 1; /* Permite que a lista cresça e ocupe espaço */
 }
 
 .featuresList li {
   display: flex;
   align-items: center;
-  margin-bottom: 1rem;
-  color: #e0e0e0;
-  font-size: 1rem;
+  margin-bottom: 0.7rem; /* Espaçamento entre itens da lista reduzido */
+  color: #444; /* Cor mais escura para as features */
+  font-size: 0.9rem; /* Fonte ligeiramente menor */
 }
 
 .featuresList li svg {
@@ -129,7 +136,8 @@
 }
 
 .subscribeButton:disabled {
-  background-color: #555;
+  background-color: #ccc; /* Cor de fundo mais clara para botão desabilitado */
+  color: #666; /* Cor de texto mais escura para botão desabilitado */
   cursor: not-allowed;
 }
 
@@ -154,20 +162,43 @@
   width: 200px;
 }
 
+/* Wrapper para o toggle e o CPF */
+.controlsWrapper {
+  display: flex;
+  flex-direction: column; /* Padrão para mobile */
+  align-items: center;
+  gap: 1.5rem; /* Espaçamento entre os elementos */
+  margin-bottom: 2rem; /* Margem abaixo do wrapper */
+  width: 100%;
+  max-width: 1000px; /* Alinhar com o pricingGrid */
+}
+
+@media (min-width: 768px) { /* Em telas maiores, coloca lado a lado */
+  .controlsWrapper {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center; /* Mantendo o align-items: center para uma centralização padrão */
+  }
+  .cpfContainer {
+    margin-top: -1.2rem; /* Sobe o container do CPF um pouco */
+  }
+}
+
 /* Estilos para o toggle Mensal/Anual */
 .toggleContainer {
   display: flex;
   align-items: center;
-  margin-bottom: 2rem;
-  background-color: #1a1a1a;
+  /* margin: 0 auto 2rem auto; Removido, o espaçamento será do controlsWrapper */
+  background-color: #f0f0f0; /* Fundo mais claro para o toggle */
   border-radius: 50px;
   padding: 0.5rem 1rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Sombra mais suave */
+  max-width: fit-content; /* Ajusta a largura ao conteúdo */
 }
 
 .toggleContainer span {
   font-size: 1rem;
-  color: #a0a0a0;
+  color: #666; /* Cor mais escura para o texto do toggle */
   transition: color 0.3s ease;
 }
 
@@ -197,7 +228,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #333;
+  background-color: #ccc; /* Cor de fundo mais clara para o slider */
   transition: 0.4s;
   border-radius: 34px;
 }
@@ -228,30 +259,30 @@ input:checked + .slider:before {
 
 /* Estilos para o campo de CPF */
 .cpfContainer {
-  margin: 2rem 0;
+  /* margin: 2rem auto; Removido, o espaçamento será do controlsWrapper */
   width: 100%;
-  max-width: 400px; /* Alinhar com a largura dos cards */
+  max-width: 400px; /* Mantém a largura máxima para o campo de CPF para não ficar muito largo */
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  align-items: flex-start; /* Alinhar o label à esquerda */
+  align-items: center; /* Centraliza os itens dentro do container */
 }
 
 .cpfLabel {
   font-size: 0.9rem;
-  color: #a0a0a0;
+  color: #666; /* Cor mais escura para o label */
   margin-bottom: 0.2rem;
 }
 
 .cpfInput {
   width: 100%;
   padding: 0.8rem 1rem;
-  border: 1px solid #333;
+  border: 1px solid #e0e0e0; /* Borda cinza claro */
   border-radius: 8px;
-  background-color: #1a1a1a;
-  color: #e0e0e0;
+  background-color: #ffffff; /* Fundo branco para o input */
+  color: #333; /* Texto escuro para o input */
   font-size: 1rem;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05); /* Sombra interna mais suave */
   transition: border-color 0.3s ease;
 }
 
@@ -261,7 +292,7 @@ input:checked + .slider:before {
 }
 
 .error {
-  color: #ff6b6b;
+  color: #d9534f; /* Cor de erro mais compatível com tema claro */
   font-size: 0.9rem;
   margin-top: 0.5rem;
   text-align: center;
