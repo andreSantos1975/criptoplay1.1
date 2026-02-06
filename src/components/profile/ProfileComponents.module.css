@@ -157,6 +157,31 @@
   background-color: #218838;
 }
 
+.btnDanger {
+  padding: 0.75rem 1.5rem;
+  background-color: #dc3545; /* Bootstrap danger red */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btnDanger:hover {
+  background-color: #c82333; /* Darker red on hover */
+}
+
+.btnDanger:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 .label {
   display: block;
   font-size: 0.875rem;
