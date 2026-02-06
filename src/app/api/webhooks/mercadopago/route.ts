@@ -1,4 +1,4 @@
-/// src/app/api/webhooks/mercadopago/route.ts
+// src/app/api/webhooks/mercadopago/route.ts
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago';
 import crypto from 'crypto'; // Importar o módulo crypto
@@ -18,7 +18,7 @@ interface PaymentWithAdditionalInfo {
   };
 }
 
-// --- DEFINIÇÃO DOS LIMITES DE CHAT POR PLANO ---
+/// --- DEFINIÇÃO DOS LIMITES DE CHAT POR PLANO ---
 // IMPORTANTE: Substitua os IDs pelos IDs reais dos seus planos no Mercado Pago.
 const PLAN_LIMITS: { [key: string]: number } = {
   "PLANO_STARTER_ID": 200,   // Exemplo para o plano Starter
@@ -37,103 +37,72 @@ export async function POST(req: Request) {
 
   // 1. Obter o corpo RAW e o cabeçalho de assinatura
   const rawBody = await req.text();
-    const signature = req.headers.get('x-signature');
-    const requestId = req.headers.get('x-request-id'); // Novo: Capturar x-request-id
-    const url = new URL(req.url);
-    const dataId = url.searchParams.get('data.id'); // Novo: Capturar data.id da query string
-  
-    console.log('--- DEBUG WEBHOOK ---');
-    console.log('Raw Body Recebido:', rawBody);
-    console.log('X-Signature Recebido:', signature);
-    console.log('X-Request-Id Recebido:', requestId); // Novo log para debug
-    console.log('Data.Id da Query:', dataId); // Novo log para debug
-  
-    // 2. Verificar se o segredo e a assinatura estão presentes
-    if (!MERCADOPAGO_WEBHOOK_SECRET) {
-      console.error('MERCADOPAGO_WEBHOOK_SECRET não configurado.');
-      return NextResponse.json({ message: 'Erro de configuração do servidor.' }, { status: 500 });
-    }
-  
-    // 2. Extrair ts e v1 do x-signature
-    if (!signature) {
-      console.warn('Webhook: Cabeçalho x-signature ausente.');
-      return NextResponse.json({ message: 'Requisição inválida: Cabeçalho x-signature ausente.' }, { status: 400 });
-    }
-  
-    const parts = signature.split(',');
-    let timestamp = '';
-    let hash = '';
-  
-    for (const part of parts) {
-      const [key, value] = part.trim().split('=');
-      if (key === 'ts') timestamp = value;
-      if (key === 'v1') hash = value;
-    }
-  
-    if (!timestamp || !hash) {
-      console.warn('Webhook: Formato de x-signature inválido.');
-      return NextResponse.json({ message: 'Requisição não autorizada: Formato de x-signature inválido.' }, { status: 401 });
-    }
-  
-    // 3. Construir a manifest (ignorar partes ausentes)
-    const manifestParts: string[] = [];
-    if (dataId) manifestParts.push(`id:${dataId}`);
-    if (requestId) manifestParts.push(`request-id:${requestId}`);
-    if (timestamp) manifestParts.push(`ts:${timestamp}`);
-    const manifest = manifestParts.join(';') + ';'; // Termina com ';'
-  
-    // 4. Computar o HMAC-SHA256
-    const secretBuffer = Buffer.from(MERCADOPAGO_WEBHOOK_SECRET!);
-    const computedHash = crypto.createHmac('sha256', secretBuffer).update(manifest).digest('hex');
-  
-    // Logs de debug atualizados
-    console.log('DEBUG: MERCADOPAGO_WEBHOOK_SECRET (value):', MERCADOPAGO_WEBHOOK_SECRET);
-    console.log('DEBUG: timestamp:', timestamp);
-    console.log('DEBUG: manifest:', manifest);
-    console.log('DEBUG: Hash Recebido (v1):', hash);
-    console.log('DEBUG: Hash Calculado:', computedHash);
-  
-    if (computedHash !== hash) {
-      console.warn('Webhook: Assinatura inválida.');
-      return NextResponse.json({ message: 'Requisição não autorizada: Assinatura inválida.' }, { status: 401 });
-    }
-  
-    // Se a verificação passou, parsear o corpo como JSON
-    let body;
-    try {
-      body = JSON.parse(rawBody);
-      console.log('Corpo JSON Processado:', body);
-    } catch (error) {
-      console.error('Erro ao parsear rawBody como JSON:', error);
-      // Adicione um log para o rawBody aqui se ainda não tiver, para ver se é vazio ou inválido
-      console.error('Raw Body que falhou no parse:', rawBody);
-      return NextResponse.json({ message: 'Corpo da requisição inválido.' }, { status: 400 });
-    }  
+  const signature = req.headers.get('x-signature');
+  const requestId = req.headers.get('x-request-id');
+  const url = new URL(req.url);
+  const dataId = url.searchParams.get('data.id');
 
+  if (!MERCADOPAGO_WEBHOOK_SECRET) {
+    return NextResponse.json({ message: 'Erro de configuração do servidor.' }, { status: 500 });
+  }
 
-  // BLOC
+  if (!signature) {
+    return NextResponse.json({ message: 'Requisição inválida: Cabeçalho x-signature ausente.' }, { status: 400 });
+  }
+
+  const parts = signature.split(',');
+  let timestamp = '';
+  let hash = '';
+
+  for (const part of parts) {
+    const [key, value] = part.trim().split('=');
+    if (key === 'ts') timestamp = value;
+    if (key === 'v1') hash = value;
+  }
+
+  if (!timestamp || !hash) {
+    return NextResponse.json({ message: 'Requisição não autorizada: Formato de x-signature inválido.' }, { status: 401 });
+  }
+
+  const manifestParts: string[] = [];
+  if (dataId) manifestParts.push(`id:${dataId}`);
+  if (requestId) manifestParts.push(`request-id:${requestId}`);
+  if (timestamp) manifestParts.push(`ts:${timestamp}`);
+  const manifest = manifestParts.join(';') + ';';
+
+  const secretBuffer = Buffer.from(MERCADOPAGO_WEBHOOK_SECRET!);
+  const computedHash = crypto.createHmac('sha256', secretBuffer).update(manifest).digest('hex');
+
+  if (computedHash !== hash) {
+    return NextResponse.json({ message: 'Requisição não autorizada: Assinatura inválida.' }, { status: 401 });
+  }
+
+  let body;
   try {
-    console.log('Webhook Mercado Pago recebido:', body);
+    body = JSON.parse(rawBody);
+  } catch (error) {
+    return NextResponse.json({ message: 'Corpo da requisição inválido.' }, { status: 400 });
+  }
+
+  try {
     const { type, data } = body;
 
-    // Lógica para assinaturas recorrentes
     if (type === 'subscription_preapproval') {
       const preapprovalId = data.id;
       const preapprovalInstance = new PreApproval(client);
       const preapproval = await preapprovalInstance.get({ id: preapprovalId });
 
       if (!preapproval || !preapproval.external_reference) {
-        console.error('Webhook: Preapproval não encontrada ou sem external_reference.', preapproval);
         return NextResponse.json({ message: 'Preapproval inválida.' }, { status: 400 });
       }
 
       const userId = preapproval.external_reference;
-      const newStatus = preapproval.status; // e.g., "authorized", "paused", "cancelled"
+      const newStatus = preapproval.status;
 
       const subscription = await prisma.subscription.findFirst({
         where: { mercadoPagoSubscriptionId: preapproval.id },
       });
-      
+
       if (subscription) {
         await prisma.subscription.update({
           where: { id: subscription.id },
@@ -141,123 +110,105 @@ export async function POST(req: Request) {
         });
 
         let userUpdateData: any = { subscriptionStatus: newStatus };
-        
-        // Se a assinatura for autorizada, atualiza o limite de chat e encerra o período de teste
+
         if (newStatus === 'authorized') {
-          if (subscription.planId !== null) { // Adicionando a verificação de nulidade aqui
+          if (subscription.planId !== null) {
             const newLimit = PLAN_LIMITS[subscription.planId];
             if (newLimit) {
               userUpdateData.chatMessageLimit = newLimit;
             }
-          } else {
-            console.warn(`Webhook: assinatura ${subscription.id} tem planId nulo. Limite de chat não atualizado.`);
           }
-          userUpdateData.trialEndsAt = null; // Encerra o período de teste
+          userUpdateData.trialEndsAt = null;
         }
 
         await prisma.user.update({
           where: { id: userId },
           data: userUpdateData,
         });
-
-        console.log(`Webhook: Assinatura recorrente ${preapproval.id} do usuário ${userId} atualizada para ${newStatus}. Limite de chat definido se aplicável.`);
       }
-
       return NextResponse.json({ message: 'Webhook de assinatura recorrente processado.' }, { status: 200 });
     }
 
-    // Nova lógica para pagamentos autorizados em assinaturas recorrentes
-    if (type === 'subscription_authorized_payment') {
-      const authorizedPaymentId = data.id;
-      const paymentInstance = new Payment(client);
-      let authorizedPayment;
-      try {
-        authorizedPayment = await paymentInstance.get({ id: authorizedPaymentId });
-      } catch (err) {
-        console.error(`[MercadoPago Webhook - subscription_authorized_payment] Erro ao buscar o pagamento ${authorizedPaymentId}:`, err);
-        return NextResponse.json({ message: 'Erro ao buscar o pagamento autorizado.' }, { status: 500 });
-      }
+            if (type === 'subscription_authorized_payment') {
 
-      if (!authorizedPayment) {
-        console.error('Webhook: Authorized payment não encontrado.', authorizedPayment);
-        return NextResponse.json({ message: 'Pagamento autorizado inválido.' }, { status: 400 });
-      }
+              const authorizedPaymentId = data.id;
 
-      // Do fetch, obter preapproval_id (que é o ID da assinatura)
-      const preapprovalId = (authorizedPayment as any).preapproval_id; // Campo chave para linkar à assinatura
-      if (!preapprovalId) {
-        console.error('Webhook: Authorized payment sem preapproval_id.', authorizedPayment);
-        return NextResponse.json({ message: 'Pagamento autorizado sem link para assinatura.' }, { status: 400 });
-      }
+              const authorizedPayment = await fetch(`https://api.mercadopago.com/authorized_payments/${authorizedPaymentId}`, {
 
-      // Agora, fetch a preapproval (assinatura) para obter external_reference (userId)
+                method: 'GET',
+
+                headers: {
+
+                  'Authorization': `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+
+                  'Content-Type': 'application/json',
+
+                },
+
+              }).then(res => res.json());
+
+        
+
+              if (!authorizedPayment || !authorizedPayment.preapproval_id) {
+
+                return NextResponse.json({ message: 'Pagamento autorizado inválido ou sem link para assinatura.' }, { status: 400 });
+
+              }
+
+        
+
+              const preapprovalId = authorizedPayment.preapproval_id;
+
       const preapprovalInstance = new PreApproval(client);
       const preapproval = await preapprovalInstance.get({ id: preapprovalId });
 
       if (!preapproval || !preapproval.external_reference) {
-        console.error('Webhook: Preapproval não encontrada ou sem external_reference.', preapproval);
         return NextResponse.json({ message: 'Preapproval inválida.' }, { status: 400 });
       }
 
       const userId = preapproval.external_reference;
-      const newStatus = authorizedPayment.status; // e.g., "authorized", "approved"
-      console.log(`[MercadoPago Webhook - subscription_authorized_payment] Processando authorizedPaymentId: ${authorizedPaymentId}, preapprovalId: ${preapprovalId}, userId: ${userId}, newStatus: ${newStatus}`);
+      const newStatus = authorizedPayment.status;
 
       const subscription = await prisma.subscription.findFirst({
         where: { mercadoPagoSubscriptionId: preapprovalId },
       });
-      
+
       if (subscription) {
-        console.log(`[MercadoPago Webhook - subscription_authorized_payment] Encontrada assinatura Prisma ID: ${subscription.id}. Atualizando status para: ${newStatus}.`);
         await prisma.subscription.update({
           where: { id: subscription.id },
           data: { status: newStatus === 'approved' ? 'active' : newStatus },
         });
-        console.log(`[MercadoPago Webhook - subscription_authorized_payment] Status da assinatura Prisma atualizado para ${newStatus}.`);
 
         let userUpdateData: any = { subscriptionStatus: newStatus };
-        
-        // Se o pagamento for autorizado/aprovado, atualiza o limite de chat e encerra o período de teste
+
         if (newStatus === 'authorized' || newStatus === 'approved') {
           if (subscription.planId !== null) {
             const newLimit = PLAN_LIMITS[subscription.planId];
             if (newLimit) {
               userUpdateData.chatMessageLimit = newLimit;
-              console.log(`[MercadoPago Webhook - subscription_authorized_payment] Pagamento autorizado. Definindo chatMessageLimit para: ${newLimit}.`);
             }
-          } else {
-            console.warn(`[MercadoPago Webhook - subscription_authorized_payment] Assinatura ${subscription.id} tem planId nulo. Limite de chat não atualizado.`);
           }
-          userUpdateData.trialEndsAt = null; // Encerra o período de teste
+          userUpdateData.trialEndsAt = null;
         }
-        console.log(`[MercadoPago Webhook - subscription_authorized_payment] Atualizando User ${userId} com dados:`, userUpdateData);
         await prisma.user.update({
           where: { id: userId },
           data: userUpdateData,
         });
-        console.log(`[MercadoPago Webhook - subscription_authorized_payment] User ${userId} atualizado com sucesso.`);
-        revalidatePath('/dashboard/profile'); // Revalida a página de perfil
-        revalidatePath('/'); // Revalida o root para o middleware
-        console.log(`[MercadoPago Webhook - subscription_authorized_payment] revalidatePath executado para '/dashboard/profile' e '/'.`);
-
-        console.log(`Webhook: Pagamento autorizado recorrente ${authorizedPaymentId} para assinatura ${preapprovalId} do usuário ${userId} atualizado para ${newStatus}. Limite de chat definido se aplicável.`);
+        revalidatePath('/dashboard/profile');
+        revalidatePath('/');
       }
-
       return NextResponse.json({ message: 'Webhook de pagamento autorizado recorrente processado.' }, { status: 200 });
     }
 
-    // Lógica para pagamentos únicos (Plano Vitalício)
     if (type === 'payment') {
       const paymentId = data.id;
       const paymentInstance = new Payment(client);
       const payment = await paymentInstance.get({ id: paymentId });
-      
+
       if (!payment || !payment.external_reference) {
-        console.error('Webhook: Pagamento não encontrado ou sem external_reference.', payment);
         return NextResponse.json({ message: 'Pagamento inválido.' }, { status: 400 });
       }
 
-      // Verificar se o pagamento foi aprovado
       if (payment.status === 'approved') {
         const userId = payment.external_reference;
         const planId = ((payment as unknown) as PaymentWithAdditionalInfo).additional_info?.items?.[0]?.id || 'LIFETIME_PLAN';
@@ -277,25 +228,19 @@ export async function POST(req: Request) {
           const newLimit = PLAN_LIMITS[planId];
           await prisma.user.update({
             where: { id: userId },
-            data: { 
-              subscriptionStatus: 'lifetime', // Status mais descritivo
-              ...(newLimit && { chatMessageLimit: newLimit }) // Atualiza o limite se encontrado
+            data: {
+              subscriptionStatus: 'lifetime',
+              ...(newLimit && { chatMessageLimit: newLimit })
             },
           });
-          console.log(`Webhook: Plano vitalício para o usuário ${userId} ativado. Limite de chat definido como ${newLimit || 'padrão'}.`);
-        } else {
-          console.log(`Webhook: Nenhuma assinatura pendente encontrada para o usuário ${userId} e plano ${planId}.`);
         }
       }
-      
       return NextResponse.json({ message: 'Webhook de pagamento processado.' }, { status: 200 });
     }
 
     return NextResponse.json({ message: 'Tipo de notificação não relevante.' }, { status: 200 });
 
   } catch (error) {
-    console.error('Erro ao processar webhook do Mercado Pago:', error);
     return NextResponse.json({ message: 'Erro interno ao processar webhook.' }, { status: 500 });
-  } // FIM DO BLOCO COMENTADO
-
+  }
 }

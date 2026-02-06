@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   // Agora recebe 'payerEmail' diretamente do corpo da requisição
   const { planId, planName, amount, description, planType, frequency, payerEmail, cpf } = await req.json();
 
-  console.log('Recebido do Frontend:', { planId, planName, amount, planType, frequency, payerEmail, cpf });
+
 
   /// Adiciona validação para o payerEmail
   if (!planId || !planName || !amount || !description || !planType || !payerEmail) {
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
         
         return NextResponse.json({ preferenceId: response.id }, { status: 200 });
       } else {
-        console.error('Erro ao criar preferência de pagamento:', response);
+
         return NextResponse.json({ message: 'Erro ao iniciar pagamento com Mercado Pago' }, { status: 500 });
       }
 
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
         },
       };
 
-      console.log('📦 Enviando para o Mercado Pago (PreApproval):', JSON.stringify(preapprovalData, null, 2));
+
 
       const response = await preapproval.create({ body: preapprovalData });
 
@@ -161,20 +161,13 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ init_point: response.init_point }, { status: 200 });
       } else {
-        console.error('Erro ao criar pre-aprovação:', response);
+
         return NextResponse.json({ message: 'Erro ao iniciar assinatura com Mercado Pago' }, { status: 500 });
       }
     }
 
   } catch (error: any) {
-    console.error('❌ ERRO CRÍTICO na API de criação de assinatura:');
-    console.error('Mercado Pago Error Details:', {
-      status: error?.status || error?.response?.status,
-      message: error?.message,
-      cause: error?.cause ? JSON.stringify(error.cause) : 'undefined',
-      data: error?.response?.data ? JSON.stringify(error.response.data) : 'undefined',
-      fullError: JSON.stringify(error, null, 2)
-    });
+
     
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2002') {

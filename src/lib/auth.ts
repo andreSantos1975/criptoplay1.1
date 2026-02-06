@@ -89,11 +89,7 @@ export const authOptions: AuthOptions = {
           token.permissions = permissions; // 4. ANEXAR permissões ao token
           token.subscriptionStatus = dbUser.subscriptionStatus; // Popula token.subscriptionStatus do dbUser
 
-          console.log("DEBUG JWT Callback - dbUser.subscriptionStatus:", dbUser.subscriptionStatus);
-          console.log("DEBUG JWT Callback - dbUser.subscriptions:", dbUser.subscriptions);
-          console.log("DEBUG JWT Callback - permissions.hasActiveSubscription:", permissions.hasActiveSubscription);
-          console.log("DEBUG JWT Callback - token.subscriptionStatus (after update):", token.subscriptionStatus);
-        }
+                  }
       }
       
       // Permitir que usuário LIFETIME contorne checagens de assinatura
