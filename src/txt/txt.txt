@@ -947,6 +947,28 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
 ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
  criptoplay-checkout-pro (main*)        
 
+--------------------------- 06/02/2026 -------------------------------------------
+
+ http://localhost:3000/resgatar-bonus
+
+✦ A lógica de bônus agora concede acesso limitado de 60 dias ao plano Started. Todas as tarefas para
+  adaptar o sistema a múltiplas plataformas estão concluídas. O endpoint
+  src/app/api/bonus/activate/route.ts foi modificado para type: 'TIMED' e endDate calculada. O
+  usuário deve configurar variáveis de ambiente para HOTMART_EBOOK_PRODUCT_ID, HOTMART_EBOOK_PRICE,
+  PERFECTPAY_EBOOK_PRODUCT_ID, PERFECTPAY_EBOOK_PRICE, KIWIFY_EBOOK_PRODUCT_ID, KIWIFY_EBOOK_PRICE,
+  configurar webhooks nas plataformas para os respectivos endpoints (/api/webhook/hotmart,
+  /api/webhook/perfectpay, /api/webhook/kiwify), implementar a verificação de assinatura para cada
+  webhook, e testar o fluxo completo. O sistema está pronto para resgate de bônus de e-book com
+  acesso temporário.
+
+  Sim, a venda do e-book na Hotmart, notificada via webhook, qualifica o usuário para o bônus. O
+  sistema recebe o webhook em SEU_DOMINIO/api/webhook/hotmart, verifica os dados da compra e armazena
+  o comprador na tabela EbookPurchase com status "PENDING". O usuário, então, acessa
+  SEU_DOMINIO/resgatar-bonus?origem=hotmart, insere o e-mail da compra e, em
+  SEU_DOMINIO/api/bonus/activate, o sistema valida o e-mail, cria ou atualiza a conta do usuário,
+  atribui a ele uma Subscription de 60 dias para o plano "Started (Hotmart Bonus)" e marca o bônus
+  como "REDEEMED" em EbookPurchase. Ou seja, o webhook qualifica, e o usuário resgata o bônus de 60
+  dias do plano Started.
 
 
   

@@ -373,10 +373,17 @@ model MonthlyRanking {
   @@index([month, year, rankPosition])
 }
 
-model HotmartPurchase {
-  id         String   @id @default(cuid())
-  buyerEmail String   @unique
-  status     String   @default("PENDING") // PENDING, REDEEMED
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+model EbookPurchase {
+  id            String    @id @default(cuid())
+  buyerEmail    String
+  platform      String    // "HOTMART", "PERFECTPAY", "KIWIFY"
+  productId     String?   // ID do produto na plataforma (se aplicável)
+  price         Decimal?  @db.Decimal(10, 2) // Preço pago (opcional, para futuras validações)
+  transactionId String?   @unique // ID da transação da plataforma (útil para rastreamento)
+  status        String    @default("PENDING") // PENDING, REDEEMED
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([buyerEmail, platform]) // Garante que um email só compra uma vez por plataforma
+  @@map("ebook_purchases") // Nome da tabela no banco de dados
 }
