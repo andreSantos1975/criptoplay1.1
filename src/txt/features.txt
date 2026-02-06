@@ -1,0 +1,214 @@
+👑 PREMIUM — o que isso significa NA PRÁTICA
+🔁 Automação de dados (Premium)
+Para o usuário
+
+Conectar a conta da Binance
+
+A CriptoPlay:
+
+puxa trades automaticamente
+
+atualiza saldo
+
+calcula lucro/prejuízo
+
+preenche o Diário de Trades sozinho
+
+Nada de planilha manual
+
+📌 Exemplo real:
+
+“Entrei vendido em BTC às 10h → a CriptoPlay registrou sozinha.”
+
+Tecnicamente
+
+API Binance (read-only)
+
+Jobs agendados (cron / queue)
+
+Sincronização:
+
+ordens
+
+posições
+
+histórico
+
+syncTradesFromBinance(userId)
+syncBalances(userId)
+
+
+👉 Isso justifica Premium, porque tem custo e complexidade.
+
+🔗 Integração Binance (Premium)
+Para o usuário
+
+Conectar API Key (somente leitura)
+
+Visualizar:
+
+saldo spot
+
+saldo futuros
+
+histórico real de operações
+
+Dados confiáveis (não “digitados”)
+
+📌 Exemplo:
+
+“Meu PnL mensal é baseado em trades reais.”
+
+Tecnicamente
+
+Guardar API key criptografada
+
+Scopes limitados
+
+Rate limit control
+
+Feature flag: apenas Premium
+
+if (!user.isPremium) throw new ForbiddenError();
+
+📊 Funcionalidades avançadas de relatórios (Premium)
+Para o usuário
+
+Relatórios mais profundos, como:
+
+win rate por ativo
+
+drawdown
+
+melhor horário de trade
+
+lucro por estratégia
+
+Exportar:
+
+PDF
+
+CSV
+
+📌 Exemplo:
+
+“BTC dá mais lucro no período da manhã.”
+
+Diferença PRO vs PREMIUM
+PRO	PREMIUM
+Relatório mensal	Histórico completo
+Visão geral	Análise por ativo
+Resumo	Gráficos avançados
+🔹 STARTER — o que isso entrega DE VERDADE
+
+Agora o mais importante: Starter não é fraco, ele é essencial.
+
+🧮 Calculadora de Portfólio (Starter)
+Para o usuário
+
+Informar:
+
+ativo
+
+quantidade
+
+preço médio
+
+Ver:
+
+valor total investido
+
+lucro/prejuízo estimado
+
+alocação (%)
+
+📌 Exemplo:
+
+“40% BTC, 30% ETH, 30% USDT.”
+
+👉 Manual, sem integração com corretora.
+
+Tecnicamente
+
+CRUD simples
+
+Sem automação
+
+Sem API externa
+
+🗂️ Gerenciamento de Contas (Starter)
+Para o usuário
+
+Criar contas internas:
+
+“Carteira Spot”
+
+“Futuros”
+
+“Longo prazo”
+
+Separar estratégias
+
+📌 Exemplo:
+
+“Essa conta é só para hold.”
+
+Tecnicamente
+
+Relacionamento:
+
+User → Accounts → Transactions
+
+
+Base para os planos maiores
+
+🔐 Autenticação e Segurança (Starter)
+Para o usuário
+
+Login seguro
+
+Recuperação de senha
+
+Sessão protegida
+
+Logout remoto
+
+👉 Isso não é diferencial, é obrigatório
+
+Tecnicamente
+
+JWT / NextAuth
+
+Hash de senha
+
+Proteção de rotas
+
+Controle por plano
+
+🧠 POR QUE ISSO FAZ SENTIDO COMO PRODUTO
+Starter
+
+✔ Organização
+✔ Educação
+✔ Planejamento
+❌ Sem automação
+❌ Sem dados reais
+
+Premium
+
+✔ Economia de tempo
+✔ Dados reais
+✔ Análise profissional
+✔ Valor alto percebido
+
+👉 Usuário entende por que pagar mais.
+
+🧩 COMO EXPLICAR ISSO NA PÁGINA DE PREÇOS
+
+Premium:
+
+Automatize seus dados, conecte sua corretora e analise seus resultados com relatórios profissionais.
+
+Starter:
+
+Organize seus investimentos e planeje sua evolução no mercado cripto.
