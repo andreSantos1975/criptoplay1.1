@@ -11,9 +11,11 @@ interface AccessStatusSectionProps {
   permissions: UserPermissions | undefined;
   trialEndsAt?: Date | null;
   userEmail?: string | null;
+  subscriptionType?: string | null;
+  planName?: string | null;
 }
 
-const AccessStatusSection = ({ permissions, trialEndsAt, userEmail }: AccessStatusSectionProps) => {
+const AccessStatusSection = ({ permissions, trialEndsAt, userEmail, subscriptionType, planName }: AccessStatusSectionProps) => {
   const [isCancelling, setIsCancelling] = useState(false);
 
   const isPaidSubscriber = permissions?.hasActiveSubscription && !permissions?.isInTrial;
@@ -89,7 +91,7 @@ const AccessStatusSection = ({ permissions, trialEndsAt, userEmail }: AccessStat
         {isPaidSubscriber && (
           <div className={styles.successBadge}>
             <Sparkles size={20} />
-            <span>Você é um assinante CriptoPlay! Seu acesso premium está ativo.</span>
+            <span>Você é um assinante CriptoPlay! Seu acesso {planName || (subscriptionType === 'PREMIUM' ? 'Premium' : subscriptionType?.charAt(0).toUpperCase() + subscriptionType?.slice(1).toLowerCase() || '')} está ativo</span>
             <button 
               onClick={handleCancelSubscription} 
               disabled={isCancelling}

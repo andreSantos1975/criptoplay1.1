@@ -142,6 +142,8 @@ export default function ProfilePage() {
           permissions={user?.permissions} 
           trialEndsAt={user?.trialEndsAt}
           userEmail={user?.email}
+          subscriptionType={user?.subscriptionStatus}
+          planName={user?.planName}
         />
       </div>
     </div>

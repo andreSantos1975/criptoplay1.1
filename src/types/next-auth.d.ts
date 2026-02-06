@@ -20,6 +20,7 @@ declare module 'next-auth' {
       id: string;
       username?: string | null;
       subscriptionStatus?: string | null; // Adicionado status da assinatura
+      planName?: string | null; // Adicionado nome do plano de assinatura
       isAdmin?: boolean;
       createdAt?: Date;
       emailVerified?: Date | null;

@@ -89,7 +89,33 @@ export const authOptions: AuthOptions = {
           token.permissions = permissions; // 4. ANEXAR permissões ao token
           token.subscriptionStatus = dbUser.subscriptionStatus; // Popula token.subscriptionStatus do dbUser
 
-                  }
+          // Lógica para determinar o planName
+          let userPlanName: string | null = null;
+          if (dbUser.subscriptions && dbUser.subscriptions.length > 0) {
+            // Priorizar a assinatura LIFETIME
+            const lifetimeSubscription = dbUser.subscriptions.find(
+              (sub) => sub.type === "LIFETIME" && (sub.status === "active" || sub.status === "authorized")
+            );
+
+            if (lifetimeSubscription) {
+              userPlanName = lifetimeSubscription.planName;
+            } else {
+              // Encontrar a assinatura ativa mais recente
+              const activeSubscriptions = dbUser.subscriptions.filter(
+                (sub) => sub.status === "active" || sub.status === "authorized"
+              );
+
+              if (activeSubscriptions.length > 0) {
+                // Ordenar por data de início (mais recente primeiro)
+                activeSubscriptions.sort(
+                  (a, b) => b.startDate.getTime() - a.startDate.getTime()
+                );
+                userPlanName = activeSubscriptions[0].planName;
+              }
+            }
+          }
+          token.planName = userPlanName; // Popula token.planName
+        }
       }
       
       // Permitir que usuário LIFETIME contorne checagens de assinatura
@@ -98,6 +124,7 @@ export const authOptions: AuthOptions = {
           token.permissions.hasActiveSubscription = true;
           token.permissions.hasCourseAccess = true; // Garantir acesso ao curso também
         }
+        token.planName = "Vitalício"; // Definir planName para usuário LIFETIME
       }
 
       return token;
@@ -107,6 +134,7 @@ export const authOptions: AuthOptions = {
         session.user.id = token.id as string;
         session.user.isAdmin = token.isAdmin as boolean;
         session.user.subscriptionStatus = token.subscriptionStatus as string | null;
+        session.user.planName = token.planName as string | null; // Passa o planName para a sessão
         session.user.username = token.username as string | null;
         session.user.createdAt = token.createdAt as Date;
         session.user.emailVerified = token.emailVerified as Date | null;
