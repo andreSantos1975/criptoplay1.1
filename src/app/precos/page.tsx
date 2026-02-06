@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { CheckCircle } from "lucide-react";
 import styles from "./pricing.module.css";
+import CpfAlertModal from '@/components/profile/CpfAlertModal'; // Importar o novo modal de alerta
 
 type Plan = {
   id: string;
@@ -67,7 +68,8 @@ export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [cpf, setCpf] = useState("");
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // Manter error para outros fins se houver
+  const [showCpfAlertModal, setShowCpfAlertModal] = useState(false); // NOVO ESTADO
 
   const handleSubscription = async (plan: Plan) => {
     if (status === "unauthenticated") {
@@ -81,12 +83,13 @@ export default function PricingPage() {
     }
 
     if (!cpf.trim()) {
-        setError("Por favor, informe seu CPF para continuar.");
+        // setError("Por favor, informe seu CPF para continuar."); // SUBSTITUIDO PELO MODAL
+        setShowCpfAlertModal(true); // Abre o modal de alerta de CPF
         return;
     }
 
     setLoadingPlan(plan.id);
-    setError(null);
+    setError(null); // Limpar qualquer erro anterior
 
     const isAnnual = billingCycle === "annual";
     const amount = isAnnual ? plan.annualPrice : plan.monthlyPrice;
@@ -125,10 +128,16 @@ export default function PricingPage() {
       }
 
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message); // Mantém o erro para outros tipos de falha na API
     } finally {
       setLoadingPlan(null);
     }
+  };
+
+  const handleCloseCpfAlertModal = () => {
+    setShowCpfAlertModal(false);
+    // Opcional: focar no campo CPF após fechar o modal
+    // document.getElementById('cpf')?.focus();
   };
 
   return (
@@ -163,7 +172,7 @@ export default function PricingPage() {
           placeholder="000.000.000-00"
           className={styles.cpfInput}
         />
-        {error && <p className={styles.error}>{error}</p>}
+        {/* {error && <p className={styles.error}>{error}</p>} // REMOVIDO */}
       </div>
 
       <div className={styles.pricingGrid}>
@@ -204,6 +213,13 @@ export default function PricingPage() {
           </div>
         ))}
       </div>
+
+      {showCpfAlertModal && (
+        <CpfAlertModal
+          message="Por favor, informe seu CPF para continuar com a assinatura. Ele é necessário para processar o pagamento."
+          onClose={handleCloseCpfAlertModal}
+        />
+      )}
     </div>
   );
 }

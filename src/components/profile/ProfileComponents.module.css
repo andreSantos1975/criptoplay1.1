@@ -258,3 +258,80 @@
 .trialBadge span {
   font-weight: 500;
 }
+/* Estilos para o Modal de Confirmação */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6); /* Fundo semi-transparente */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Garante que o modal esteja acima de outros elementos */
+  backdrop-filter: blur(5px); /* Efeito de desfoque no fundo */
+}
+
+.modalContent {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  animation: modalOpen 0.3s ease-out forwards;
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+@keyframes modalOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modalMessage {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* Estilo para botão secundário (Cancelar) - similar a btnPrimary, mas com cores diferentes */
+.btnSecondary {
+  padding: 0.75rem 1.5rem;
+  background-color: #6c757d; /* Bootstrap secondary gray */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btnSecondary:hover {
+  background-color: #5a6268; /* Darker gray on hover */
+}
+
+.btnSecondary:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}

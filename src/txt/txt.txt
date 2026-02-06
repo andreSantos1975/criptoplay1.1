@@ -25,6 +25,7 @@ sudo /opt/lampp/lampp start
 npm run dev 
 -------------------------------
  "cryptocurrency-icons": "^0.18.1" 
+
 Lightweight Charts
 -------------------------------------------------------------------
 biblioteca react-hot-toast usada para feedbacks alert para usuários
@@ -100,9 +101,9 @@ git remote add origin https://github.com/andreSantos1975/ferramentas.git
 git branch -M main
 git push -u origin main
 
-------------------------------------------
+------------------------------------
 
-------------------------------------------
+------------------------------------
 
 Verificar em qual branch você está
 git branch
@@ -903,159 +904,11 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
 
   ------------------------------------------------------------------------
 
-   Ação: Vou pedir para você desabilitar temporariamente a verificação de assinatura no seu
-  src/app/api/webhooks/mercadopago/route.ts para depuração.
-
-   Modifiquei src/app/api/webhooks/mercadopago/route.ts para desativar temporariamente a verificação
-  de assinatura e retornar 200 OK após processar o rawBody.
-
-  1. Reativar Verificação de Assinatura: Para um ambiente de produção e testes mais robustos, a
-      verificação da assinatura é CRÍTICA. Ela garante que a requisição veio realmente do Mercado
-      Pago.
-       * Recomendação: Assim que você confirmar que o Mercado Pago está enviando os webhooks,
-         descomente e teste o bloco de verificação de assinatura.
-   2. Descomentar a Lógica de Processamento: O bloco principal que atualiza o status do usuário e os
-      limites de chat está inteiro comentado.
-       * Recomendação: Para que a Criptoplay de fato atualize o perfil do usuário, você precisará
-         descomentar este bloco.
-   3. IDs dos `PLAN_LIMITS`: O objeto PLAN_LIMITS usa placeholders como "PLANO_STARTER_ID",
-      "PLANO_PRO_ID", "LIFETIME_PLAN".
-       * Recomendação: Estes IDs precisam ser substituídos pelos IDs reais dos seus planos no Mercado
-         Pago para que a lógica de atualização de limites funcione corretamente.
-   4. `external_reference`: O código usa preapproval.external_reference e payment.external_reference
-      para identificar o userId.
-       * Recomendação: Certifique-se de que, ao criar a preferência de pagamento ou plano de
-         assinatura na Criptoplay antes de redirecionar para o Mercado Pago, você está passando o
-         userId da Criptoplay corretamente neste campo external_reference. É assim que o Mercado Pago
-         "devolve" essa informação na notificação.
-
-  Em Resumo:
-
-  O arquivo está preparado para testar a *recepção inicial dos webhooks (o que você já conseguiu com
-  o Insomnia). No entanto, ele AINDA NÃO está alinhado para o teste funcional completo* de
-  atualização de perfil de usuário ou para segurança robusta, porque a lógica principal e a
-  verificação de assinatura estão comentadas e os IDs dos planos são placeholders.
-
-  Para resolver "o status do perfil do usuario nao atualiza quando a assinatura é feita no checkout
-  depois da compra na plataforma", você precisa:
-
-
-   1. Descomentar o bloco de lógica de processamento (do // BLOC até o // FIM DO BLOCO COMENTADO).
-   2. Substituir os IDs placeholders em `PLAN_LIMITS` pelos IDs reais dos seus planos do Mercado
-      Pago.
-   3. Verificar se o `external_reference` está sendo passado corretamente para o Mercado Pago quando
-      a assinatura/pagamento é criada.
-
-  Após fazer essas mudanças, você poderá tentar um fluxo de assinatura/pagamento real novamente e
-  verificar os logs do ngrok/servidor para o processamento completo.
-
-
-  Você gostaria que eu prosseguisse descomentando a lógica de processamento e a verificação de
-  assinatura, ou prefere revisar os PLAN_LIMITS e o external_reference primeiro?
-
-
- 1 GEMINI.md file
-▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
-Configuração do Mercado Pago: Confirme que sua conta no Mercado Pago está configurada para
-      enviar os eventos de webhook relevantes (ex: preapproval, payment) para a sua notification_url
-      correta e publicamente acessível (a URL do seu ngrok, se estiver testando localmente).
----------------------------------------
-
-
-   1. IDs em `PLAN_LIMITS`: O objeto PLAN_LIMITS ainda tem IDs de placeholder (ex:
-      "PLANO_STARTER_ID"). Você precisa substituir esses placeholders pelos IDs reais dos seus planos
-      configurados no Mercado Pago. Caso contrário, a atualização dos limites de chat não funcionará.
-   2. `external_reference`: Certifique-se de que o userId da Criptoplay está sendo passado
-      corretamente como external_reference ao criar as preferências de pagamento ou assinaturas no
-      Mercado Pago. Isso é fundamental para vincular as notificações ao usuário correto.
-
-        Você precisa ir ao seu painel do Mercado Pago, encontrar os IDs reais de cada um dos seus planos
-  (Starter, Pro, Vitalício, etc.) e substituir as strings "PLANO_STARTER_ID", etc., pelos IDs exatos.
-
-  O planId que seu código busca (seja de subscription.planId ou
-  payment.additional_info?.items?.[0]?.id) precisa corresponder às chaves que você define em
-  `PLAN_LIMITS`.
-
-
-  Seu próximo passo é:
-
-
-   1. Acessar seu painel do Mercado Pago e encontrar os IDs reais para cada um dos seus planos.
-   2. Atualizar o objeto `PLAN_LIMITS` no arquivo src/app/api/webhooks/mercadopago/route.ts com esses
-      IDs reais.
-
-      -------------------
-
-        1. `notification_url` (URL do Webhook): A URL que você configurou no painel do Mercado Pago para
-      receber os webhooks está incorreta, inalcançável (seu ngrok não está rodando, ou a URL mudou)
-      ou não está associada ao produto/plano correto.
-   2. Tipos de Evento não Inscritos: Os tipos de evento que deveriam acionar o webhook (ex:
-      preapproval, payment aprovado) não estão habilitados para sua aplicação nas configurações de
-      webhook do Mercado Pago.
-   3. Status do Pagamento/Assinatura: O pagamento ou a assinatura não está atingindo um status final
-      (ex: "aprovado", "autorizado") que o Mercado Pago considera que deve gerar um evento de
-      webhook.
-Assim que a verificação de assinatura passar, o passo final será atualizar os PLAN_LIMITS com os
-  IDs reais dos seus planos do Mercado Pago. Aguardarei sua confirmação após testar a verificação de
-  assinatura.
-
-
   ==================================================================================
 
   ------------------- 04/02/2026 -------21:22--------------------------------------
 
-  Excelente! Seus logs confirmam que a verificação de assinatura agora está funcionando corretamente!
-
-
-  As linhas chave DEBUG: Hash Recebido (v1) e DEBUG: Hash Calculado são idênticas para todos os
-  webhooks recebidos neste log. Isso significa que a verificação de assinatura passou, e seu webhook
-  está retornando 200 OK para todas essas notificações válidas!
-
-  Feedback:
-
-
-  Seu webhook agora está recebendo e validando corretamente a X-Signature do Mercado Pago. Isso é um
-  grande avanço!
-
-  No entanto, há um novo problema:
-
-
-   1 Webhook: Nenhuma assinatura pendente encontrada para o usuário cml7yhdan00005oguexfu6bg4 e plano
-     LIFETIME_PLAN.
-  Esta mensagem é da sua lógica de processamento, especificamente do manipulador do tipo payment. Ela
-  indica que:
-   * Um webhook do tipo payment foi recebido e validado.
-   * Seu código tentou encontrar uma assinatura pendente para o userId: "cml7yhdan00005oguexfu6bg4" e
-     planId: "LIFETIME_PLAN".
-   * Ele não conseguiu encontrar uma assinatura pendente correspondente.
-
-
-  Isso significa que o usuário (cml7yhdan00005oguexfu6bg4) iniciou um pagamento LIFETIME_PLAN com
-  sucesso, mas seu banco de dados (Prisma) não tinha uma entrada de assinatura pending correspondente
-  para esse usuário e ID do plano.
-
-  Possíveis razões para "Nenhuma assinatura pendente encontrada":
-
-
-   1. `planId: "LIFETIME_PLAN"` está incorreto: Como discutimos anteriormente, PLAN_LIMITS ainda usa
-      IDs de placeholder. O código também define planId = ((payment as unknown) as
-      PaymentWithAdditionalInfo).additional_info?.items?.[0]?.id || 'LIFETIME_PLAN';
-       * Se payment.additional_info?.items?.[0]?.id não estiver presente ou não corresponder à chave
-         em PLAN_LIMITS, o padrão será "LIFETIME_PLAN".
-       * Se sua chamada prisma.subscription.create em src/app/api/subscriptions/create/route.ts
-         estiver usando um planId diferente para planos lifetime (por exemplo, o ID real do Mercado
-         Pago), então a busca no webhook falhará se o padrão for "LIFETIME_PLAN".
-   2. Incompatibilidade de `userId`: Menos provável, pois external_reference parece estar sendo
-      passado corretamente, mas vale a pena verificar novamente se cml7yhdan00005oguexfu6bg4 é o ID
-      real de um usuário em seu banco de dados.
-   3. Status da assinatura: A assinatura pode não ter sido criada com status: 'pending' ou pode já
-      ter sido atualizada por outro webhook.
-   4. Tempo: Pode haver um pequeno atraso entre seu prisma.subscription.create em
-      api/subscriptions/create e o momento em que o webhook chega e tenta consultá-lo.
-
-
-  Plano de Ação:
-
+  
 
    1. Atualize `PLAN_LIMITS` com os IDs reais do Mercado Pago. Este é o próximo passo mais crítico.
        * Vá para o seu painel Sandbox do Mercado Pago.

@@ -6,6 +6,7 @@ import { ptBR } from 'date-fns/locale';
 import styles from './ProfileComponents.module.css';
 import { UserPermissions } from '@/types/next-auth.d'; // Importar a interface de permissões
 import toast from 'react-hot-toast';
+import ConfirmationModal from './ConfirmationModal'; // Importar o novo componente do modal
 
 interface AccessStatusSectionProps {
   permissions: UserPermissions | undefined;
@@ -17,6 +18,7 @@ interface AccessStatusSectionProps {
 
 const AccessStatusSection = ({ permissions, trialEndsAt, userEmail, subscriptionType, planName }: AccessStatusSectionProps) => {
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
   const isPaidSubscriber = permissions?.hasActiveSubscription && !permissions?.isInTrial;
   const isHotmartPurchaser = permissions?.hasCourseAccess && !isPaidSubscriber && !permissions?.isInTrial;
@@ -27,13 +29,17 @@ const AccessStatusSection = ({ permissions, trialEndsAt, userEmail, subscription
   const trialDaysRemaining = Math.max(0, trialDaysDiff + 1);
   const formattedTrialEndDate = trialEndsAt ? format(new Date(trialEndsAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR }) : '';
 
-  const handleCancelSubscription = async () => {
-    if (!window.confirm("Tem certeza que deseja cancelar sua assinatura? Você perderá o acesso aos benefícios ao final do ciclo de faturamento atual.")) {
-      return;
-    }
+  const handleOpenModal = () => { // Função para abrir o modal
+    setShowConfirmationModal(true);
+  };
 
-    setIsCancelling(true);
-    toast.dismiss();
+  const handleCloseModal = () => { // Função para fechar o modal sem confirmar
+    setShowConfirmationModal(false);
+  };
+
+  const handleConfirmCancel = async () => { // Lógica de cancelamento, disparada pelo modal
+    setShowConfirmationModal(false); // Fecha o modal
+    setIsCancelling(true); // Começa a mostrar o estado de carregamento no botão principal
 
     try {
       const res = await fetch('/api/subscriptions/cancel', {
@@ -91,9 +97,9 @@ const AccessStatusSection = ({ permissions, trialEndsAt, userEmail, subscription
         {isPaidSubscriber && (
           <div className={styles.successBadge}>
             <Sparkles size={20} />
-            <span>Você é um assinante CriptoPlay! Seu acesso {planName || (subscriptionType === 'PREMIUM' ? 'Premium' : subscriptionType?.charAt(0).toUpperCase() + subscriptionType?.slice(1).toLowerCase() || '')} está ativo</span>
+            <span>Você é um assinante CriptoPlay! Seu acesso {planName || (subscriptionType ? (subscriptionType === 'PREMIUM' ? 'Premium' : subscriptionType.charAt(0).toUpperCase() + subscriptionType.slice(1).toLowerCase()) : '')} está ativo</span>
             <button 
-              onClick={handleCancelSubscription} 
+              onClick={handleOpenModal} // Chama a função para abrir o modal
               disabled={isCancelling}
               className={styles.btnDanger} 
               style={{ marginTop: '1rem', width: '100%' }}
@@ -116,6 +122,15 @@ const AccessStatusSection = ({ permissions, trialEndsAt, userEmail, subscription
           </div>
         )}
       </div>
+      
+      {showConfirmationModal && (
+        <ConfirmationModal
+          message="Tem certeza que deseja cancelar sua assinatura? Você perderá o acesso aos benefícios ao final do ciclo de faturamento atual."
+          onConfirm={handleConfirmCancel}
+          onCancel={handleCloseModal}
+          isLoading={isCancelling}
+        />
+      )}
     </div>
   );
 };

@@ -53,7 +53,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'Email missing' }, { status: 200 });
       }
 
-      const buyerEmail = data?.buyer?.email;
       const productHotmartId = data?.product?.id; // ID do produto na Hotmart
       const productHotmartName = data?.product?.name; // Nome do produto na Hotmart
       const purchasePrice = data?.price?.value; // Valor da compra
