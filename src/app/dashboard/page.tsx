@@ -182,6 +182,13 @@ const DashboardPage = () => {
   const [editingIncome, setEditingIncome] = useState<Income | undefined>();
   const [budgetCategories, setBudgetCategories] = useState<Category[]>([]);
   const [simulatorMode, setSimulatorMode] = useState<'spot' | 'futures'>('spot');
+  const [simulatorKey, setSimulatorKey] = useState(0); // Novo estado para a key
+
+  useEffect(() => {
+    if (activeTab === 'analise') {
+        setSimulatorKey(Date.now()); // Força a remontagem dos simuladores quando a aba de análise é ativada
+    }
+  }, [activeTab]);
 
   // --- PERSONAL FINANCE QUERIES & MUTATIONS ---
   const year = selectedDate.getFullYear();
@@ -442,7 +449,7 @@ const DashboardPage = () => {
         if (!hasActiveSubscription(session)) return renderLockedContent();
         
         return (
-          <div>
+          <div key={simulatorKey}>
             <div className={styles.simulatorToggle}>
               <button 
                 onClick={() => setSimulatorMode('spot')}

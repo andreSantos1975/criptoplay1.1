@@ -10,7 +10,7 @@ import { useRealtimeChartUpdate } from '@/hooks/useRealtimeChartUpdate';
 import { Alert, AlertType, Trade } from '@prisma/client';
 import { UTCTimestamp } from 'lightweight-charts';
 
-// Componentes do simulador e dashboard
+/// Componentes do simulador e dashboard
 import AssetHeader from '@/components/dashboard/AssetHeader/AssetHeader';
 import SimulatorChart from '@/components/simulator/SimulatorChart/SimulatorChart';
 import { PositionRow } from '@/components/simulator/PositionRow/PositionRow';
@@ -293,7 +293,7 @@ const Simulator = () => {
 
   // --- CÁLCULOS MEMOIZADOS E EFEITOS ---
   const entryPrice = currentPriceData ? parseFloat(currentPriceData.price) : 0;
-  const tradeLevelsForChart: TradeLevels = { entry: entryPrice, stopLoss, takeProfit };
+  const tradeLevelsForChart: TradeLevels = useMemo(() => ({ entry: entryPrice, stopLoss, takeProfit }), [entryPrice, stopLoss, takeProfit]);
 
   // Efeito para aplicar Stop Loss (1%) e Take Profit (2%) padrão
   useEffect(() => {

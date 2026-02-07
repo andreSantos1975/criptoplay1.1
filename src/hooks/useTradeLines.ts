@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { IChartApi, ISeriesApi, IPriceLine, LineStyle } from 'lightweight-charts';
 
-// Props para o nosso hook
+/// Props para o nosso hook
 interface UseTradeLinesProps {
   chartRef: React.RefObject<IChartApi | null>;
   seriesRef: React.RefObject<ISeriesApi<"Candlestick"> | null>;
@@ -42,6 +42,8 @@ export const useTradeLines = ({
   const prospectivePriceLinesRef = useRef<Partial<Record<'takeProfit' | 'stopLoss', IPriceLine>>>({});
   const [draggingLine, setDraggingLine] = useState<'takeProfit' | 'stopLoss' | null>(null);
 
+
+
   const onLevelsChangeRef = useRef(onLevelsChange);
   onLevelsChangeRef.current = onLevelsChange;
   const tradeLevelsRef = useRef(tradeLevels);
@@ -49,12 +51,21 @@ export const useTradeLines = ({
 
   const cleanupLines = useCallback((linesRef: React.MutableRefObject<any>) => {
     const series = seriesRef.current;
+    console.log(`[useTradeLines] Chamando cleanupLines. Series disponível: ${!!series}. Tipo de linesRef: ${linesRef.current instanceof Map ? 'Map' : typeof linesRef.current}`);
     if (series && linesRef.current) {
       if (linesRef.current instanceof Map) {
-        linesRef.current.forEach(line => series.removePriceLine(line));
+        linesRef.current.forEach((line, key) => {
+          series.removePriceLine(line);
+          console.log(`[useTradeLines] Removendo static price line: ${key}`);
+        });
         linesRef.current.clear();
       } else if (typeof linesRef.current === 'object') {
-        Object.values(linesRef.current).forEach((line: any) => line && series.removePriceLine(line));
+        Object.values(linesRef.current).forEach((line: any) => {
+          if (line) {
+            series.removePriceLine(line);
+            console.log(`[useTradeLines] Removendo prospective price line: ${line.options().title}`);
+          }
+        });
         linesRef.current = {};
       }
     }
@@ -63,7 +74,9 @@ export const useTradeLines = ({
   // Effect for STATIC lines from open positions
   useEffect(() => {
     const series = seriesRef.current;
+    console.log(`[useTradeLines] useEffect de STATIC lines para símbolo: ${symbol}. isChartReady: ${isChartReady}. Series disponível: ${!!series}`);
     if (!isChartReady || !series) {
+      console.log(`[useTradeLines] Cleanup de STATIC lines na inicialização/desativação.`);
       cleanupLines(staticPriceLinesRef);
       return;
     }
@@ -89,6 +102,7 @@ export const useTradeLines = ({
             existingLine.applyOptions(lineOptions);
           } else {
             staticPriceLinesRef.current.set(key, series.createPriceLine(lineOptions));
+            console.log(`[useTradeLines] Criando static price line: ${title}`);
           }
         }
       });
@@ -98,6 +112,7 @@ export const useTradeLines = ({
       if (!linesToKeep.has(key)) {
         series.removePriceLine(line);
         staticPriceLinesRef.current.delete(key);
+        console.log(`[useTradeLines] Removendo static price line não necessária: ${key}`);
       }
     });
 
@@ -106,6 +121,7 @@ export const useTradeLines = ({
   // Effect for PROSPECTIVE (draggable) lines
   useEffect(() => {
     const series = seriesRef.current;
+    console.log(`[useTradeLines] useEffect de PROSPECTIVE lines para símbolo: ${symbol}. isChartReady: ${isChartReady}. Series disponível: ${!!series}`);
     if (!isChartReady || !series) {
       cleanupLines(prospectivePriceLinesRef);
       return;
@@ -117,34 +133,48 @@ export const useTradeLines = ({
       return Math.abs(val1 - Number(val2)) < 1e-9;
     };
     
-    // --- Remove-Then-Add Strategy ---
+    // Declaração movida para cá
+    const currentPosition = openPositions?.find(pos => pos.symbol === symbol); 
     
-    // 1. Always remove existing prospective lines before deciding to redraw.
-    if (prospectivePriceLinesRef.current.takeProfit) {
-      series.removePriceLine(prospectivePriceLinesRef.current.takeProfit);
-      delete prospectivePriceLinesRef.current.takeProfit;
-    }
-    if (prospectivePriceLinesRef.current.stopLoss) {
-      series.removePriceLine(prospectivePriceLinesRef.current.stopLoss);
-      delete prospectivePriceLinesRef.current.stopLoss;
+    // Limpar linhas prospectivas existentes no início para evitar duplicação ou persistência de linhas não desejadas
+    // antes de potencialmente criar novas.
+    Object.values(prospectivePriceLinesRef.current).forEach((line: any) => {
+      if (line) {
+        series.removePriceLine(line);
+      }
+    });
+    prospectivePriceLinesRef.current = {}; // Limpa o ref para garantir que não haja referências a linhas removidas.
+
+    // Apenas renderizar linhas prospectivas se houver um tipo de operação selecionado
+    // E NÃO houver uma posição aberta para este símbolo.
+    if ((tipoOperacao === 'compra' || tipoOperacao === 'venda') && !currentPosition) {
+      const { takeProfit, stopLoss } = tradeLevels;
+
+      // Renderizar Take Profit
+      if (takeProfit > 0) {
+        const tpLineOptions = createLineOptions(takeProfit, '#00C853', `TP Prosp.`, true);
+        const tpLine = series.createPriceLine(tpLineOptions);
+        prospectivePriceLinesRef.current.takeProfit = tpLine;
+        console.log(`[useTradeLines] Criando prospective TP line para ${symbol} em ${takeProfit}`);
+      }
+
+      // Renderizar Stop Loss
+      if (stopLoss > 0) {
+        const slLineOptions = createLineOptions(stopLoss, '#D32F2F', `SL Prosp.`, true);
+        const slLine = series.createPriceLine(slLineOptions);
+        prospectivePriceLinesRef.current.stopLoss = slLine;
+        console.log(`[useTradeLines] Criando prospective SL line para ${symbol} em ${stopLoss}`);
+      }
+    } else {
+      // Se as condições não forem atendidas (ou seja, posição aberta, ou não em modo de planejamento),
+      // garantir que todas as linhas prospectivas sejam removidas
+      console.log(`[useTradeLines] Limpando PROSPECTIVE lines para ${symbol} - Condições não atendidas (posição aberta ou não em planejamento).`);
+      cleanupLines(prospectivePriceLinesRef);
     }
 
-    const currentPosition = openPositions?.find(pos => pos.symbol === symbol);
 
-    // 2. Decide if the lines need to be re-created.
-    // Re-create Take Profit line if it's a new level and not redundant with an existing position's TP.
-    if (tradeLevels.takeProfit > 0 && !isNearlyEqual(tradeLevels.takeProfit, Number(currentPosition?.takeProfit))) {
-      const tpOptions = createLineOptions(tradeLevels.takeProfit, '#66BB6A', 'TP Prev.', true);
-      prospectivePriceLinesRef.current.takeProfit = series.createPriceLine(tpOptions);
-    }
 
-    // Re-create Stop Loss line if it's a new level and not redundant with an existing position's SL.
-    if (tradeLevels.stopLoss > 0 && !isNearlyEqual(tradeLevels.stopLoss, Number(currentPosition?.stopLoss))) {
-      const slOptions = createLineOptions(tradeLevels.stopLoss, '#FF7043', 'SL Prev.', true);
-      prospectivePriceLinesRef.current.stopLoss = series.createPriceLine(slOptions);
-    }
-
-  }, [isChartReady, tradeLevels, openPositions, symbol, seriesRef, cleanupLines]);
+  }, [isChartReady, tradeLevels, openPositions, symbol, seriesRef, cleanupLines, marketType, tipoOperacao]);
 
 
   // Effect for DRAG-AND-DROP listeners
@@ -154,6 +184,7 @@ export const useTradeLines = ({
     const series = seriesRef.current;
 
     if (!isChartReady || !chartElement || !chart || !series) return;
+    console.log(`[useTradeLines] Configurando DRAG-AND-DROP listeners para símbolo: ${symbol}`);
 
     const isNearPriceLine = (priceLine: IPriceLine, y: number) => {
       const priceY = series.priceToCoordinate(priceLine.options().price);
@@ -243,6 +274,7 @@ export const useTradeLines = ({
 
 
     return () => {
+      console.log(`[useTradeLines] Removendo DRAG-AND-DROP listeners para símbolo: ${symbol}`);
       // Remove Listeners
       chartElement.removeEventListener('mousedown', handleMouseDown);
       chartElement.removeEventListener('mousemove', handleMouseMove);
@@ -251,15 +283,17 @@ export const useTradeLines = ({
       chartElement.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isChartReady, chartRef, seriesRef, chartContainerRef, draggingLine]);
+  }, [isChartReady, chartRef, seriesRef, chartContainerRef, draggingLine, symbol]); // Adicionei symbol aqui para o log ser mais útil
 
 
   // Cleanup on unmount
   useEffect(() => {
+    console.log(`[useTradeLines] useEffect de UNMOUNT para símbolo: ${symbol}`);
     return () => {
+      console.log(`[useTradeLines] Executando cleanup no UNMOUNT para símbolo: ${symbol}`);
       cleanupLines(staticPriceLinesRef);
       cleanupLines(prospectivePriceLinesRef);
     };
-  }, [cleanupLines]);
+  }, [cleanupLines, symbol]); // Adicionei symbol aqui para o log ser mais útil
 };
 

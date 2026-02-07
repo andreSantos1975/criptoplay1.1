@@ -469,6 +469,12 @@ const FuturesSimulator = () => {
     defaultsAppliedRef.current = false;
   }, [side]);
 
+  // Resetar tradeLevels e defaultsAppliedRef quando o símbolo mudar
+  useEffect(() => {
+    setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 });
+    defaultsAppliedRef.current = false;
+  }, [symbol]);
+
   // MOVED: Hooks de dados movidos para o topo para garantir inicialização antes do uso
   const { data: exchangeRateData, isLoading: isLoadingRate } = useQuery({
     queryKey: ['usdtToBrlRate'],
@@ -667,13 +673,13 @@ const FuturesSimulator = () => {
       queryClient.invalidateQueries({ queryKey: ['trades'] });
       queryClient.invalidateQueries({ queryKey: ['simulatorTrades'] });
       queryClient.invalidateQueries({ queryKey: ['simulatorProfile'] });
-      // Limpa as linhas de rascunho (prospectivas) após o sucesso da operação
-      setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 });
-
-      // Abrir o modal do diário
-      setJournalPositionId(newPosition.id);
-      setIsJournalModalOpen(true);
-    },
+                // Limpa as linhas de rascunho (prospectivas) após o sucesso da operação
+                setTradeLevels({ entry: 0, stopLoss: 0, takeProfit: 0 });
+                setSide('LONG'); // Resetar o lado da operação para o padrão
+      
+                // Abrir o modal do diário
+                setJournalPositionId(newPosition.id);
+                setIsJournalModalOpen(true);    },
     onError: (error: Error) => {
       toast.dismiss();
       if (error.message.includes('Usuário não encontrado')) {

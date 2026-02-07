@@ -26,7 +26,7 @@ interface SimulatorChartProps {
   realtimeChartUpdate: BarData | null;
   openPositions: any[] | undefined;
   alerts: Alert[] | undefined;
-  // New props for better UX
+  /// New props for better UX
   prospectiveAlert: { price: number } | null;
   onProspectiveAlertChange: (newAlert: { price: number }) => void;
   onStartCreateAlert: () => void;
@@ -59,6 +59,8 @@ export const SimulatorChart = memo(({
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [isChartReady, setIsChartReady] = useState(false);
 
+  console.log(`[SimulatorChart] Renderizando para símbolo: ${symbol}. isChartReady: ${isChartReady}`);
+
   // Verifica se o usuário tem acesso ao gráfico com base na assinatura
   const hasAccess = session?.user?.permissions?.hasActiveSubscription;
 
@@ -90,12 +92,20 @@ export const SimulatorChart = memo(({
 
   // Effect to create and cleanup the chart
   useEffect(() => {
+    console.log(`[SimulatorChart] useEffect de inicialização. Símbolo: ${symbol}. hasAccess: ${hasAccess}`);
     // Se não tiver acesso, nem tenta criar o gráfico
-    if (!hasAccess) return;
+    if (!hasAccess) {
+      console.log(`[SimulatorChart] Sem acesso para símbolo: ${symbol}. Não criando gráfico.`);
+      return;
+    }
 
     const chartElement = chartContainerRef.current;
-    if (!chartElement) return;
+    if (!chartElement) {
+      console.log(`[SimulatorChart] chartContainerRef.current é null para símbolo: ${symbol}.`);
+      return;
+    }
 
+    console.log(`[SimulatorChart] Criando gráfico para símbolo: ${symbol}`);
     const chart = createChart(chartElement, {
       layout: { background: { type: ColorType.Solid, color: "#131722" }, textColor: "#D9D9D9" },
       grid: { vertLines: { color: "#2A2E39" }, horzLines: { color: "#2A2E39" } },
@@ -124,13 +134,16 @@ export const SimulatorChart = memo(({
 
     resizeObserver.observe(chartElement);
     setIsChartReady(true);
+    console.log(`[SimulatorChart] Gráfico criado e pronto para símbolo: ${symbol}`);
 
     return () => {
+      console.log(`[SimulatorChart] Cleanup do gráfico para símbolo: ${symbol}`);
       resizeObserver.disconnect();
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
       setIsChartReady(false);
+      console.log(`[SimulatorChart] Gráfico removido e referências nulas para símbolo: ${symbol}`);
     };
   }, [symbol, hasAccess]); // Dependências simplificadas
 
