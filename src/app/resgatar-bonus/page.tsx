@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styles from "./ResgatarBonusPage.module.css"; // Atualizado para ResgatarBonusPage.module.css
 
-export default function ResgatarBonusPage() {
+function ResgatarBonusPageContent() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error", text: string } | null>(null);
@@ -78,5 +78,13 @@ export default function ResgatarBonusPage() {
         </p>
       )}
     </div>
+  );
+}
+
+export default function ResgatarBonusPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResgatarBonusPageContent />
+    </Suspense>
   );
 }

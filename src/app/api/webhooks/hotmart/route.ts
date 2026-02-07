@@ -91,11 +91,12 @@ export async function POST(request: NextRequest) {
           });
 
           // Upsert HotmartPurchase status to REDEEMED
-          await tx.hotmartPurchase.upsert({
-            where: { buyerEmail: buyerEmail },
+          await tx.ebookPurchase.upsert({
+            where: { buyerEmail_platform: { buyerEmail: buyerEmail, platform: 'HOTMART' } },
             update: { status: 'REDEEMED' },
             create: {
               buyerEmail: buyerEmail,
+              platform: 'HOTMART', // Adicionar a plataforma ao criar
               status: 'REDEEMED',
             },
           });
@@ -103,11 +104,11 @@ export async function POST(request: NextRequest) {
         });
       } else {
         // User not found, just record the Hotmart purchase as PENDING
-        await prisma.hotmartPurchase.upsert({
-          where: { buyerEmail: buyerEmail },
+                  await prisma.ebookPurchase.upsert({          where: { buyerEmail_platform: { buyerEmail: buyerEmail, platform: 'HOTMART' } },
           update: {}, // No specific update if not found, just create or ensure existence
           create: {
             buyerEmail: buyerEmail,
+            platform: 'HOTMART', // Adicionar a plataforma ao criar
             status: 'PENDING', // Keep as PENDING if user not found, requires manual linking
           },
         });

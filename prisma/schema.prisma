@@ -45,6 +45,7 @@ model User {
   subscriptions       Subscription[]
   alerts              Alert[]
   futuresPositions    FuturesPosition[]
+  ebookPurchases      EbookPurchase[] // Adicionar esta linha
 }
 
 model Subscription {
@@ -383,6 +384,8 @@ model EbookPurchase {
   status        String    @default("PENDING") // PENDING, REDEEMED
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  userId        String?   // Adicionar userId para vincular ao User que resgatou/espera resgatar
+  user          User?     @relation(fields: [userId], references: [id])
 
   @@unique([buyerEmail, platform]) // Garante que um email só compra uma vez por plataforma
   @@map("ebook_purchases") // Nome da tabela no banco de dados

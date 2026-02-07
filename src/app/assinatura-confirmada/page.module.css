@@ -1,0 +1,75 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  text-align: center;
+  padding: 1rem;
+}
+
+.card {
+  background-color: hsl(var(--card));
+  padding: 2rem;
+  border-radius: 0.5rem; /* Equivalente a rounded-lg */
+  box-shadow: var(--shadow-medium); /* Equivalente a shadow-lg, usando variável do globals.css */
+  max-width: 28rem; /* Equivalente a max-w-md */
+  width: 100%;
+}
+
+.icon {
+  margin-left: auto;
+  margin-right: auto;
+  height: 6rem; /* Equivalente a h-24 */
+  width: 6rem; /* Equivalente a w-24 */
+  color: hsl(158 64% 38%); /* Um verde similar ao green-500, usando sucesso do globals.css */
+  margin-bottom: 1rem; /* Equivalente a mb-4 */
+}
+
+.title {
+  font-size: 1.875rem; /* Equivalente a text-3xl */
+  font-weight: 700; /* Equivalente a font-bold */
+  color: hsl(var(--foreground)); /* Assumindo que text-gray-900 ou text-white em darkmode se resolve para foreground */
+  margin-bottom: 1rem; /* Equivalente a mb-4 */
+}
+
+.paragraph {
+  color: hsl(var(--foreground)); /* Assumindo que text-gray-700 ou text-gray-300 em darkmode se resolve para foreground */
+  margin-bottom: 1.5rem; /* Equivalente a mb-6 ou mb-8 */
+}
+
+.button {
+  width: 100%; /* Equivalente a w-full */
+  padding-top: 0.75rem; /* Equivalente a py-3 */
+  padding-bottom: 0.75rem; /* Equivalente a py-3 */
+  font-size: 1.125rem; /* Equivalente a text-lg */
+  font-weight: 600; /* Equivalente a font-semibold */
+  /* Cores do botão: usando primary como base para o botão principal */
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border: none;
+  border-radius: 0.25rem; /* Pequeno arredondamento */
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.button:hover {
+  background-color: hsl(var(--primary-muted)); /* Um tom um pouco mais escuro ou mais claro */
+}
+
+.footerText {
+  margin-top: 1rem; /* Equivalente a mt-4 */
+  font-size: 0.875rem; /* Equivalente a text-sm */
+  color: hsl(var(--muted-foreground)); /* Equivalente a text-gray-500 ou text-gray-400 em darkmode */
+}
+
+.link {
+  color: hsl(220 84% 25%); /* Um azul similar ao blue-600, usando primary */
+  text-decoration: underline;
+}
+
+.link:hover {
+  text-decoration: none;
+}

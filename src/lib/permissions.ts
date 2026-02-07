@@ -1,5 +1,5 @@
 import { Session } from "next-auth";
-import { Subscription, HotmartPurchase } from "@prisma/client";
+import { Subscription, EbookPurchase } from "@prisma/client";
 import { UserPermissions } from "@/types/next-auth.d";
 import prisma from "./prisma"; // Importar Prisma
 
@@ -59,11 +59,10 @@ export async function getUserPermissions(user: {
   // 4. Verifica se tem compra registrada na Hotmart
   let hasPurchasedFromHotmart = false;
   if (email) {
-    const hotmartPurchase = await prisma.hotmartPurchase.findUnique({
-      where: { buyerEmail: email },
-    });
+    const ebookPurchase = await prisma.ebookPurchase.findUnique({
+              where: { buyerEmail_platform: { buyerEmail: email, platform: 'HOTMART' } },    });
     // Consideramos acesso se a compra existir e tiver sido resgatada (ou o status que definirmos como válido)
-    if (hotmartPurchase && (hotmartPurchase.status === 'REDEEMED' || hotmartPurchase.status === 'approved' || hotmartPurchase.status === 'completed')) {
+    if (ebookPurchase && (ebookPurchase.status === 'REDEEMED' || ebookPurchase.status === 'approved' || ebookPurchase.status === 'completed')) {
       hasPurchasedFromHotmart = true;
     }
   }

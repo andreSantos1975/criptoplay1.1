@@ -969,6 +969,44 @@ Qual seria a tática de implementaçao para usuarios dos tres planos da platafor
   atribui a ele uma Subscription de 60 dias para o plano "Started (Hotmart Bonus)" e marca o bônus
   como "REDEEMED" em EbookPurchase. Ou seja, o webhook qualifica, e o usuário resgata o bônus de 60
   dias do plano Started.
+------------------------------------------------------------------------------------------
+
+ Concluí todas as refatorações. O modelo EbookPurchase e User foi atualizado no Prisma para vincular
+  compras a usuários, com migração realizada. Criei activateBonusSubscription em src/lib/utils.ts
+  para gerenciar a ativação de assinaturas de 60 dias. O endpoint de ativação agora lida com o
+  cenário de "aguardando confirmação" e ativa a assinatura automaticamente via
+  activateBonusSubscription quando o webhook chega e a compra é confirmada. Todos os endpoints de
+  webhook foram atualizados para usar essa função, garantindo a ativação automática e o registro
+  REDEEMED. O sistema está preparado para pagamentos com confirmação atrasada e múltiplas
+  plataformas. Os próximos passos essenciais para o usuário são configurar variáveis de ambiente,
+  webhooks e verificação de assinatura para cada plataforma, e testar o fluxo completo. Aguardo o
+  próximo comando.
 
 
+ Ok, o fluxo de "definição de senha" para usuários que resgatam bônus sem uma conta prévia
+  funcionará assim: ao resgatar, uma nova conta é criada e um token de redefinição de senha
+  é gerado e enviado por e-mail, permitindo ao usuário definir sua senha e acessar o plano.
+  O webhook da plataforma de compra então ativa a assinatura do plano. Os componentes
+  envolvidos são src/app/api/bonus/activate/route.ts (criação de usuário e envio de e-mail),
+  src/lib/mail.ts (função de envio de e-mail), src/emails/PasswordResetEmail.tsx (template
+  de e-mail) e src/app/auth/new-password/page.tsx (página de definição de senha). O plano de
+  ação é: 1) Adicionar função de envio de e-mail em src/lib/mail.ts. 2) Modificar
+  src/app/api/bonus/activate/route.ts para gerar token e enviar e-mail. 3) Verificar e
+  adaptar src/app/auth/new-password/page.tsx e /api/auth/reset-password/route.ts. Começarei
+  lendo src/lib/mail.ts.
+
+   Minha recomendação é prosseguir com a implementação da sendSetPasswordEmail em
+  src/lib/mail.ts e as modificações em src/app/api/bonus/activate/route.ts.
   
+  A Tarefa 2 foi concluída. O fluxo de bônus agora inclui a criação de um User (se
+  necessário), geração de passwordResetToken com expiração, envio de e-mail para definição
+  de senha e uma mensagem amigável para o usuário. Todas as funcionalidades foram
+  implementadas, desde a adaptação do Prisma e funções utilitárias até a página de resgate e
+  endpoints de ativação/webhook.
+
+
+  Os próximos passos essenciais para o usuário são configurar variáveis de ambiente (Resend,
+  NextAuth, IDs/preços de e-books por plataforma), configurar webhooks em cada plataforma,
+  implementar a verificação de assinatura para segurança e realizar testes completos para
+  validar o fluxo, especialmente em cenários de pagamento com confirmação atrasada. Aguardo
+  o próximo comando.

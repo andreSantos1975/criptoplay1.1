@@ -3,6 +3,7 @@ import { PriceAlertEmail } from '../emails/PriceAlertEmail';
 import { render } from '@react-email/components';
 import { ContactFormEmail } from '../emails/ContactFormEmail';
 import { HotmartWelcomeEmail } from '../emails/HotmartWelcomeEmail';
+import { PasswordResetEmail } from '../emails/PasswordResetEmail'; // Importar PasswordResetEmail
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -53,6 +54,55 @@ export async function sendHotmartWelcomeEmail({
     return data;
   } catch (error) {
     console.error('[Mail] Exceção ao enviar e-mail de boas-vindas:', error);
+    return null;
+  }
+}
+
+interface SendSetPasswordEmailParams {
+  to: string;
+  userName?: string | null;
+  token: string; // Token para definir a senha
+}
+
+export async function sendSetPasswordEmail({
+  to,
+  userName,
+  token,
+}: SendSetPasswordEmailParams) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[Mail] RESEND_API_KEY não definida. O envio do e-mail de definição de senha foi pulado.');
+    return;
+  }
+
+  const setPasswordLink = `${process.env.NEXTAUTH_URL}/auth/new-password?token=${token}`;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+
+  try {
+    console.log(`[Mail] Tentando enviar e-mail de definição de senha para ${to}...`);
+
+    const emailHtml = await render(
+      PasswordResetEmail({
+        userName: userName || 'Usuário',
+        resetLink: setPasswordLink,
+      })
+    );
+
+    const { data, error } = await resend.emails.send({
+      from: `CriptoPlay <${fromEmail}>`,
+      to: [to],
+      subject: `Defina sua senha e acesse a CriptoPlay!`,
+      html: emailHtml,
+    });
+
+    if (error) {
+      console.error('[Mail] Erro ao enviar e-mail de definição de senha via Resend:', error);
+      return null;
+    }
+
+    console.log(`[Mail] E-mail de definição de senha enviado com sucesso! ID: ${data?.id}`);
+    return data;
+  } catch (error) {
+    console.error('[Mail] Exceção ao enviar e-mail de definição de senha:', error);
     return null;
   }
 }

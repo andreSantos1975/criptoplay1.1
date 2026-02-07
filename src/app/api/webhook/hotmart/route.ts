@@ -1,7 +1,8 @@
 // src/app/api/webhook/hotmart/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { Prisma } from '@prisma/client'; // Importar Prisma para tipos como Decimal
+import { Prisma } from '@prisma/client';
+import { activateBonusSubscription } from '@/lib/utils'; // Importar a função utilitária
 
 // Função auxiliar para verificar a autenticidade do webhook (exemplo)
 // Em um ambiente de produção, você DEVE implementar uma verificação robusta
@@ -52,8 +53,8 @@ export async function POST(request: NextRequest) {
 
     if (normalizedSaleStatus === 'APPROVED' || normalizedSaleStatus === 'COMPLETE' || normalizedSaleStatus === 'APROVADO') {
       if (productId.toString() === HOTMART_EBOOK_PRODUCT_ID && parseFloat(price) >= HOTMART_EBOOK_PRICE) {
-        // Salvar o e-mail do comprador na tabela EbookPurchase
-        await prisma.ebookPurchase.upsert({
+        // Encontra ou cria o registro da compra do ebook
+        const ebookPurchase = await prisma.ebookPurchase.upsert({
           where: {
             buyerEmail_platform: {
               buyerEmail: buyerEmail,
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
             },
           },
           update: {
-            status: 'PENDING', // Garante que o status é PENDING se já existe
+            // status: 'PENDING', // O status pode ser atualizado para REDEEMED aqui ou após a ativação
             productId: productId.toString(),
             price: new Prisma.Decimal(price),
             transactionId: transactionId ? transactionId.toString() : null,
@@ -72,10 +73,32 @@ export async function POST(request: NextRequest) {
             productId: productId.toString(),
             price: new Prisma.Decimal(price),
             transactionId: transactionId ? transactionId.toString() : null,
-            status: 'PENDING',
+            status: 'PENDING', // Inicialmente PENDING
           },
         });
         console.log(`E-mail ${buyerEmail} qualificado para bônus (Hotmart) e salvo/atualizado.`);
+
+        // Verificar se o usuário já existe e se tentou resgatar
+        let user = await prisma.user.findUnique({
+            where: { email: buyerEmail },
+        });
+
+        // Se o usuário existir e a compra estiver PENDING (e não REDEEMED ainda por webhook anterior)
+        if (user && ebookPurchase.status === 'PENDING') {
+            // Ativar a assinatura para o usuário
+            await activateBonusSubscription(buyerEmail, "HOTMART");
+
+            // Marcar a compra do e-book como resgatada e vincular ao usuário
+            await prisma.ebookPurchase.update({
+                where: { id: ebookPurchase.id },
+                data: {
+                    status: 'REDEEMED',
+                    userId: user.id,
+                },
+            });
+            console.log(`Assinatura Started ativada automaticamente para ${buyerEmail} via webhook Hotmart.`);
+        }
+
       } else {
         console.log(`Webhook Hotmart ignorado: Produto ID ${productId} ou preço ${price} não corresponde ao ebook configurado (${HOTMART_EBOOK_PRODUCT_ID}, ${HOTMART_EBOOK_PRICE}).`);
       }

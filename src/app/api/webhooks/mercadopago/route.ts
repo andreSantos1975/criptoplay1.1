@@ -19,12 +19,12 @@ interface PaymentWithAdditionalInfo {
 }
 
 /// --- DEFINIÇÃO DOS LIMITES DE CHAT POR PLANO ---
-// IMPORTANTE: Substitua os IDs pelos IDs reais dos seus planos no Mercado Pago.
+/// IMPORTANTE: Substitua os IDs pelos IDs reais dos seus planos no Mercado Pago.
 const PLAN_LIMITS: { [key: string]: number } = {
-  "PLANO_STARTER_ID": 200,   // Exemplo para o plano Starter
-  "PLANO_PRO_ID": 1000,      // Exemplo para o plano Pro
-  "LIFETIME_PLAN": 5000,     // Exemplo para o plano Vitalício
-  // Adicione outros planos aqui
+  "03486178e0ab4673bd1d621f9bd52de0": 200,   // ID real para o plano Starter
+    "c63ef25352fe4aa1825fb04a4185d1cc": 1000,      // ID real para o plano Pro
+    "543e3931dc574997b58379f19b205b2c": 7500,  // ID real para o plano Premium
+    // Adicione outros planos aqui
 };
 
 
